@@ -2,6 +2,7 @@ const STORAGE_KEY = "command-atlas-state-v1";
 const DATA_URL = "./commands.json";
 const SECURE_DATA_URL = "./secure-categories.json";
 const SEARCH_DEBOUNCE_MS = 150;
+const SCROLL_TOP_THRESHOLD = 280;
 const PBKDF2_ITERATIONS = 250000;
 const PBKDF2_KEY_SIZE = 256 / 32;
 
@@ -29,6 +30,7 @@ const ui = {
   activeState: document.getElementById("active-state"),
   clearButton: document.getElementById("clear-btn"),
   categorySelect: document.getElementById("category-select"),
+  scrollTopButton: document.getElementById("scroll-top-btn"),
   securePanel: document.getElementById("secure-panel"),
   secureCategoryList: document.getElementById("secure-category-list"),
   announcer: document.getElementById("app-announcer")
@@ -100,6 +102,10 @@ function bindEvents() {
     applyFilters();
   });
 
+  ui.scrollTopButton?.addEventListener("click", () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+
   [ui.results, ui.protectedResults].forEach((container) => {
     container?.addEventListener("click", async (event) => {
       const copyButton = event.target.closest("[data-copy-command]");
@@ -155,6 +161,10 @@ function bindEvents() {
       ui.searchInput.blur();
     }
   });
+
+  window.addEventListener("scroll", toggleScrollTopButton, { passive: true });
+  window.addEventListener("resize", toggleScrollTopButton, { passive: true });
+  toggleScrollTopButton();
 }
 
 async function fetchJson(url, label) {
@@ -660,6 +670,7 @@ function updateSummary(resultCount) {
 
   ui.activeState.textContent = `目前：${categoryLabel}${queryLabel}`;
   ui.resultSummary.textContent = `共找到 ${resultCount} 筆結果`;
+  toggleScrollTopButton();
 }
 
 function saveState() {
@@ -890,4 +901,14 @@ function announce(message) {
   window.setTimeout(() => {
     ui.announcer.textContent = message;
   }, 20);
+}
+
+function toggleScrollTopButton() {
+  if (!ui.scrollTopButton) {
+    return;
+  }
+
+  const shouldShow = window.scrollY > SCROLL_TOP_THRESHOLD;
+  ui.scrollTopButton.hidden = !shouldShow;
+  ui.scrollTopButton.classList.toggle("is-visible", shouldShow);
 }
