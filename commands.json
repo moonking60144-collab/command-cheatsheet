@@ -64,6 +64,54 @@
     "notes": "檢查 `.git`、`.github`、隱藏設定檔時很好用。"
   },
   {
+    "id": "powershell-unblock-files",
+    "category": "PowerShell",
+    "command": "Get-ChildItem -Path \"<目標路徑>\" -Recurse -File | Unblock-File -Verbose",
+    "description": "解除指定路徑下檔案的封鎖狀態。",
+    "tags": ["powershell", "unblock", "file", "security"],
+    "notes": "把 `<目標路徑>` 換成實際路徑。若只是處理下載資料夾，可用 `gci \"$env:USERPROFILE\\Downloads\" -Recurse -File | Unblock-File -Verbose`。"
+  },
+  {
+    "id": "powershell-tracert-route",
+    "category": "PowerShell",
+    "command": "tracert <主機或網域>",
+    "description": "追蹤封包到目標主機時經過的路由節點。",
+    "tags": ["powershell", "network", "tracert", "route"],
+    "notes": "把 `<主機或網域>` 換成實際目標，例如 `tracert google.com`。"
+  },
+  {
+    "id": "powershell-sfc-scannow",
+    "category": "PowerShell",
+    "command": "sfc /scannow",
+    "description": "掃描並修復 Windows 受保護的系統檔案。",
+    "tags": ["powershell", "windows", "sfc", "system"],
+    "notes": "如果懷疑 DLL 或系統檔案損壞時可先跑這個；通常建議用系統管理員權限執行。"
+  },
+  {
+    "id": "powershell-sysdm-cpl",
+    "category": "PowerShell",
+    "command": "sysdm.cpl",
+    "description": "開啟系統內容視窗，可從這裡進入環境變數設定。",
+    "tags": ["powershell", "windows", "environment", "system"],
+    "notes": "常用在找進階系統設定與環境變數。"
+  },
+  {
+    "id": "powershell-appwiz-cpl",
+    "category": "PowerShell",
+    "command": "appwiz.cpl",
+    "description": "開啟程式與功能視窗，查看或移除已安裝程式。",
+    "tags": ["powershell", "windows", "programs", "uninstall"],
+    "notes": "想快速進入舊版控制台的程式與功能頁面時很方便。"
+  },
+  {
+    "id": "powershell-ncpa-cpl",
+    "category": "PowerShell",
+    "command": "ncpa.cpl",
+    "description": "開啟網路連線視窗，管理網卡與網路介面。",
+    "tags": ["powershell", "windows", "network", "adapter"],
+    "notes": "常用來快速調整網卡、查看介面狀態或進入網路設定。"
+  },
+  {
     "id": "wsl-list",
     "category": "WSL",
     "command": "wsl -l -v",
