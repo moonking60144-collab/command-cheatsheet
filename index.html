@@ -30,7 +30,7 @@
       <section class="hero-panel" aria-label="搜尋與篩選">
         <div class="panel-heading">
           <label class="search-panel" for="search-input">
-            <span>搜尋指令、描述、標籤或分類</span>
+            <span>快速查找</span>
             <input
               id="search-input"
               type="search"
@@ -40,7 +40,9 @@
           </label>
         </div>
 
-        <div id="filter-bar" class="filter-bar" aria-label="分類篩選"></div>
+        <div class="filter-bar-wrap">
+          <div id="filter-bar" class="filter-bar" aria-label="分類篩選"></div>
+        </div>
 
         <div class="toolbar">
           <p id="active-state" class="active-state">目前：全部分類</p>
@@ -49,15 +51,13 @@
         </div>
       </section>
 
-      <section id="secure-panel" class="secure-panel" aria-label="受保護分類解鎖" hidden>
-        <div class="secure-panel-header">
-          <div>
-            <p class="section-label">Protected</p>
-            <p class="secure-panel-copy">指定分類資料已使用 AES-256 加密。密碼只存在目前頁面的記憶體中，不會寫入本機持久化儲存。</p>
-          </div>
-        </div>
+      <details id="secure-panel" class="secure-panel" aria-label="受保護分類解鎖" hidden>
+        <summary class="secure-panel-toggle">
+          <span class="section-label">Protected</span>
+          <span class="secure-panel-hint">AES-256 加密分類 · 點擊展開輸入密碼</span>
+        </summary>
         <div id="secure-category-list" class="secure-category-list"></div>
-      </section>
+      </details>
     </header>
 
     <main class="layout">

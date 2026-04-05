@@ -558,9 +558,11 @@ function renderResults(container, items) {
     card.innerHTML = `
       <div class="card-top">
         <span class="category-badge">${escapeHtml(item.category)}</span>
+      </div>
+      <div class="command-block">
+        <pre class="command-line"><code>${highlightText(item.command, highlightTokens)}</code></pre>
         <button class="copy-button" type="button" data-copy-command="${escapeAttribute(item.command)}">複製</button>
       </div>
-      <pre class="command-line"><code>${highlightText(item.command, highlightTokens)}</code></pre>
       <p class="description">${highlightText(item.description, highlightTokens)}</p>
       ${item.notes ? `<p class="notes">${highlightText(item.notes, highlightTokens)}</p>` : ""}
       <div class="card-footer">
@@ -569,6 +571,13 @@ function renderResults(container, items) {
         </div>
       </div>
     `;
+    card.setAttribute("tabindex", "0");
+    card.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        card.querySelector("[data-copy-command]")?.click();
+      }
+    });
     fragment.appendChild(card);
   });
 
