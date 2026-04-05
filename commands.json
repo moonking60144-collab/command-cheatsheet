@@ -1,0 +1,146 @@
+[
+  {
+    "id": "git-status-short",
+    "category": "Git",
+    "command": "git status -sb",
+    "description": "用精簡格式查看目前分支與檔案狀態。",
+    "tags": ["git", "status", "branch"],
+    "notes": "日常最常用的安全起手式，先看清楚再 add 或 commit。"
+  },
+  {
+    "id": "git-log-graph",
+    "category": "Git",
+    "command": "git log --oneline --graph --decorate --all",
+    "description": "快速查看 commit 歷史、分支位置與 merge 走向。",
+    "tags": ["git", "history", "log"],
+    "notes": "很適合排查這條分支是從哪裡分出去的。"
+  },
+  {
+    "id": "git-switch-create",
+    "category": "Git",
+    "command": "git switch -c feature/add-search-shortcuts",
+    "description": "建立並切換到新的功能分支。",
+    "tags": ["git", "branch", "switch"],
+    "notes": "把 `feature/add-search-shortcuts` 換成你的實際分支名稱。"
+  },
+  {
+    "id": "docker-compose-up",
+    "category": "Docker",
+    "command": "docker compose up -d",
+    "description": "在背景模式啟動 compose 定義的服務。",
+    "tags": ["docker", "compose", "container"],
+    "notes": "常用在本機開發環境啟動資料庫、快取或後端服務。"
+  },
+  {
+    "id": "docker-ps",
+    "category": "Docker",
+    "command": "docker ps --format \"table {{.Names}}\\t{{.Status}}\\t{{.Ports}}\"",
+    "description": "以表格格式查看目前正在執行的容器與對外 port。",
+    "tags": ["docker", "ps", "ports"],
+    "notes": "排查哪個容器真的有起來時很好用。"
+  },
+  {
+    "id": "powershell-utf8",
+    "category": "PowerShell",
+    "command": "Get-Content -Encoding utf8 C:\\Users\\moonk\\.codex\\config.toml",
+    "description": "用 UTF-8 讀檔，避免中文或設定內容被誤判成亂碼。",
+    "tags": ["powershell", "utf8", "config"],
+    "notes": "在 Windows 設定檔排查時特別重要。"
+  },
+  {
+    "id": "powershell-search",
+    "category": "PowerShell",
+    "command": "Select-String -Path .\\*.md -Pattern \"GitHub Pages\"",
+    "description": "在指定檔案範圍內搜尋關鍵字。",
+    "tags": ["powershell", "search", "grep"],
+    "notes": "要搜整個資料夾時可把 `*.md` 換成 `*` 或搭配 `Get-ChildItem`。"
+  },
+  {
+    "id": "powershell-list",
+    "category": "PowerShell",
+    "command": "Get-ChildItem -Force",
+    "description": "列出目前資料夾包含隱藏檔在內的內容。",
+    "tags": ["powershell", "ls", "files"],
+    "notes": "檢查 `.git`、`.github`、隱藏設定檔時很好用。"
+  },
+  {
+    "id": "wsl-list",
+    "category": "WSL",
+    "command": "wsl -l -v",
+    "description": "查看所有 WSL 發行版與其版本、運行狀態。",
+    "tags": ["wsl", "windows", "linux"],
+    "notes": "確認目前哪個 Linux 發行版在跑，以及是不是 WSL 2。"
+  },
+  {
+    "id": "wsl-shutdown",
+    "category": "WSL",
+    "command": "wsl --shutdown",
+    "description": "關閉所有 WSL 執行個體，讓環境重新啟動。",
+    "tags": ["wsl", "restart", "windows"],
+    "notes": "WSL 網路或掛載怪怪的時候，這招很常救得回來。"
+  },
+  {
+    "id": "bash-rg",
+    "category": "Bash",
+    "command": "rg -n \"serviceWorker\" .",
+    "description": "在目前專案中快速搜尋文字與行號。",
+    "tags": ["bash", "ripgrep", "search"],
+    "notes": "比一般 grep 快很多，適合查函式名、設定鍵或錯誤訊息。"
+  },
+  {
+    "id": "bash-files",
+    "category": "Bash",
+    "command": "rg --files",
+    "description": "快速列出專案內的檔案清單。",
+    "tags": ["bash", "files", "ripgrep"],
+    "notes": "想知道檔案實際在哪裡，比盲目 `find` 更快。"
+  },
+  {
+    "id": "wslpath-convert",
+    "category": "Bash",
+    "command": "wslpath 'C:\\Users\\moonk\\Downloads\\cheatsheet-full-guide-1.md'",
+    "description": "把 Windows 路徑轉成 WSL 可用的路徑。",
+    "tags": ["bash", "wsl", "path"],
+    "notes": "跨 Windows / WSL 工作時，先換路徑可以減少很多誤判。"
+  },
+  {
+    "id": "explorer-open",
+    "category": "Bash",
+    "command": "explorer.exe .",
+    "description": "從 WSL 直接打開目前資料夾對應的 Windows 檔案總管。",
+    "tags": ["bash", "windows", "explorer"],
+    "notes": "很適合確認目前你手上的其實是哪一側檔案。"
+  },
+  {
+    "id": "python-server",
+    "category": "Python",
+    "command": "python3 -m http.server 4173",
+    "description": "在目前資料夾啟動一個簡單的本機靜態伺服器。",
+    "tags": ["python", "server", "preview"],
+    "notes": "這個專案本機預覽時就可以直接用。"
+  },
+  {
+    "id": "windows-python-server",
+    "category": "Python",
+    "command": "py -m http.server 4173",
+    "description": "在 Windows PowerShell 內啟動本機靜態伺服器。",
+    "tags": ["python", "windows", "preview"],
+    "notes": "如果你是在 Windows 終端機操作，這個版本比較順手。"
+  },
+  {
+    "id": "gh-pages-push",
+    "category": "GitHub",
+    "command": "git add . && git commit -m \"Update cheatsheet\" && git push",
+    "description": "把本機變更送上 GitHub，觸發 GitHub Pages 自動部署。",
+    "tags": ["github", "deploy", "git"],
+    "notes": "若已設定好 workflow，push 完等 Actions 跑完即可更新網站。"
+  },
+  {
+    "id": "gh-pr-checkout",
+    "category": "GitHub",
+    "command": "gh pr checkout 123",
+    "description": "把指定 PR 拉到本機切換查看。",
+    "tags": ["github", "gh", "pull-request"],
+    "notes": "把 `123` 換成實際 PR 編號。"
+  }
+]

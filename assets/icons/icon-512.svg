@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Command Atlas icon large</title>
+  <desc id="desc">A terminal-inspired icon for the command cheatsheet app.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0e1a2f"/>
+      <stop offset="100%" stop-color="#06101b"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7ae0ff"/>
+      <stop offset="100%" stop-color="#90f7d6"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <rect x="48" y="48" width="416" height="416" rx="74" fill="none" stroke="rgba(122,224,255,0.4)" stroke-width="8"/>
+  <path d="M144 186L224 256L144 326" fill="none" stroke="url(#accent)" stroke-linecap="round" stroke-linejoin="round" stroke-width="30"/>
+  <path d="M266 332H376" fill="none" stroke="#ffc274" stroke-linecap="round" stroke-width="28"/>
+  <circle cx="140" cy="112" r="18" fill="#90f7d6"/>
+  <circle cx="198" cy="112" r="18" fill="#7ae0ff"/>
+  <circle cx="256" cy="112" r="18" fill="#ffc274"/>
+</svg>

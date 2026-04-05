@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#79b8ff">
+  <meta
+    name="description"
+    content="一個可搜尋、可分類、可離線使用的指令查詢工作台，適合部署到 GitHub Pages。"
+  >
+  <title>Command Atlas | 指令查詢工作台</title>
+  <link rel="icon" href="assets/icons/icon-192.svg" type="image/svg+xml">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="hero">
+      <div class="hero-grid">
+        <div class="hero-copy">
+          <p class="eyebrow">Command Atlas</p>
+          <div class="hero-meta">
+            <span class="meta-chip" id="command-count">0 筆指令</span>
+            <span class="meta-chip" id="category-count">0 個分類</span>
+          </div>
+        </div>
+        <span class="panel-label"><kbd>/</kbd> 聚焦搜尋</span>
+      </div>
+
+      <section class="hero-panel" aria-label="搜尋與篩選">
+        <div class="panel-heading">
+          <label class="search-panel" for="search-input">
+            <span>搜尋指令、描述、標籤或分類</span>
+            <input
+              id="search-input"
+              type="search"
+              autocomplete="off"
+              placeholder="搜尋指令、描述、標籤或分類…"
+            >
+          </label>
+        </div>
+
+        <div id="filter-bar" class="filter-bar" aria-label="分類篩選"></div>
+
+        <div class="toolbar">
+          <p id="active-state" class="active-state">目前：全部分類</p>
+          <p id="result-summary" class="result-summary">正在載入指令資料...</p>
+          <button id="clear-btn" class="ghost-button" type="button">清空</button>
+        </div>
+      </section>
+    </header>
+
+    <main class="layout">
+      <section class="results-section" aria-label="查詢結果">
+        <div class="section-header">
+          <p class="section-label">Results</p>
+          <h2 id="results-title">查詢結果</h2>
+        </div>
+
+        <div id="results" class="card-grid" aria-live="polite"></div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p>Command Atlas · 純靜態 · GitHub Pages</p>
+      <p>搜尋、複製、走人。</p>
+    </footer>
+  </div>
+
+  <noscript>
+    <div class="noscript-banner">這個網站需要啟用 JavaScript 才能使用搜尋、分類與複製功能。</div>
+  </noscript>
+
+  <script src="app.js" defer></script>
+</body>
+</html>
