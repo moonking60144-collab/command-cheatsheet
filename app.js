@@ -28,6 +28,7 @@ const ui = {
   categoryCount: document.getElementById("category-count"),
   activeState: document.getElementById("active-state"),
   clearButton: document.getElementById("clear-btn"),
+  categorySelect: document.getElementById("category-select"),
   securePanel: document.getElementById("secure-panel"),
   secureCategoryList: document.getElementById("secure-category-list"),
   announcer: document.getElementById("app-announcer")
@@ -87,6 +88,13 @@ function bindEvents() {
     }
 
     state.activeCategory = button.dataset.category;
+    saveState();
+    renderFilters();
+    applyFilters();
+  });
+
+  ui.categorySelect?.addEventListener("change", (event) => {
+    state.activeCategory = event.target.value;
     saveState();
     renderFilters();
     applyFilters();
@@ -281,6 +289,22 @@ function renderFilters() {
   ];
 
   ui.filterBar.replaceChildren(...buttons);
+
+  if (ui.categorySelect) {
+    const options = [
+      createSelectOption("all", "全部"),
+      ...state.categories.map((category) => createSelectOption(category, category))
+    ];
+    ui.categorySelect.replaceChildren(...options);
+    ui.categorySelect.value = state.activeCategory;
+  }
+}
+
+function createSelectOption(value, label) {
+  const option = document.createElement("option");
+  option.value = value;
+  option.textContent = label;
+  return option;
 }
 
 function createFilterButton(category, label) {
