@@ -40,76 +40,20 @@
     "notes": "排查哪個容器真的有起來時很好用。"
   },
   {
-    "id": "powershell-utf8",
-    "category": "PowerShell",
-    "command": "Get-Content -Encoding utf8 <檔案路徑>",
-    "description": "用 UTF-8 讀檔，避免中文或設定內容被誤判成亂碼。",
-    "tags": ["powershell", "utf8", "config", "encoding"],
-    "notes": "把 `<檔案路徑>` 換成實際路徑，例如 `.codex\\config.toml`。在 Windows 排查設定檔亂碼時特別好用。"
+    "id": "gh-pages-push",
+    "category": "GitHub",
+    "command": "git add . && git commit -m \"Update cheatsheet\" && git push",
+    "description": "把本機變更送上 GitHub，觸發 GitHub Pages 自動部署。",
+    "tags": ["github", "deploy", "git"],
+    "notes": "若已設定好 workflow，push 完等 Actions 跑完即可更新網站。"
   },
   {
-    "id": "powershell-search",
-    "category": "PowerShell",
-    "command": "Select-String -Path .\\*.md -Pattern \"GitHub Pages\"",
-    "description": "在指定檔案範圍內搜尋關鍵字。",
-    "tags": ["powershell", "search", "grep"],
-    "notes": "要搜整個資料夾時可把 `*.md` 換成 `*` 或搭配 `Get-ChildItem`。"
-  },
-  {
-    "id": "powershell-list",
-    "category": "PowerShell",
-    "command": "Get-ChildItem -Force",
-    "description": "列出目前資料夾包含隱藏檔在內的內容。",
-    "tags": ["powershell", "ls", "files"],
-    "notes": "檢查 `.git`、`.github`、隱藏設定檔時很好用。"
-  },
-  {
-    "id": "powershell-unblock-files",
-    "category": "PowerShell",
-    "command": "Get-ChildItem -Path \"<目標路徑>\" -Recurse -File | Unblock-File -Verbose",
-    "description": "解除指定路徑下檔案的封鎖狀態。",
-    "tags": ["powershell", "unblock", "file", "security"],
-    "notes": "把 `<目標路徑>` 換成實際路徑。若只是處理下載資料夾，可用 `gci \"$env:USERPROFILE\\Downloads\" -Recurse -File | Unblock-File -Verbose`。"
-  },
-  {
-    "id": "powershell-tracert-route",
-    "category": "PowerShell",
-    "command": "tracert <主機或網域>",
-    "description": "追蹤封包到目標主機時經過的路由節點。",
-    "tags": ["powershell", "network", "tracert", "route"],
-    "notes": "把 `<主機或網域>` 換成實際目標，例如 `tracert google.com`。"
-  },
-  {
-    "id": "powershell-sfc-scannow",
-    "category": "PowerShell",
-    "command": "sfc /scannow",
-    "description": "掃描並修復 Windows 受保護的系統檔案。",
-    "tags": ["powershell", "windows", "sfc", "system"],
-    "notes": "如果懷疑 DLL 或系統檔案損壞時可先跑這個；通常建議用系統管理員權限執行。"
-  },
-  {
-    "id": "powershell-sysdm-cpl",
-    "category": "PowerShell",
-    "command": "sysdm.cpl",
-    "description": "開啟系統內容視窗，可從這裡進入環境變數設定。",
-    "tags": ["powershell", "windows", "environment", "system"],
-    "notes": "常用在找進階系統設定與環境變數。"
-  },
-  {
-    "id": "powershell-appwiz-cpl",
-    "category": "PowerShell",
-    "command": "appwiz.cpl",
-    "description": "開啟程式與功能視窗，查看或移除已安裝程式。",
-    "tags": ["powershell", "windows", "programs", "uninstall"],
-    "notes": "想快速進入舊版控制台的程式與功能頁面時很方便。"
-  },
-  {
-    "id": "powershell-ncpa-cpl",
-    "category": "PowerShell",
-    "command": "ncpa.cpl",
-    "description": "開啟網路連線視窗，管理網卡與網路介面。",
-    "tags": ["powershell", "windows", "network", "adapter"],
-    "notes": "常用來快速調整網卡、查看介面狀態或進入網路設定。"
+    "id": "gh-pr-checkout",
+    "category": "GitHub",
+    "command": "gh pr checkout 123",
+    "description": "把指定 PR 拉到本機切換查看。",
+    "tags": ["github", "gh", "pull-request"],
+    "notes": "把 `123` 換成實際 PR 編號。"
   },
   {
     "id": "wsl-list",
@@ -176,19 +120,243 @@
     "notes": "如果你是在 Windows 終端機操作，這個版本比較順手。"
   },
   {
-    "id": "gh-pages-push",
-    "category": "GitHub",
-    "command": "git add . && git commit -m \"Update cheatsheet\" && git push",
-    "description": "把本機變更送上 GitHub，觸發 GitHub Pages 自動部署。",
-    "tags": ["github", "deploy", "git"],
-    "notes": "若已設定好 workflow，push 完等 Actions 跑完即可更新網站。"
+    "id": "powershell-utf8",
+    "category": "PowerShell",
+    "command": "Get-Content -Encoding utf8 <檔案路徑>",
+    "description": "用 UTF-8 讀檔，避免中文或設定內容被誤判成亂碼。",
+    "tags": ["powershell", "utf8", "config", "encoding"],
+    "notes": "把 `<檔案路徑>` 換成實際路徑，例如 `.codex\\config.toml`。在 Windows 排查設定檔亂碼時特別好用。"
   },
   {
-    "id": "gh-pr-checkout",
-    "category": "GitHub",
-    "command": "gh pr checkout 123",
-    "description": "把指定 PR 拉到本機切換查看。",
-    "tags": ["github", "gh", "pull-request"],
-    "notes": "把 `123` 換成實際 PR 編號。"
+    "id": "powershell-search",
+    "category": "PowerShell",
+    "command": "Select-String -Path .\\*.md -Pattern \"GitHub Pages\"",
+    "description": "在指定檔案範圍內搜尋關鍵字。",
+    "tags": ["powershell", "search", "grep"],
+    "notes": "要搜整個資料夾時可把 `*.md` 換成 `*` 或搭配 `Get-ChildItem`。"
+  },
+  {
+    "id": "powershell-list",
+    "category": "PowerShell",
+    "command": "Get-ChildItem -Force",
+    "description": "列出目前資料夾包含隱藏檔在內的內容。",
+    "tags": ["powershell", "ls", "files"],
+    "notes": "檢查 `.git`、`.github`、隱藏設定檔時很好用。"
+  },
+  {
+    "id": "powershell-unblock-files",
+    "category": "PowerShell",
+    "command": "Get-ChildItem -Path \"<目標路徑>\" -Recurse -File | Unblock-File -Verbose",
+    "description": "解除指定路徑下檔案的封鎖狀態。",
+    "tags": ["powershell", "unblock", "file", "security"],
+    "notes": "把 `<目標路徑>` 換成實際路徑。若只是處理下載資料夾，可用 `gci \"$env:USERPROFILE\\Downloads\" -Recurse -File | Unblock-File -Verbose`。"
+  },
+  {
+    "id": "windows-ipconfig-all",
+    "category": "Windows Network",
+    "command": "ipconfig /all",
+    "description": "查看完整 TCP/IP 設定，包括 IP、Gateway、DNS Server 與 DHCP 狀態。",
+    "tags": ["windows", "network", "dns", "dhcp", "ipconfig"],
+    "notes": "網路有問題先看這條，通常能先判斷是本機沒拿到設定、DNS 不對，還是閘道異常。"
+  },
+  {
+    "id": "windows-ipconfig-flushdns",
+    "category": "Windows Network",
+    "command": "ipconfig /flushdns",
+    "description": "清除本機 DNS 快取。",
+    "tags": ["windows", "network", "dns", "cache", "ipconfig"],
+    "notes": "改 DNS、切 VPN、網站解析異常或 DNS 剛更新但本機還沒生效時很常用。"
+  },
+  {
+    "id": "windows-nslookup",
+    "category": "Windows Network",
+    "command": "nslookup <網域>",
+    "description": "查詢指定網域目前解析到哪個 IP。",
+    "tags": ["windows", "network", "dns", "nslookup", "lookup"],
+    "notes": "要比對不同 DNS Server，可改成 `nslookup <網域> <DNS 伺服器>`，例如 `nslookup google.com 8.8.8.8`。"
+  },
+  {
+    "id": "powershell-tracert-route",
+    "category": "Windows Network",
+    "command": "tracert <主機或網域>",
+    "description": "追蹤封包到目標主機時經過的路由節點。",
+    "tags": ["windows", "network", "tracert", "route"],
+    "notes": "把 `<主機或網域>` 換成實際目標。排查出國路由、節點卡住或 ISP 繞路時很好用。"
+  },
+  {
+    "id": "windows-test-netconnection",
+    "category": "Windows Network",
+    "command": "Test-NetConnection <主機> -Port <埠>",
+    "description": "測試指定主機與 TCP port 是否真的可連線。",
+    "tags": ["windows", "network", "powershell", "tcp", "port", "tnc"],
+    "notes": "比 `ping` 更適合現代網站、RDP、資料庫、SMB 或 API 連通性排查。"
+  },
+  {
+    "id": "windows-netstat-ano",
+    "category": "Windows Network",
+    "command": "netstat -ano",
+    "description": "查看目前 TCP/UDP 連線、接聽埠與對應 PID。",
+    "tags": ["windows", "network", "port", "tcp", "netstat"],
+    "notes": "查某個 port 是否被占用時，可搭配 `findstr`，例如 `netstat -ano | findstr :443`。"
+  },
+  {
+    "id": "windows-get-nettcpconnection",
+    "category": "Windows Network",
+    "command": "Get-NetTCPConnection",
+    "description": "PowerShell 版 netstat，可查目前 TCP 連線與 Listen 埠。",
+    "tags": ["windows", "network", "powershell", "tcp", "port"],
+    "notes": "結果更好篩選、也更適合接管線，例如 `Get-NetTCPConnection -State Listen` 或 `-LocalPort 443`。"
+  },
+  {
+    "id": "windows-tasklist",
+    "category": "Windows Process & Service",
+    "command": "tasklist",
+    "description": "列出目前正在執行的程序。",
+    "tags": ["windows", "process", "tasklist", "pid"],
+    "notes": "快速確認某個程序是否還活著，也可搭配 `findstr` 篩選，例如 `tasklist | findstr chrome`。"
+  },
+  {
+    "id": "windows-taskkill-pid",
+    "category": "Windows Process & Service",
+    "command": "taskkill /PID <pid> /F",
+    "description": "強制結束指定 PID 的程序。",
+    "tags": ["windows", "process", "taskkill", "pid", "force"],
+    "notes": "`/F` 會強制終止，未儲存資料會直接丟失。若要按檔名結束，也可用 `taskkill /IM notepad.exe /F`。"
+  },
+  {
+    "id": "windows-sc-query",
+    "category": "Windows Process & Service",
+    "command": "sc query",
+    "description": "查看 Windows Service 狀態。",
+    "tags": ["windows", "service", "sc", "status"],
+    "notes": "查指定服務時可加名稱，例如 `sc query wuauserv`。排 Windows Update、Print Spooler 或 SQL Server 問題很常用。"
+  },
+  {
+    "id": "windows-get-service",
+    "category": "Windows Process & Service",
+    "command": "Get-Service",
+    "description": "PowerShell 版服務查詢，可直接做篩選與自動化。",
+    "tags": ["windows", "service", "powershell", "status"],
+    "notes": "例如 `Get-Service | Where-Object Status -eq 'Running'` 或 `Get-Service spooler`。"
+  },
+  {
+    "id": "windows-wevtutil-system",
+    "category": "Windows Event Log",
+    "command": "wevtutil qe System /c:20 /rd:true /f:text",
+    "description": "查看最近 20 筆系統事件記錄。",
+    "tags": ["windows", "eventlog", "wevtutil", "system", "logs"],
+    "notes": "遠端或 Server Core 排查時很好用。若看應用程式記錄，可改成 `wevtutil qe Application /c:20 /rd:true /f:text`。"
+  },
+  {
+    "id": "windows-get-winevent-system",
+    "category": "Windows Event Log",
+    "command": "Get-WinEvent -LogName System -MaxEvents 20",
+    "description": "用 PowerShell 讀取最近的系統事件記錄。",
+    "tags": ["windows", "eventlog", "powershell", "logs", "system"],
+    "notes": "若要看更多細節，可接 `Format-List TimeCreated, Id, ProviderName, LevelDisplayName, Message`。"
+  },
+  {
+    "id": "powershell-sfc-scannow",
+    "category": "Windows Repair",
+    "command": "sfc /scannow",
+    "description": "掃描並修復 Windows 受保護的系統檔案。",
+    "tags": ["windows", "repair", "sfc", "system"],
+    "notes": "懷疑 DLL 或系統檔案損壞時可先跑這個；通常建議用系統管理員權限執行。"
+  },
+  {
+    "id": "windows-dism-restorehealth",
+    "category": "Windows Repair",
+    "command": "DISM /Online /Cleanup-Image /RestoreHealth",
+    "description": "修復 Windows 元件存放區與系統映像健康狀態。",
+    "tags": ["windows", "repair", "dism", "image", "restorehealth"],
+    "notes": "SFC 修不好時常接著跑這條。執行時間可能較久，正式環境建議先確認修復來源正常。"
+  },
+  {
+    "id": "powershell-sysdm-cpl",
+    "category": "Windows Shortcut",
+    "command": "sysdm.cpl",
+    "description": "開啟系統內容視窗，可從這裡進入環境變數設定。",
+    "tags": ["windows", "shortcut", "environment", "system", "control-panel"],
+    "notes": "常用在找進階系統設定與環境變數。"
+  },
+  {
+    "id": "powershell-appwiz-cpl",
+    "category": "Windows Shortcut",
+    "command": "appwiz.cpl",
+    "description": "開啟程式與功能視窗，查看或移除已安裝程式。",
+    "tags": ["windows", "shortcut", "programs", "uninstall", "control-panel"],
+    "notes": "想快速進入舊版控制台的程式與功能頁面時很方便。"
+  },
+  {
+    "id": "powershell-ncpa-cpl",
+    "category": "Windows Shortcut",
+    "command": "ncpa.cpl",
+    "description": "開啟網路連線視窗，管理網卡與網路介面。",
+    "tags": ["windows", "shortcut", "network", "adapter", "control-panel"],
+    "notes": "常用來快速調整網卡、查看介面狀態或進入網路設定。"
+  },
+  {
+    "id": "windows-services-msc",
+    "category": "Windows Shortcut",
+    "command": "services.msc",
+    "description": "開啟服務管理器。",
+    "tags": ["windows", "shortcut", "service", "management", "msc"],
+    "notes": "用 GUI 快速查看、啟停服務時很常用。"
+  },
+  {
+    "id": "windows-eventvwr-msc",
+    "category": "Windows Shortcut",
+    "command": "eventvwr.msc",
+    "description": "開啟事件檢視器。",
+    "tags": ["windows", "shortcut", "eventlog", "viewer", "msc"],
+    "notes": "想直接看事件記錄 GUI，而不是命令列輸出時很好用。"
+  },
+  {
+    "id": "windows-wf-msc",
+    "category": "Windows Shortcut",
+    "command": "wf.msc",
+    "description": "開啟進階防火牆設定。",
+    "tags": ["windows", "shortcut", "firewall", "security", "msc"],
+    "notes": "排防火牆規則、入站與出站設定時會用到。"
+  },
+  {
+    "id": "windows-compmgmt-msc",
+    "category": "Windows Shortcut",
+    "command": "compmgmt.msc",
+    "description": "開啟電腦管理。",
+    "tags": ["windows", "shortcut", "management", "computer", "msc"],
+    "notes": "裡面整合了事件記錄、服務、裝置、磁碟等多個管理工具。"
+  },
+  {
+    "id": "windows-diskmgmt-msc",
+    "category": "Windows Shortcut",
+    "command": "diskmgmt.msc",
+    "description": "開啟磁碟管理。",
+    "tags": ["windows", "shortcut", "disk", "storage", "msc"],
+    "notes": "查磁碟分割、初始化新磁碟或調整磁碟機代號時很好用。"
+  },
+  {
+    "id": "windows-devmgmt-msc",
+    "category": "Windows Shortcut",
+    "command": "devmgmt.msc",
+    "description": "開啟裝置管理員。",
+    "tags": ["windows", "shortcut", "device", "driver", "msc"],
+    "notes": "查驅動、裝置狀態或重新掃描硬體變更時很常用。"
+  },
+  {
+    "id": "windows-ms-settings-update",
+    "category": "Windows Shortcut",
+    "command": "start ms-settings:windowsupdate",
+    "description": "直接開啟 Windows Update 設定頁。",
+    "tags": ["windows", "shortcut", "settings", "update", "ms-settings"],
+    "notes": "從 PowerShell 或命令列快速跳轉到更新設定。"
+  },
+  {
+    "id": "windows-ms-settings-network",
+    "category": "Windows Shortcut",
+    "command": "start ms-settings:network",
+    "description": "直接開啟 Windows 網路設定頁。",
+    "tags": ["windows", "shortcut", "settings", "network", "ms-settings"],
+    "notes": "需要快速切到網路設定 GUI 時很好用。"
   }
 ]
