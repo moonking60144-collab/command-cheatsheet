@@ -48,6 +48,16 @@
           <button id="clear-btn" class="ghost-button" type="button">清空</button>
         </div>
       </section>
+
+      <section id="secure-panel" class="secure-panel" aria-label="受保護分類解鎖" hidden>
+        <div class="secure-panel-header">
+          <div>
+            <p class="section-label">Protected</p>
+            <p class="secure-panel-copy">指定分類資料已使用 AES-256 加密。密碼只存在目前頁面的記憶體中，不會寫入本機持久化儲存。</p>
+          </div>
+        </div>
+        <div id="secure-category-list" class="secure-category-list"></div>
+      </section>
     </header>
 
     <main class="layout">
@@ -71,6 +81,7 @@
     <div class="noscript-banner">這個網站需要啟用 JavaScript 才能使用搜尋、分類與複製功能。</div>
   </noscript>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js" defer crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="app.js" defer></script>
 </body>
 </html>

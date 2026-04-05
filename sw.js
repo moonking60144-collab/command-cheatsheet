@@ -1,10 +1,11 @@
-const CACHE_NAME = "command-atlas-shell-v1";
+const CACHE_NAME = "command-atlas-shell-v2";
 const ASSETS = [
   "./",
   "./index.html",
   "./styles.css",
   "./app.js",
   "./commands.json",
+  "./secure-categories.json",
   "./manifest.json",
   "./assets/icons/icon-192.svg",
   "./assets/icons/icon-512.svg"

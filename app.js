@@ -1,7 +1,11 @@
 const STORAGE_KEY = "command-atlas-state-v1";
 const DATA_URL = "./commands.json";
+const SECURE_DATA_URL = "./secure-categories.json";
 
 const state = {
+  publicCommands: [],
+  protectedCategories: [],
+  unlockedCommands: new Map(),
   commands: [],
   categories: [],
   query: "",
@@ -16,7 +20,9 @@ const ui = {
   commandCount: document.getElementById("command-count"),
   categoryCount: document.getElementById("category-count"),
   activeState: document.getElementById("active-state"),
-  clearButton: document.getElementById("clear-btn")
+  clearButton: document.getElementById("clear-btn"),
+  securePanel: document.getElementById("secure-panel"),
+  secureCategoryList: document.getElementById("secure-category-list")
 };
 
 init();
@@ -26,23 +32,16 @@ async function init() {
   restoreState();
 
   try {
-    const response = await fetch(DATA_URL, { cache: "no-store" });
+    const [publicPayload, protectedPayload] = await Promise.all([
+      fetchJson(DATA_URL, "公開指令資料"),
+      fetchProtectedCategories()
+    ]);
 
-    if (!response.ok) {
-      throw new Error(`讀取失敗：${response.status}`);
-    }
+    state.publicCommands = normalizeCommands(publicPayload);
+    state.protectedCategories = protectedPayload;
 
-    const rawData = await response.json();
-    state.commands = normalizeCommands(rawData);
-    state.categories = getCategories(state.commands);
-
-    if (state.activeCategory !== "all" && !state.categories.includes(state.activeCategory)) {
-      state.activeCategory = "all";
-    }
-
-    updateMetrics();
-    renderFilters();
-    applyFilters();
+    renderProtectedCategories();
+    rebuildCommandState();
     registerServiceWorker();
   } catch (error) {
     console.error(error);
@@ -91,6 +90,17 @@ function bindEvents() {
     await copyToClipboard(command, copyButton);
   });
 
+  ui.secureCategoryList?.addEventListener("submit", async (event) => {
+    const form = event.target.closest("[data-secure-form]");
+
+    if (!form) {
+      return;
+    }
+
+    event.preventDefault();
+    await unlockProtectedCategory(form);
+  });
+
   document.addEventListener("keydown", (event) => {
     const activeTag = document.activeElement?.tagName;
     const isTyping = activeTag === "INPUT" || activeTag === "TEXTAREA";
@@ -111,17 +121,48 @@ function bindEvents() {
   });
 }
 
-function normalizeCommands(rawData) {
+async function fetchJson(url, label) {
+  const response = await fetch(url, { cache: "no-store" });
+
+  if (!response.ok) {
+    throw new Error(`讀取${label}失敗：${response.status}`);
+  }
+
+  return response.json();
+}
+
+async function fetchProtectedCategories() {
+  try {
+    const response = await fetch(SECURE_DATA_URL, { cache: "no-store" });
+
+    if (response.status === 404) {
+      return [];
+    }
+
+    if (!response.ok) {
+      throw new Error(`讀取受保護分類失敗：${response.status}`);
+    }
+
+    const payload = await response.json();
+    return normalizeProtectedCategories(payload);
+  } catch (error) {
+    console.warn("secure categories load failed", error);
+    return [];
+  }
+}
+
+function normalizeCommands(rawData, fallbackCategory = "") {
   if (!Array.isArray(rawData)) {
-    throw new Error("commands.json 必須是陣列格式。");
+    throw new Error("指令資料必須是陣列格式。");
   }
 
   return rawData
     .filter(Boolean)
     .map((item, index) => {
+      const derivedCategory = String(item.category ?? fallbackCategory ?? "").trim() || "Uncategorized";
       const normalized = {
         id: item.id ?? `command-${index + 1}`,
-        category: String(item.category ?? "Uncategorized").trim(),
+        category: derivedCategory,
         command: String(item.command ?? "").trim(),
         description: String(item.description ?? "").trim(),
         tags: Array.isArray(item.tags) ? item.tags.map((tag) => String(tag).trim()).filter(Boolean) : [],
@@ -142,6 +183,38 @@ function normalizeCommands(rawData) {
       };
     })
     .filter((item) => item.command && item.description);
+}
+
+function normalizeProtectedCategories(payload) {
+  const source = Array.isArray(payload?.encryptedCategories)
+    ? payload.encryptedCategories
+    : Array.isArray(payload)
+      ? payload
+      : [];
+
+  return source
+    .filter(Boolean)
+    .map((entry, index) => ({
+      id: String(entry.id ?? `protected-${index + 1}`).trim(),
+      label: String(entry.label ?? entry.category ?? `Protected ${index + 1}`).trim(),
+      description: String(entry.description ?? "").trim(),
+      ciphertext: String(entry.ciphertext ?? "").trim()
+    }))
+    .filter((entry) => entry.id && entry.label);
+}
+
+function rebuildCommandState() {
+  const unlocked = Array.from(state.unlockedCommands.values()).flat();
+  state.commands = [...state.publicCommands, ...unlocked];
+  state.categories = getCategories(state.commands);
+
+  if (state.activeCategory !== "all" && !state.categories.includes(state.activeCategory)) {
+    state.activeCategory = "all";
+  }
+
+  updateMetrics();
+  renderFilters();
+  applyFilters();
 }
 
 function getCategories(commands) {
@@ -165,6 +238,130 @@ function createFilterButton(category, label) {
   button.dataset.category = category;
   button.textContent = label;
   return button;
+}
+
+function renderProtectedCategories() {
+  if (!ui.securePanel || !ui.secureCategoryList) {
+    return;
+  }
+
+  if (!state.protectedCategories.length) {
+    ui.securePanel.hidden = true;
+    ui.secureCategoryList.replaceChildren();
+    return;
+  }
+
+  ui.securePanel.hidden = false;
+
+  const fragment = document.createDocumentFragment();
+
+  state.protectedCategories.forEach((entry) => {
+    const card = document.createElement("article");
+    const isUnlocked = state.unlockedCommands.has(entry.id);
+    card.className = "secure-card";
+    card.innerHTML = `
+      <div class="secure-card-header">
+        <div>
+          <p class="secure-card-title">${escapeHtml(entry.label)}</p>
+          <p class="secure-card-meta">AES-256 受保護分類</p>
+        </div>
+        <span class="secure-badge${isUnlocked ? " is-unlocked" : ""}">
+          ${isUnlocked ? "已解鎖" : "待解鎖"}
+        </span>
+      </div>
+      ${entry.description ? `<p class="secure-card-copy">${escapeHtml(entry.description)}</p>` : ""}
+      ${isUnlocked ? `
+        <p class="secure-status is-success" data-status-for="${escapeAttribute(entry.id)}">
+          此分類已加入目前頁面的搜尋與篩選結果。
+        </p>
+      ` : `
+        <form class="secure-form" data-secure-form data-protected-id="${escapeAttribute(entry.id)}">
+          <label class="password-field">
+            <span>解密密碼</span>
+            <input
+              class="secure-input"
+              type="password"
+              name="password"
+              autocomplete="current-password"
+              spellcheck="false"
+              placeholder="輸入密碼後解鎖"
+              required
+            >
+          </label>
+          <button class="secure-submit" type="submit">解鎖</button>
+        </form>
+        <p class="secure-status" data-status-for="${escapeAttribute(entry.id)}">
+          解鎖後才會把這個分類加入結果中。
+        </p>
+      `}
+    `;
+    fragment.appendChild(card);
+  });
+
+  ui.secureCategoryList.replaceChildren(fragment);
+}
+
+async function unlockProtectedCategory(form) {
+  const protectedId = form.dataset.protectedId;
+  const passwordField = form.elements.password;
+  const password = typeof passwordField?.value === "string" ? passwordField.value : "";
+  const target = state.protectedCategories.find((entry) => entry.id === protectedId);
+
+  setProtectedStatus(protectedId, "正在解鎖...", false);
+
+  if (!target || !target.ciphertext || !password) {
+    form.reset();
+    setProtectedStatus(protectedId, "無法解鎖，請確認輸入內容。", true);
+    return;
+  }
+
+  try {
+    const decrypted = decryptProtectedCommands(target, password);
+    state.unlockedCommands.set(target.id, decrypted);
+    form.reset();
+    renderProtectedCategories();
+    rebuildCommandState();
+  } catch (error) {
+    console.warn("unlock failed", error);
+    form.reset();
+    setProtectedStatus(protectedId, "無法解鎖，請確認輸入內容。", true);
+  }
+}
+
+function decryptProtectedCommands(target, password) {
+  if (!window.CryptoJS?.AES) {
+    throw new Error("CryptoJS unavailable");
+  }
+
+  const decryptedBytes = window.CryptoJS.AES.decrypt(target.ciphertext, password);
+  const plaintext = decryptedBytes.toString(window.CryptoJS.enc.Utf8);
+
+  if (!plaintext) {
+    throw new Error("Decryption failed");
+  }
+
+  let parsed;
+
+  try {
+    parsed = JSON.parse(plaintext);
+  } catch (error) {
+    throw new Error("Invalid decrypted JSON");
+  }
+
+  return normalizeCommands(parsed, target.label);
+}
+
+function setProtectedStatus(protectedId, message, isError) {
+  const target = Array.from(ui.secureCategoryList?.querySelectorAll("[data-status-for]") ?? [])
+    .find((node) => node.dataset.statusFor === protectedId);
+
+  if (!target) {
+    return;
+  }
+
+  target.textContent = message;
+  target.classList.toggle("is-error", Boolean(isError));
+  target.classList.toggle("is-success", !isError && message.includes("已"));
 }
 
 function applyFilters() {
@@ -234,7 +431,7 @@ function renderResults(items) {
     ui.results.innerHTML = `
       <article class="empty-state">
         <h3>沒有符合的結果</h3>
-        <p>你可以換個關鍵字、切回全部分類，或直接到 commands.json 新增這條常用指令。</p>
+        <p>你可以換個關鍵字、切回全部分類，或到 commands.json / secure-categories.json 補上需要的資料。</p>
       </article>
     `;
     return;
@@ -269,7 +466,7 @@ function renderError(error) {
   ui.resultSummary.textContent = "資料讀取失敗";
   ui.results.innerHTML = `
     <article class="error-state">
-      <h3>載入 commands.json 時發生問題</h3>
+      <h3>載入資料時發生問題</h3>
       <p>${escapeHtml(error.message)}。請先確認你是透過本機伺服器預覽，而不是直接雙擊 HTML 檔案。</p>
     </article>
   `;

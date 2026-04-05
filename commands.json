@@ -42,10 +42,10 @@
   {
     "id": "powershell-utf8",
     "category": "PowerShell",
-    "command": "Get-Content -Encoding utf8 C:\\Users\\moonk\\.codex\\config.toml",
+    "command": "Get-Content -Encoding utf8 <檔案路徑>",
     "description": "用 UTF-8 讀檔，避免中文或設定內容被誤判成亂碼。",
-    "tags": ["powershell", "utf8", "config"],
-    "notes": "在 Windows 設定檔排查時特別重要。"
+    "tags": ["powershell", "utf8", "config", "encoding"],
+    "notes": "把 `<檔案路徑>` 換成實際路徑，例如 `.codex\\config.toml`。在 Windows 排查設定檔亂碼時特別好用。"
   },
   {
     "id": "powershell-search",
@@ -98,10 +98,10 @@
   {
     "id": "wslpath-convert",
     "category": "Bash",
-    "command": "wslpath 'C:\\Users\\moonk\\Downloads\\cheatsheet-full-guide-1.md'",
+    "command": "wslpath 'C:\\Users\\<使用者>\\Downloads\\example.md'",
     "description": "把 Windows 路徑轉成 WSL 可用的路徑。",
-    "tags": ["bash", "wsl", "path"],
-    "notes": "跨 Windows / WSL 工作時，先換路徑可以減少很多誤判。"
+    "tags": ["bash", "wsl", "path", "convert"],
+    "notes": "把引號內換成你要轉換的實際 Windows 路徑。跨 Windows / WSL 工作時先轉路徑可以少踩很多坑。"
   },
   {
     "id": "explorer-open",
