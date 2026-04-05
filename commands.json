@@ -153,123 +153,251 @@
   },
   {
     "id": "windows-ipconfig-all",
-    "category": "Windows Network",
+    "category": "Windows Network & DNS",
     "command": "ipconfig /all",
-    "description": "查看完整 TCP/IP 設定，包括 IP、Gateway、DNS Server 與 DHCP 狀態。",
-    "tags": ["windows", "network", "dns", "dhcp", "ipconfig"],
-    "notes": "網路有問題先看這條，通常能先判斷是本機沒拿到設定、DNS 不對，還是閘道異常。"
+    "description": "看完整網卡與 TCP/IP 設定，包括 IP、Gateway、DNS、DHCP、MAC。",
+    "tags": ["network", "ip", "dns", "dhcp", "windows", "ipconfig"],
+    "notes": "網路有問題通常先看這條，最容易先判斷是本機設定、DNS 還是 DHCP 問題。"
   },
   {
     "id": "windows-ipconfig-flushdns",
-    "category": "Windows Network",
+    "category": "Windows Network & DNS",
     "command": "ipconfig /flushdns",
     "description": "清除本機 DNS 快取。",
-    "tags": ["windows", "network", "dns", "cache", "ipconfig"],
-    "notes": "改 DNS、切 VPN、網站解析異常或 DNS 剛更新但本機還沒生效時很常用。"
+    "tags": ["network", "dns", "cache", "windows", "ipconfig"],
+    "notes": "改 DNS、切 VPN、網站剛改解析但本機還沒更新時很好用。"
+  },
+  {
+    "id": "windows-ipconfig-renew",
+    "category": "Windows Network & DNS",
+    "command": "ipconfig /renew",
+    "description": "重新向 DHCP 伺服器取得 IP 位址。",
+    "tags": ["network", "dhcp", "ip", "renew", "windows"],
+    "notes": "DHCP 網段常用，適合排除租約異常或切換網路後沒拿到新位址。"
+  },
+  {
+    "id": "windows-ipconfig-release",
+    "category": "Windows Network & DNS",
+    "command": "ipconfig /release",
+    "description": "釋放目前 DHCP 取得的 IP 位址。",
+    "tags": ["network", "dhcp", "ip", "risk", "windows"],
+    "notes": "執行後當下可能斷網，通常會接著搭配 `ipconfig /renew` 使用。"
   },
   {
     "id": "windows-nslookup",
-    "category": "Windows Network",
+    "category": "Windows Network & DNS",
     "command": "nslookup <網域>",
-    "description": "查詢指定網域目前解析到哪個 IP。",
-    "tags": ["windows", "network", "dns", "nslookup", "lookup"],
-    "notes": "要比對不同 DNS Server，可改成 `nslookup <網域> <DNS 伺服器>`，例如 `nslookup google.com 8.8.8.8`。"
+    "description": "查指定網域是否有正常解析。",
+    "tags": ["dns", "lookup", "network", "windows", "resolver"],
+    "notes": "最常用的 DNS 排查指令之一，像 `nslookup google.com`。"
   },
   {
-    "id": "powershell-tracert-route",
-    "category": "Windows Network",
+    "id": "windows-nslookup-dns-server",
+    "category": "Windows Network & DNS",
+    "command": "nslookup <網域> <DNS 伺服器>",
+    "description": "指定 DNS Server 查詢，確認不同 resolver 回答是否一致。",
+    "tags": ["dns", "lookup", "resolver", "network", "windows"],
+    "notes": "適合比對公司 DNS、家用 DNS、公共 DNS 的差異，例如 `nslookup google.com 8.8.8.8`。"
+  },
+  {
+    "id": "windows-ping",
+    "category": "Windows Network & DNS",
+    "command": "ping <主機或 IP>",
+    "description": "做基本 ICMP 可達性測試。",
+    "tags": ["network", "icmp", "ping", "windows"],
+    "notes": "只能代表基本 reachability，不代表 Web、RDP、資料庫等服務一定可用。"
+  },
+  {
+    "id": "windows-test-connection",
+    "category": "Windows Network & DNS",
+    "command": "Test-Connection <主機或 IP> -Count 4",
+    "description": "PowerShell 版 ping，回傳物件化結果，較適合接腳本。",
+    "tags": ["powershell", "icmp", "network", "windows", "ping"],
+    "notes": "如果你要做自動化或篩選輸出，這條通常比傳統 `ping` 更好用。"
+  },
+  {
+    "id": "windows-tracert-route",
+    "category": "Windows Network & DNS",
     "command": "tracert <主機或網域>",
-    "description": "追蹤封包到目標主機時經過的路由節點。",
-    "tags": ["windows", "network", "tracert", "route"],
-    "notes": "把 `<主機或網域>` 換成實際目標。排查出國路由、節點卡住或 ISP 繞路時很好用。"
+    "description": "追蹤封包到目標主機途中經過的路由節點。",
+    "tags": ["route", "tracert", "network", "windows"],
+    "notes": "排跨點延遲、ISP 問題或某段路由卡住時很常用。"
+  },
+  {
+    "id": "windows-route-print",
+    "category": "Windows Network & DNS",
+    "command": "route print",
+    "description": "查看本機 routing table。",
+    "tags": ["route", "network", "gateway", "windows"],
+    "notes": "多張網卡、VPN、靜態路由衝突時特別有幫助。"
+  },
+  {
+    "id": "windows-arp-a",
+    "category": "Windows Network & DNS",
+    "command": "arp -a",
+    "description": "查看目前 ARP 快取中 IP 與 MAC 的對應關係。",
+    "tags": ["arp", "lan", "network", "windows"],
+    "notes": "排區網設備、IP 衝突或第二層網路問題時很有參考價值。"
   },
   {
     "id": "windows-test-netconnection",
-    "category": "Windows Network",
+    "category": "Windows Port & Firewall",
     "command": "Test-NetConnection <主機> -Port <埠>",
-    "description": "測試指定主機與 TCP port 是否真的可連線。",
-    "tags": ["windows", "network", "powershell", "tcp", "port", "tnc"],
-    "notes": "比 `ping` 更適合現代網站、RDP、資料庫、SMB 或 API 連通性排查。"
+    "description": "測試某台主機的特定 TCP port 是否真的可連。",
+    "tags": ["tcp", "port", "network", "powershell", "windows"],
+    "notes": "排網站、RDP、SQL、SMB、API 時比 `ping` 更接近實際問題。"
   },
   {
     "id": "windows-netstat-ano",
-    "category": "Windows Network",
+    "category": "Windows Port & Firewall",
     "command": "netstat -ano",
-    "description": "查看目前 TCP/UDP 連線、接聽埠與對應 PID。",
-    "tags": ["windows", "network", "port", "tcp", "netstat"],
-    "notes": "查某個 port 是否被占用時，可搭配 `findstr`，例如 `netstat -ano | findstr :443`。"
+    "description": "查看所有 TCP/UDP 連線、接聽埠與對應 PID。",
+    "tags": ["netstat", "tcp", "port", "windows", "pid"],
+    "notes": "看 active connection、LISTENING 與 PID 時很好用。"
+  },
+  {
+    "id": "windows-netstat-port",
+    "category": "Windows Port & Firewall",
+    "command": "netstat -ano | findstr :<埠號>",
+    "description": "快速查某個 port 是否被占用。",
+    "tags": ["netstat", "port", "pid", "windows", "listen"],
+    "notes": "排 Web、RDP、代理、反向代理時很好用，例如 `:443` 或 `:3389`。"
   },
   {
     "id": "windows-get-nettcpconnection",
-    "category": "Windows Network",
+    "category": "Windows Port & Firewall",
     "command": "Get-NetTCPConnection",
-    "description": "PowerShell 版 netstat，可查目前 TCP 連線與 Listen 埠。",
-    "tags": ["windows", "network", "powershell", "tcp", "port"],
-    "notes": "結果更好篩選、也更適合接管線，例如 `Get-NetTCPConnection -State Listen` 或 `-LocalPort 443`。"
+    "description": "PowerShell 版 netstat，可查看目前 TCP 連線。",
+    "tags": ["tcp", "port", "powershell", "windows", "network"],
+    "notes": "結果較好篩選，也更適合接管線做分析。"
+  },
+  {
+    "id": "windows-get-nettcpconnection-listen",
+    "category": "Windows Port & Firewall",
+    "command": "Get-NetTCPConnection -State Listen",
+    "description": "只看目前正在 Listen 的 socket。",
+    "tags": ["tcp", "listen", "powershell", "windows", "port"],
+    "notes": "當你只想確認哪些服務正在接聽時，這條比看整份連線清單更乾淨。"
+  },
+  {
+    "id": "windows-get-nettcpconnection-localport",
+    "category": "Windows Port & Firewall",
+    "command": "Get-NetTCPConnection -LocalPort <埠號>",
+    "description": "查看指定 local port 的 TCP 連線或接聽狀態。",
+    "tags": ["tcp", "port", "powershell", "windows", "rdp"],
+    "notes": "確認某服務是否真的在 listen 時很常用，例如 3389、443、1433。"
+  },
+  {
+    "id": "windows-firewall-show-all",
+    "category": "Windows Port & Firewall",
+    "command": "netsh advfirewall firewall show rule name=all",
+    "description": "列出目前所有防火牆規則。",
+    "tags": ["firewall", "netsh", "security", "windows", "rule"],
+    "notes": "輸出量很大，通常建議再搭配 `findstr` 做過濾。"
+  },
+  {
+    "id": "windows-firewall-find-rule",
+    "category": "Windows Port & Firewall",
+    "command": "netsh advfirewall firewall show rule name=all | findstr <關鍵字或埠號>",
+    "description": "快速查某條防火牆規則是否存在。",
+    "tags": ["firewall", "rdp", "port", "windows", "rule"],
+    "notes": "查 RDP、特定程式或某個 port 對應規則時很好用，例如搜尋 `3389`。"
   },
   {
     "id": "windows-tasklist",
     "category": "Windows Process & Service",
     "command": "tasklist",
-    "description": "列出目前正在執行的程序。",
-    "tags": ["windows", "process", "tasklist", "pid"],
-    "notes": "快速確認某個程序是否還活著，也可搭配 `findstr` 篩選，例如 `tasklist | findstr chrome`。"
+    "description": "快速列出目前所有程序。",
+    "tags": ["process", "tasklist", "windows", "pid"],
+    "notes": "遠端桌面或純命令列環境排查時很好用。"
+  },
+  {
+    "id": "windows-tasklist-find",
+    "category": "Windows Process & Service",
+    "command": "tasklist | findstr <程序名>",
+    "description": "查特定程序是否還活著。",
+    "tags": ["process", "filter", "tasklist", "windows"],
+    "notes": "可換成任何程序名，例如 `chrome`、`code` 或你的 agent / service 程序。"
   },
   {
     "id": "windows-taskkill-pid",
     "category": "Windows Process & Service",
     "command": "taskkill /PID <pid> /F",
     "description": "強制結束指定 PID 的程序。",
-    "tags": ["windows", "process", "taskkill", "pid", "force"],
-    "notes": "`/F` 會強制終止，未儲存資料會直接丟失。若要按檔名結束，也可用 `taskkill /IM notepad.exe /F`。"
+    "tags": ["process", "kill", "risk", "windows", "pid"],
+    "notes": "高風險，未儲存資料會直接丟失。適合處理卡死程序或占 port 程序。"
+  },
+  {
+    "id": "windows-taskkill-image",
+    "category": "Windows Process & Service",
+    "command": "taskkill /IM <程序名.exe> /F",
+    "description": "直接用程序名稱強制結束程序，不必先查 PID。",
+    "tags": ["process", "kill", "image", "windows", "risk"],
+    "notes": "高風險，像 `notepad.exe`、`chrome.exe` 這種程序名都可以直接代入。"
   },
   {
     "id": "windows-sc-query",
     "category": "Windows Process & Service",
     "command": "sc query",
-    "description": "查看 Windows Service 狀態。",
-    "tags": ["windows", "service", "sc", "status"],
-    "notes": "查指定服務時可加名稱，例如 `sc query wuauserv`。排 Windows Update、Print Spooler 或 SQL Server 問題很常用。"
+    "description": "列出目前服務狀態。",
+    "tags": ["service", "sc", "windows", "status"],
+    "notes": "Windows 原生命令，排查服務沒起來時很常用。"
+  },
+  {
+    "id": "windows-sc-query-service",
+    "category": "Windows Process & Service",
+    "command": "sc query <服務名>",
+    "description": "查單一服務是否為 Running / Stopped。",
+    "tags": ["service", "sc", "status", "windows"],
+    "notes": "印表機、更新、SQL、Agent 類服務都很常這樣查，例如 `spooler`。"
   },
   {
     "id": "windows-get-service",
     "category": "Windows Process & Service",
     "command": "Get-Service",
-    "description": "PowerShell 版服務查詢，可直接做篩選與自動化。",
-    "tags": ["windows", "service", "powershell", "status"],
-    "notes": "例如 `Get-Service | Where-Object Status -eq 'Running'` 或 `Get-Service spooler`。"
+    "description": "PowerShell 版服務清單。",
+    "tags": ["service", "powershell", "windows", "status"],
+    "notes": "可再接 `Where-Object` 或 `Sort-Object` 做篩選，比 `sc query` 更適合自動化。"
+  },
+  {
+    "id": "windows-get-service-running",
+    "category": "Windows Process & Service",
+    "command": "Get-Service | Where-Object {$_.Status -eq \"Running\"}",
+    "description": "只看目前正在執行的服務。",
+    "tags": ["service", "running", "powershell", "windows"],
+    "notes": "用 PowerShell 管線先聚焦正在跑的服務，再往下做分析或輸出報表。"
   },
   {
     "id": "windows-wevtutil-system",
     "category": "Windows Event Log",
     "command": "wevtutil qe System /c:20 /rd:true /f:text",
-    "description": "查看最近 20 筆系統事件記錄。",
-    "tags": ["windows", "eventlog", "wevtutil", "system", "logs"],
-    "notes": "遠端或 Server Core 排查時很好用。若看應用程式記錄，可改成 `wevtutil qe Application /c:20 /rd:true /f:text`。"
+    "description": "查看最近 20 筆 System Log。",
+    "tags": ["eventlog", "wevtutil", "system", "windows", "logs"],
+    "notes": "遠端或 Server Core 排查時很好用，直接抓最近事件來看。"
   },
   {
     "id": "windows-get-winevent-system",
     "category": "Windows Event Log",
     "command": "Get-WinEvent -LogName System -MaxEvents 20",
-    "description": "用 PowerShell 讀取最近的系統事件記錄。",
-    "tags": ["windows", "eventlog", "powershell", "logs", "system"],
-    "notes": "若要看更多細節，可接 `Format-List TimeCreated, Id, ProviderName, LevelDisplayName, Message`。"
+    "description": "用 PowerShell 查看最近的系統事件。",
+    "tags": ["eventlog", "powershell", "system", "windows", "logs"],
+    "notes": "比 `wevtutil` 更適合做篩選與腳本化，後續也比較容易轉成表格或匯出。"
   },
   {
     "id": "powershell-sfc-scannow",
     "category": "Windows Repair",
     "command": "sfc /scannow",
     "description": "掃描並修復 Windows 受保護的系統檔案。",
-    "tags": ["windows", "repair", "sfc", "system"],
-    "notes": "懷疑 DLL 或系統檔案損壞時可先跑這個；通常建議用系統管理員權限執行。"
+    "tags": ["system", "repair", "sfc", "windows"],
+    "notes": "懷疑 DLL 或系統檔損壞時先跑這條；通常建議用系統管理員權限執行。"
   },
   {
     "id": "windows-dism-restorehealth",
     "category": "Windows Repair",
     "command": "DISM /Online /Cleanup-Image /RestoreHealth",
-    "description": "修復 Windows 元件存放區與系統映像健康狀態。",
-    "tags": ["windows", "repair", "dism", "image", "restorehealth"],
-    "notes": "SFC 修不好時常接著跑這條。執行時間可能較久，正式環境建議先確認修復來源正常。"
+    "description": "修復 Windows 元件存放區與線上系統映像。",
+    "tags": ["system", "dism", "repair", "windows"],
+    "notes": "通常 SFC 修不好時接著跑這條。執行時間可能較久，正式環境建議先確認修復來源正常。"
   },
   {
     "id": "powershell-sysdm-cpl",
@@ -354,9 +482,9 @@
   {
     "id": "windows-ms-settings-network",
     "category": "Windows Shortcut",
-    "command": "start ms-settings:network",
-    "description": "直接開啟 Windows 網路設定頁。",
+    "command": "start ms-settings:network-status",
+    "description": "直接開啟 Windows 網路狀態設定頁。",
     "tags": ["windows", "shortcut", "settings", "network", "ms-settings"],
-    "notes": "需要快速切到網路設定 GUI 時很好用。"
+    "notes": "這裡用的是 `network-status`，比泛用的 `network` 寫法更明確也更穩。"
   }
 ]
