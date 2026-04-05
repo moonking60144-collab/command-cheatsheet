@@ -22,6 +22,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Stamp cache version
+        run: sed -i "s/__CACHE_BUSTER__/${{ github.sha }}/g" sw.js
+
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 

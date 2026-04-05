@@ -49,6 +49,18 @@ pre {
   font-family: var(--mono-font);
 }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 kbd {
   display: inline-flex;
   align-items: center;
@@ -327,6 +339,16 @@ kbd {
   box-shadow: 0 0 0 3px rgba(121, 184, 255, 0.14);
 }
 
+#search-input:focus-visible,
+.secure-input:focus-visible,
+.ghost-button:focus-visible,
+.filter-pill:focus-visible,
+.copy-button:focus-visible,
+.secure-submit:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(121, 184, 255, 0.16);
+}
+
 .filter-bar {
   display: flex;
   flex-wrap: wrap;
@@ -506,6 +528,13 @@ kbd {
   line-height: 1.6;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+mark {
+  background: rgba(121, 184, 255, 0.18);
+  color: var(--accent-strong);
+  border-radius: 4px;
+  padding: 0 0.12rem;
 }
 
 .description {

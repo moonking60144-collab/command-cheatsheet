@@ -1,6 +1,9 @@
 const STORAGE_KEY = "command-atlas-state-v1";
 const DATA_URL = "./commands.json";
 const SECURE_DATA_URL = "./secure-categories.json";
+const SEARCH_DEBOUNCE_MS = 150;
+const PBKDF2_ITERATIONS = 250000;
+const PBKDF2_KEY_SIZE = 256 / 32;
 
 const state = {
   publicCommands: [],
@@ -25,8 +28,11 @@ const ui = {
   activeState: document.getElementById("active-state"),
   clearButton: document.getElementById("clear-btn"),
   securePanel: document.getElementById("secure-panel"),
-  secureCategoryList: document.getElementById("secure-category-list")
+  secureCategoryList: document.getElementById("secure-category-list"),
+  announcer: document.getElementById("app-announcer")
 };
+
+let searchDebounceId = 0;
 
 init();
 
@@ -56,7 +62,10 @@ function bindEvents() {
   ui.searchInput.addEventListener("input", (event) => {
     state.query = event.target.value.trim();
     saveState();
-    applyFilters();
+    window.clearTimeout(searchDebounceId);
+    searchDebounceId = window.setTimeout(() => {
+      applyFilters();
+    }, SEARCH_DEBOUNCE_MS);
   });
 
   ui.clearButton.addEventListener("click", () => {
@@ -161,6 +170,8 @@ function normalizeCommands(rawData, fallbackCategory = "") {
     throw new Error("指令資料必須是陣列格式。");
   }
 
+  const seenIds = new Set();
+
   return rawData
     .filter(Boolean)
     .map((item, index) => {
@@ -187,7 +198,19 @@ function normalizeCommands(rawData, fallbackCategory = "") {
           .toLowerCase()
       };
     })
-    .filter((item) => item.command && item.description);
+    .filter((item) => {
+      if (!item.command || !item.description) {
+        return false;
+      }
+
+      if (seenIds.has(item.id)) {
+        console.warn(`[Command Atlas] duplicate command id detected: ${item.id}`);
+      } else {
+        seenIds.add(item.id);
+      }
+
+      return true;
+    });
 }
 
 function normalizeProtectedCategories(payload) {
@@ -203,7 +226,12 @@ function normalizeProtectedCategories(payload) {
       id: String(entry.id ?? `protected-${index + 1}`).trim(),
       label: String(entry.label ?? entry.category ?? `Protected ${index + 1}`).trim(),
       description: String(entry.description ?? "").trim(),
-      ciphertext: String(entry.ciphertext ?? "").trim()
+      ciphertext: String(entry.ciphertext ?? "").trim(),
+      encryption: String(entry.encryption ?? "").trim(),
+      kdf: String(entry.kdf ?? "").trim(),
+      iterations: Number.isFinite(entry.iterations) ? Number(entry.iterations) : null,
+      salt: String(entry.salt ?? "").trim(),
+      iv: String(entry.iv ?? "").trim()
     }))
     .filter((entry) => entry.id && entry.label);
 }
@@ -215,6 +243,7 @@ function getUnlockedCommands() {
 function rebuildCommandState() {
   const unlocked = getUnlockedCommands();
   state.commands = [...state.publicCommands, ...unlocked];
+  warnOnDuplicateCommandIds(state.commands);
   state.categories = getCategories(state.commands);
 
   if (state.activeCategory !== "all" && !state.categories.includes(state.activeCategory)) {
@@ -245,6 +274,7 @@ function createFilterButton(category, label) {
   button.type = "button";
   button.className = `filter-pill${state.activeCategory === category ? " is-active" : ""}`;
   button.dataset.category = category;
+  button.setAttribute("aria-pressed", String(state.activeCategory === category));
   button.textContent = label;
   return button;
 }
@@ -342,8 +372,9 @@ function decryptProtectedCommands(target, password) {
     throw new Error("CryptoJS unavailable");
   }
 
-  const decryptedBytes = window.CryptoJS.AES.decrypt(target.ciphertext, password);
-  const plaintext = decryptedBytes.toString(window.CryptoJS.enc.Utf8);
+  const plaintext = isModernEncryptedPayload(target)
+    ? decryptWithPbkdf2(target, password)
+    : decryptLegacyCiphertext(target.ciphertext, password);
 
   if (!plaintext) {
     throw new Error("Decryption failed");
@@ -358,6 +389,41 @@ function decryptProtectedCommands(target, password) {
   }
 
   return normalizeCommands(parsed, target.label);
+}
+
+function isModernEncryptedPayload(target) {
+  return target.kdf === "PBKDF2-SHA256"
+    && typeof target.iterations === "number"
+    && typeof target.salt === "string"
+    && typeof target.iv === "string";
+}
+
+function decryptWithPbkdf2(target, password) {
+  const salt = window.CryptoJS.enc.Hex.parse(target.salt);
+  const iv = window.CryptoJS.enc.Hex.parse(target.iv);
+  const ciphertext = window.CryptoJS.enc.Base64.parse(target.ciphertext);
+  const key = window.CryptoJS.PBKDF2(password, salt, {
+    keySize: PBKDF2_KEY_SIZE,
+    iterations: target.iterations,
+    hasher: window.CryptoJS.algo.SHA256
+  });
+
+  const decryptedBytes = window.CryptoJS.AES.decrypt(
+    { ciphertext },
+    key,
+    {
+      iv,
+      mode: window.CryptoJS.mode.CBC,
+      padding: window.CryptoJS.pad.Pkcs7
+    }
+  );
+
+  return decryptedBytes.toString(window.CryptoJS.enc.Utf8);
+}
+
+function decryptLegacyCiphertext(ciphertext, password) {
+  const decryptedBytes = window.CryptoJS.AES.decrypt(ciphertext, password);
+  return decryptedBytes.toString(window.CryptoJS.enc.Utf8);
 }
 
 function setProtectedStatus(protectedId, message, isError) {
@@ -484,6 +550,7 @@ function renderResults(container, items) {
   }
 
   const fragment = document.createDocumentFragment();
+  const highlightTokens = tokenize(state.query);
 
   items.forEach((item) => {
     const card = document.createElement("article");
@@ -493,12 +560,12 @@ function renderResults(container, items) {
         <span class="category-badge">${escapeHtml(item.category)}</span>
         <button class="copy-button" type="button" data-copy-command="${escapeAttribute(item.command)}">複製</button>
       </div>
-      <pre class="command-line"><code>${escapeHtml(item.command)}</code></pre>
-      <p class="description">${escapeHtml(item.description)}</p>
-      ${item.notes ? `<p class="notes">${escapeHtml(item.notes)}</p>` : ""}
+      <pre class="command-line"><code>${highlightText(item.command, highlightTokens)}</code></pre>
+      <p class="description">${highlightText(item.description, highlightTokens)}</p>
+      ${item.notes ? `<p class="notes">${highlightText(item.notes, highlightTokens)}</p>` : ""}
       <div class="card-footer">
         <div class="tag-list">
-          ${item.tags.map((tag) => `<span class="tag">#${escapeHtml(tag)}</span>`).join("")}
+          ${item.tags.map((tag) => `<span class="tag">#${highlightText(tag, highlightTokens)}</span>`).join("")}
         </div>
       </div>
     `;
@@ -583,12 +650,15 @@ async function copyToClipboard(text, button) {
       button.textContent = originalLabel;
       button.classList.remove("is-copied");
     }, 1400);
+
+    announce("指令已複製到剪貼簿。");
   } catch (error) {
     console.error(error);
     button.textContent = "失敗";
     window.setTimeout(() => {
       button.textContent = "複製";
     }, 1400);
+    announce("複製失敗。");
   }
 }
 
@@ -634,4 +704,57 @@ function escapeHtml(value) {
 
 function escapeAttribute(value) {
   return escapeHtml(value);
+}
+
+function warnOnDuplicateCommandIds(commands) {
+  const seen = new Set();
+
+  commands.forEach((item) => {
+    if (seen.has(item.id)) {
+      console.warn(`[Command Atlas] duplicate command id found in combined state: ${item.id}`);
+      return;
+    }
+
+    seen.add(item.id);
+  });
+}
+
+function highlightText(text, tokens) {
+  const escaped = escapeHtml(text);
+
+  if (!tokens.length) {
+    return escaped;
+  }
+
+  const uniqueTokens = [...new Set(tokens.map((token) => token.trim()).filter(Boolean))]
+    .sort((left, right) => right.length - left.length);
+
+  if (!uniqueTokens.length) {
+    return escaped;
+  }
+
+  const pattern = uniqueTokens
+    .map((token) => escapeRegex(escapeHtml(token)))
+    .join("|");
+
+  if (!pattern) {
+    return escaped;
+  }
+
+  return escaped.replace(new RegExp(`(${pattern})`, "gi"), "<mark>$1</mark>");
+}
+
+function escapeRegex(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function announce(message) {
+  if (!ui.announcer) {
+    return;
+  }
+
+  ui.announcer.textContent = "";
+  window.setTimeout(() => {
+    ui.announcer.textContent = message;
+  }, 20);
 }

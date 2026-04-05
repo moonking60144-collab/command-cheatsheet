@@ -1,4 +1,4 @@
-const CACHE_NAME = "command-atlas-shell-v2";
+const CACHE_NAME = "command-atlas-shell-__CACHE_BUSTER__";
 const ASSETS = [
   "./",
   "./index.html",
