@@ -15,7 +15,10 @@ const state = {
 const ui = {
   searchInput: document.getElementById("search-input"),
   filterBar: document.getElementById("filter-bar"),
+  publicResultsSection: document.getElementById("public-results-section"),
   results: document.getElementById("results"),
+  protectedResultsSection: document.getElementById("protected-results-section"),
+  protectedResults: document.getElementById("protected-results"),
   resultSummary: document.getElementById("result-summary"),
   commandCount: document.getElementById("command-count"),
   categoryCount: document.getElementById("category-count"),
@@ -79,15 +82,17 @@ function bindEvents() {
     applyFilters();
   });
 
-  ui.results.addEventListener("click", async (event) => {
-    const copyButton = event.target.closest("[data-copy-command]");
+  [ui.results, ui.protectedResults].forEach((container) => {
+    container?.addEventListener("click", async (event) => {
+      const copyButton = event.target.closest("[data-copy-command]");
 
-    if (!copyButton) {
-      return;
-    }
+      if (!copyButton) {
+        return;
+      }
 
-    const command = copyButton.dataset.copyCommand;
-    await copyToClipboard(command, copyButton);
+      const command = copyButton.dataset.copyCommand;
+      await copyToClipboard(command, copyButton);
+    });
   });
 
   ui.secureCategoryList?.addEventListener("submit", async (event) => {
@@ -203,8 +208,12 @@ function normalizeProtectedCategories(payload) {
     .filter((entry) => entry.id && entry.label);
 }
 
+function getUnlockedCommands() {
+  return Array.from(state.unlockedCommands.values()).flat();
+}
+
 function rebuildCommandState() {
-  const unlocked = Array.from(state.unlockedCommands.values()).flat();
+  const unlocked = getUnlockedCommands();
   state.commands = [...state.publicCommands, ...unlocked];
   state.categories = getCategories(state.commands);
 
@@ -272,7 +281,7 @@ function renderProtectedCategories() {
       ${entry.description ? `<p class="secure-card-copy">${escapeHtml(entry.description)}</p>` : ""}
       ${isUnlocked ? `
         <p class="secure-status is-success" data-status-for="${escapeAttribute(entry.id)}">
-          此分類已加入目前頁面的搜尋與篩選結果。
+          此分類已解鎖，結果會顯示在下方的私人分類分段。
         </p>
       ` : `
         <form class="secure-form" data-secure-form data-protected-id="${escapeAttribute(entry.id)}">
@@ -291,7 +300,7 @@ function renderProtectedCategories() {
           <button class="secure-submit" type="submit">解鎖</button>
         </form>
         <p class="secure-status" data-status-for="${escapeAttribute(entry.id)}">
-          解鎖後才會把這個分類加入結果中。
+          解鎖後會顯示在私人分類分段，不會混進公開卡片結果。
         </p>
       `}
     `;
@@ -366,15 +375,52 @@ function setProtectedStatus(protectedId, message, isError) {
 
 function applyFilters() {
   const tokens = tokenize(state.query);
-  const filtered = state.commands
+  const filteredPublic = filterCommands(state.publicCommands, tokens);
+  const filteredProtected = filterCommands(getUnlockedCommands(), tokens);
+  const totalResults = filteredPublic.length + filteredProtected.length;
+
+  updateSummary(totalResults);
+  renderResultSections(filteredPublic, filteredProtected, totalResults);
+}
+
+function filterCommands(commands, tokens) {
+  return commands
     .filter((item) => state.activeCategory === "all" || item.category === state.activeCategory)
     .map((item) => ({ item, score: getMatchScore(item, tokens) }))
     .filter((entry) => entry.score >= 0)
     .sort((left, right) => right.score - left.score || left.item.category.localeCompare(right.item.category, "zh-Hant"))
     .map((entry) => entry.item);
+}
 
-  updateSummary(filtered.length);
-  renderResults(filtered);
+function renderResultSections(publicItems, protectedItems, totalResults) {
+  const hasPublicItems = publicItems.length > 0;
+  const hasProtectedItems = protectedItems.length > 0;
+
+  if (ui.publicResultsSection) {
+    ui.publicResultsSection.hidden = !hasPublicItems && totalResults > 0;
+  }
+
+  if (ui.protectedResultsSection) {
+    ui.protectedResultsSection.hidden = !hasProtectedItems;
+  }
+
+  if (!totalResults) {
+    renderResults(ui.results, []);
+    ui.protectedResults?.replaceChildren();
+    return;
+  }
+
+  if (hasPublicItems) {
+    renderResults(ui.results, publicItems);
+  } else {
+    ui.results.replaceChildren();
+  }
+
+  if (hasProtectedItems && ui.protectedResults) {
+    renderResults(ui.protectedResults, protectedItems);
+  } else {
+    ui.protectedResults?.replaceChildren();
+  }
 }
 
 function tokenize(query) {
@@ -426,9 +472,9 @@ function getMatchScore(item, tokens) {
   return score;
 }
 
-function renderResults(items) {
+function renderResults(container, items) {
   if (!items.length) {
-    ui.results.innerHTML = `
+    container.innerHTML = `
       <article class="empty-state">
         <h3>沒有符合的結果</h3>
         <p>你可以換個關鍵字、切回全部分類，或到 commands.json / secure-categories.json 補上需要的資料。</p>
@@ -459,7 +505,7 @@ function renderResults(items) {
     fragment.appendChild(card);
   });
 
-  ui.results.replaceChildren(fragment);
+  container.replaceChildren(fragment);
 }
 
 function renderError(error) {
@@ -470,6 +516,14 @@ function renderError(error) {
       <p>${escapeHtml(error.message)}。請先確認你是透過本機伺服器預覽，而不是直接雙擊 HTML 檔案。</p>
     </article>
   `;
+
+  if (ui.publicResultsSection) {
+    ui.publicResultsSection.hidden = false;
+  }
+
+  if (ui.protectedResultsSection) {
+    ui.protectedResultsSection.hidden = true;
+  }
 }
 
 function updateMetrics() {
