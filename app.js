@@ -9,6 +9,7 @@ const state = {
   publicCommands: [],
   protectedCategories: [],
   unlockedCommands: new Map(),
+  placeholderValues: new Map(),
   commands: [],
   categories: [],
   query: "",
@@ -99,8 +100,21 @@ function bindEvents() {
         return;
       }
 
-      const command = copyButton.dataset.copyCommand;
+      const card = copyButton.closest(".command-card");
+      const command = buildResolvedCommand(card, copyButton.dataset.copyCommand);
       await copyToClipboard(command, copyButton);
+    });
+
+    container?.addEventListener("input", (event) => {
+      const placeholderInput = event.target.closest("[data-placeholder-token]");
+
+      if (!placeholderInput) {
+        return;
+      }
+
+      const card = placeholderInput.closest(".command-card");
+      syncCardPlaceholderValues(card);
+      updateCommandPreview(card);
     });
   });
 
@@ -553,14 +567,19 @@ function renderResults(container, items) {
   const highlightTokens = tokenize(state.query);
 
   items.forEach((item) => {
+    const placeholders = extractPlaceholders(item.command);
+    const placeholderValues = state.placeholderValues.get(item.id) ?? {};
+    const previewCommand = resolveCommandTemplate(item.command, placeholderValues);
     const card = document.createElement("article");
     card.className = "command-card";
+    card.dataset.commandId = item.id;
     card.innerHTML = `
       <div class="card-top">
         <span class="category-badge">${escapeHtml(item.category)}</span>
       </div>
       <div class="command-block">
-        <pre class="command-line"><code>${highlightText(item.command, highlightTokens)}</code></pre>
+        <pre class="command-line"><code>${highlightText(previewCommand, highlightTokens)}</code></pre>
+        ${renderPlaceholderFields(placeholders, placeholderValues)}
         <button class="copy-button" type="button" data-copy-command="${escapeAttribute(item.command)}">複製</button>
       </div>
       <p class="description">${highlightText(item.description, highlightTokens)}</p>
@@ -573,6 +592,10 @@ function renderResults(container, items) {
     `;
     card.setAttribute("tabindex", "0");
     card.addEventListener("keydown", (e) => {
+      if (e.target !== card) {
+        return;
+      }
+
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
         card.querySelector("[data-copy-command]")?.click();
@@ -681,6 +704,83 @@ function fallbackCopy(text) {
   textarea.select();
   document.execCommand("copy");
   textarea.remove();
+}
+
+function extractPlaceholders(command) {
+  const matches = String(command ?? "").match(/<[^>]+>/g) ?? [];
+  return [...new Set(matches.map((token) => token.trim()).filter(Boolean))];
+}
+
+function renderPlaceholderFields(placeholders, currentValues = {}) {
+  if (!placeholders.length) {
+    return "";
+  }
+
+  return `
+    <div class="placeholder-fields">
+      ${placeholders.map((token) => `
+        <label class="placeholder-field">
+          <span>${escapeHtml(token.slice(1, -1))}</span>
+          <input
+            class="secure-input placeholder-input"
+            type="text"
+            data-placeholder-token="${escapeAttribute(token)}"
+            placeholder="貼上實際值"
+            value="${escapeAttribute(currentValues[token] ?? "")}"
+            autocomplete="off"
+            spellcheck="false"
+          >
+        </label>
+      `).join("")}
+    </div>
+  `;
+}
+
+function buildResolvedCommand(card, template) {
+  return resolveCommandTemplate(template, getPlaceholderValues(card));
+}
+
+function getPlaceholderValues(card) {
+  const values = {};
+
+  card?.querySelectorAll("[data-placeholder-token]").forEach((input) => {
+    values[input.dataset.placeholderToken] = input.value;
+  });
+
+  return values;
+}
+
+function syncCardPlaceholderValues(card) {
+  if (!card?.dataset.commandId) {
+    return;
+  }
+
+  state.placeholderValues.set(card.dataset.commandId, getPlaceholderValues(card));
+}
+
+function resolveCommandTemplate(template, values) {
+  return String(template ?? "").replace(/<[^>]+>/g, (token) => {
+    const nextValue = values[token];
+    return typeof nextValue === "string" && nextValue !== "" ? nextValue : token;
+  });
+}
+
+function updateCommandPreview(card) {
+  if (!card) {
+    return;
+  }
+
+  const copyButton = card.querySelector("[data-copy-command]");
+  const code = card.querySelector(".command-line code");
+
+  if (!copyButton || !code) {
+    return;
+  }
+
+  code.innerHTML = highlightText(
+    buildResolvedCommand(card, copyButton.dataset.copyCommand),
+    tokenize(state.query)
+  );
 }
 
 function registerServiceWorker() {

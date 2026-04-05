@@ -594,6 +594,29 @@ kbd {
   word-break: break-word;
 }
 
+.placeholder-fields {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 0.75rem;
+  padding-left: 0.75rem;
+  border-left: 2px solid rgba(121, 184, 255, 0.22);
+}
+
+.placeholder-field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.placeholder-field span {
+  color: var(--text-dim);
+  line-height: 1.5;
+  font-size: 0.82rem;
+}
+
+.placeholder-input {
+  width: 100%;
+}
+
 mark {
   background: rgba(121, 184, 255, 0.18);
   color: var(--accent-strong);
