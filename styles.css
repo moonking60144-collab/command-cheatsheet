@@ -719,9 +719,7 @@ mark {
 }
 
 .footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  display: grid;
   gap: 1rem;
   margin-top: 1rem;
   padding-top: 0.9rem;
