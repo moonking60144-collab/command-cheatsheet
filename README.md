@@ -4,6 +4,10 @@
 
 ## 怎麼用
 
+網站：
+
+https://moonking60144-collab.github.io/command-cheatsheet/
+
 1. 開啟網站後，直接在搜尋框輸入關鍵字。
 2. 搜尋會同時比對：
    - `command`
