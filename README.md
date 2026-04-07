@@ -15,7 +15,7 @@ https://moonking60144-collab.github.io/command-cheatsheet/
    - `tags`
    - `category`
 3. 你可以先點分類按鈕，再輸入關鍵字縮小範圍。
-4. 卡片右上角按「複製」即可把指令帶走。
+4. 若指令有 `<佔位符>`，卡片會出現輸入框，填好後再按「複製」，複製的是替換完成的指令。
 5. 頁面會記住你上一次的搜尋狀態。
 
 ## 如何新增或修改指令
@@ -37,7 +37,7 @@ https://moonking60144-collab.github.io/command-cheatsheet/
 
 - `id`：唯一識別值，建議不要重複
 - `category`：分類名稱，前端會拿這個生成篩選按鈕
-- `command`：實際指令
+- `command`：實際指令。若指令包含需要自填的值，用 `<角括號>` 標記，例如 `git switch -c <分支名稱>`，卡片會自動顯示輸入框，填完後複製即可得到替換後的完整指令
 - `description`：你之後搜尋和閱讀時會看到的主要說明
 - `tags`：補充關鍵字，讓搜尋更好找
 - `notes`：進一步備註，可省略
