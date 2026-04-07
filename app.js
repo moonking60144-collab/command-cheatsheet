@@ -146,15 +146,24 @@ function bindEvents() {
         return;
       }
 
-      const copyButton = event.target.closest("[data-copy-command]");
+      if (event.target.closest(".placeholder-fields") || event.target.closest("[data-placeholder-token]")) {
+        return;
+      }
+
+      const card = event.target.closest(".command-card");
+
+      if (!card) {
+        return;
+      }
+
+      const copyButton = card.querySelector("[data-copy-command]");
 
       if (!copyButton) {
         return;
       }
 
-      const card = copyButton.closest(".command-card");
       const command = buildResolvedCommand(card, copyButton.dataset.copyCommand);
-      await copyToClipboard(command, copyButton);
+      await copyToClipboard(command, copyButton, card);
     });
 
     container?.addEventListener("input", (event) => {
@@ -1068,7 +1077,7 @@ function restoreState() {
   }
 }
 
-async function copyToClipboard(text, button) {
+async function copyToClipboard(text, button, card = null) {
   try {
     if (navigator.clipboard?.writeText) {
       await navigator.clipboard.writeText(text);
@@ -1079,10 +1088,12 @@ async function copyToClipboard(text, button) {
     const originalLabel = button.textContent;
     button.textContent = "已複製";
     button.classList.add("is-copied");
+    card?.classList.add("is-copied");
 
     window.setTimeout(() => {
       button.textContent = originalLabel;
       button.classList.remove("is-copied");
+      card?.classList.remove("is-copied");
     }, 1400);
 
     announce("指令已複製到剪貼簿。");
