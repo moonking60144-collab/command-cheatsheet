@@ -121,6 +121,19 @@ function bindEvents() {
     }
   });
 
+  window.addEventListener("pointerdown", (event) => {
+    if (!ui.categoryPicker || ui.categoryPicker.hidden) {
+      return;
+    }
+
+    const clickedInsidePicker = ui.categoryPicker.contains(event.target);
+    const clickedButton = ui.categoryPickerBtn?.contains(event.target);
+
+    if (!clickedInsidePicker && !clickedButton) {
+      closeCategoryPicker();
+    }
+  }, { capture: true });
+
   ui.scrollTopButton?.addEventListener("click", () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   });
