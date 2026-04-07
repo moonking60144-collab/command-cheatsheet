@@ -398,7 +398,7 @@ kbd {
   top: calc(100% + 0.5rem);
   right: 0;
   z-index: 50;
-  width: 360px;
+  width: 220px;
   padding: 0.55rem;
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-strong);
@@ -407,7 +407,7 @@ kbd {
     0 16px 40px rgba(0, 0, 0, 0.45),
     0 2px 8px rgba(0, 0, 0, 0.2);
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 0.3rem;
 }
 
@@ -488,7 +488,7 @@ kbd {
 .ghost-button,
 .filter-pill,
 .copy-button {
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   border-radius: 999px;
   background: var(--surface-soft);
   color: var(--text-secondary);
@@ -522,6 +522,7 @@ kbd {
 }
 
 .filter-pill.is-active {
+  border-width: 1px;
   border-color: var(--accent);
   background: var(--accent-soft);
   color: var(--text-primary);
@@ -578,8 +579,8 @@ kbd {
   margin-bottom: 0.45rem;
 }
 
-.results-section .section-label,
-.results-section .section-caption {
+.section-label,
+.section-caption {
   display: none;
 }
 
@@ -640,9 +641,7 @@ kbd {
 }
 
 body.has-active-filter .category-badge {
-  opacity: 0.38;
-  background: rgba(121, 184, 255, 0.035);
-  border-color: rgba(121, 184, 255, 0.1);
+  display: none;
 }
 
 .category-badge-button {
@@ -935,7 +934,7 @@ mark {
   }
 
   .category-picker {
-    width: min(calc(100vw - 1rem), 360px);
+    width: min(calc(100vw - 1rem), 220px);
     right: 0;
   }
 }

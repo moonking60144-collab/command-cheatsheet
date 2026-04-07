@@ -783,11 +783,12 @@ function updateSummary(resultCount) {
   const categoryLabel = state.activeCategory === "all" ? "全部分類" : state.activeCategory;
   const queryLabel = state.query ? `，關鍵字「${state.query}」` : "";
   const hasActiveFilters = state.query.length > 0 || state.activeCategory !== "all";
+  const hasActiveCategoryFilter = state.activeCategory !== "all";
 
   ui.activeState.textContent = `目前：${categoryLabel}${queryLabel}`;
   ui.resultSummary.textContent = `共找到 ${resultCount} 筆結果`;
   ui.clearButton.hidden = !hasActiveFilters;
-  document.body.classList.toggle("has-active-filter", hasActiveFilters);
+  document.body.classList.toggle("has-active-filter", hasActiveCategoryFilter);
   toggleScrollTopButton();
 }
 
