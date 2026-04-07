@@ -500,6 +500,9 @@ async function unlockProtectedCategory(form) {
     form.reset();
     renderProtectedCategories();
     rebuildCommandState();
+    if (ui.securePanel) {
+      ui.securePanel.open = false;
+    }
     window.setTimeout(() => {
       if (!ui.protectedResultsSection?.hidden) {
         ui.protectedResultsSection.scrollIntoView({ behavior: "smooth", block: "start" });
