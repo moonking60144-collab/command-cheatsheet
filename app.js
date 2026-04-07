@@ -302,8 +302,8 @@ function renderFilters() {
 
   ui.filterBar.replaceChildren(...buttons);
 
-  const activeButton = ui.filterBar.querySelector(`[data-category="${CSS.escape(state.activeCategory)}"]`);
-  activeButton?.scrollIntoView({ block: "nearest", inline: "center" });
+  const activeButton = ui.filterBar.querySelector(`[data-category="${escapeCssSelector(state.activeCategory)}"]`);
+  activeButton?.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" });
 }
 
 function createFilterButton(category, label) {
@@ -668,6 +668,7 @@ function updateSummary(resultCount) {
   ui.activeState.textContent = `目前：${categoryLabel}${queryLabel}`;
   ui.resultSummary.textContent = `共找到 ${resultCount} 筆結果`;
   ui.clearButton.hidden = !hasActiveFilters;
+  document.body.classList.toggle("has-active-filter", hasActiveFilters);
   toggleScrollTopButton();
 }
 
@@ -846,6 +847,14 @@ function escapeHtml(value) {
 
 function escapeAttribute(value) {
   return escapeHtml(value);
+}
+
+function escapeCssSelector(value) {
+  if (window.CSS?.escape) {
+    return window.CSS.escape(String(value));
+  }
+
+  return String(value).replace(/["\\]/g, "\\$&");
 }
 
 function warnOnDuplicateCommandIds(commands) {

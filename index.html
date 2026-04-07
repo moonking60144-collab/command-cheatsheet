@@ -24,17 +24,16 @@
             <span class="meta-chip" id="category-count">0 個分類</span>
           </div>
         </div>
-        <span class="panel-label"><kbd>/</kbd> 聚焦搜尋</span>
       </div>
 
       <section class="hero-panel" aria-label="搜尋與篩選">
         <div class="panel-heading">
           <label class="search-panel" for="search-input">
-            <span>快速查找</span>
             <input
               id="search-input"
               type="search"
               autocomplete="off"
+              aria-label="搜尋指令、描述、標籤或分類"
               placeholder="搜尋指令、描述、標籤或分類…"
             >
           </label>
@@ -65,11 +64,7 @@
     <main class="layout">
       <section id="public-results-section" class="results-section" aria-labelledby="results-title">
         <div class="section-header">
-          <div>
-            <p class="section-label">Public</p>
-            <h2 id="results-title">公開分類</h2>
-          </div>
-          <p class="section-caption">公開資料會直接顯示在這裡。</p>
+          <h2 id="results-title">公開分類</h2>
         </div>
 
         <div id="results" class="card-grid" aria-live="polite"></div>
@@ -77,11 +72,7 @@
 
       <section id="protected-results-section" class="results-section results-section-protected" aria-labelledby="protected-results-title" hidden>
         <div class="section-header">
-          <div>
-            <p class="section-label">Private</p>
-            <h2 id="protected-results-title">私人分類</h2>
-          </div>
-          <p class="section-caption">解鎖後的私人分類會集中顯示在這一段。</p>
+          <h2 id="protected-results-title">私人分類</h2>
         </div>
 
         <div id="protected-results" class="card-grid" aria-live="polite"></div>
