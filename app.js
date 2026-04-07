@@ -951,6 +951,27 @@ function getVisiblePageNumbers(currentPage, totalPages) {
   return [1, currentPage - 1, currentPage, currentPage + 1, totalPages];
 }
 
+function fuzzyScore(query, target) {
+  let qi = 0, consecutive = 0, lastTi = -1, firstTi = -1, score = 0;
+
+  for (let ti = 0; ti < target.length && qi < query.length; ti++) {
+    if (query[qi] === target[ti]) {
+      if (firstTi === -1) firstTi = ti;
+      consecutive = lastTi === ti - 1 ? consecutive + 1 : 0;
+      score += 1 + consecutive;
+      lastTi = ti;
+      qi++;
+    }
+  }
+
+  if (qi < query.length) return -1;
+
+  // Discard matches where chars are too spread out (span > 5× query length)
+  if (lastTi - firstTi + 1 > query.length * 5) return -1;
+
+  return score;
+}
+
 function tokenize(query) {
   return query
     .toLowerCase()
@@ -990,6 +1011,23 @@ function getMatchScore(item, tokens) {
     if (item.searchBlob.includes(token)) {
       score += 3;
       continue;
+    }
+
+    // Fuzzy subsequence fallback (only for tokens ≥ 3 chars to avoid noise)
+    if (token.length >= 3) {
+      const cmdFuzz = fuzzyScore(token, item.commandLower);
+
+      if (cmdFuzz >= 0) {
+        score += 2;
+        continue;
+      }
+
+      const descFuzz = fuzzyScore(token, item.descriptionLower);
+
+      if (descFuzz >= 0) {
+        score += 1;
+        continue;
+      }
     }
 
     return -1;
