@@ -221,10 +221,29 @@ function bindEvents() {
         return;
       }
 
+      closeShortcutsTooltip();
       clearFilters();
       ui.searchInput.blur();
     }
   });
+
+  const helpBtn = document.getElementById("help-btn");
+  const shortcutsTooltip = document.getElementById("shortcuts-tooltip");
+
+  helpBtn?.addEventListener("click", (event) => {
+    event.stopPropagation();
+    const isOpen = shortcutsTooltip.classList.toggle("is-open");
+    helpBtn.setAttribute("aria-expanded", String(isOpen));
+    shortcutsTooltip.setAttribute("aria-hidden", String(!isOpen));
+  });
+
+  document.addEventListener("click", () => closeShortcutsTooltip());
+
+  function closeShortcutsTooltip() {
+    shortcutsTooltip?.classList.remove("is-open");
+    helpBtn?.setAttribute("aria-expanded", "false");
+    shortcutsTooltip?.setAttribute("aria-hidden", "true");
+  }
 
   window.addEventListener("scroll", toggleUtilityChrome, { passive: true });
   window.addEventListener("resize", toggleUtilityChrome, { passive: true });

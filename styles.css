@@ -103,6 +103,88 @@ kbd {
   gap: 0.55rem;
 }
 
+.help-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.help-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-soft);
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color 0.16s ease, color 0.16s ease, background 0.16s ease;
+}
+
+.help-btn:hover,
+.help-btn[aria-expanded="true"] {
+  border-color: var(--accent);
+  color: var(--text-primary);
+  background: var(--accent-soft);
+}
+
+.shortcuts-tooltip {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  z-index: 50;
+  min-width: 230px;
+  padding: 0.7rem 0.8rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-strong);
+  background: var(--surface-strong);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.2);
+  display: none;
+  gap: 0.5rem;
+}
+
+.shortcuts-tooltip.is-open {
+  display: grid;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .help-wrap:hover .shortcuts-tooltip {
+    display: grid;
+  }
+}
+
+.shortcuts-title {
+  margin: 0 0 0.2rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.shortcut-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.shortcut-keys {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-shrink: 0;
+}
+
+.shortcut-desc {
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  text-align: right;
+}
+
 .brand-monogram {
   display: inline-flex;
   align-items: center;
