@@ -395,7 +395,9 @@ function rebuildCommandState() {
   warnOnDuplicateCommandIds(state.commands);
   state.categories = getCategories(state.commands);
 
-  if (state.activeCategory !== "all" && !state.categories.includes(state.activeCategory)) {
+  if (state.activeCategory === "pinned" && state.pinned.size === 0) {
+    state.activeCategory = "all";
+  } else if (state.activeCategory !== "all" && state.activeCategory !== "pinned" && !state.categories.includes(state.activeCategory)) {
     state.activeCategory = "all";
   }
 
@@ -414,8 +416,11 @@ function renderFilters() {
   indicator.className = "filter-indicator";
   indicator.setAttribute("aria-hidden", "true");
 
+  const pinnedPill = state.pinned.size > 0 ? [createPinnedFilterButton()] : [];
+
   const buttons = [
     createFilterButton("all", "全部"),
+    ...pinnedPill,
     ...state.categories.map((category) => createFilterButton(category, category))
   ];
 
@@ -484,6 +489,17 @@ function createFilterButton(category, label) {
   button.dataset.category = category;
   button.setAttribute("aria-pressed", String(state.activeCategory === category));
   button.textContent = label;
+  return button;
+}
+
+function createPinnedFilterButton() {
+  const isActive = state.activeCategory === "pinned";
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = `filter-pill filter-pill-pinned${isActive ? " is-active" : ""}`;
+  button.dataset.category = "pinned";
+  button.setAttribute("aria-pressed", String(isActive));
+  button.innerHTML = `★ 已釘選 <span class="pin-pill-count">${state.pinned.size}</span>`;
   return button;
 }
 
@@ -792,7 +808,10 @@ function _runFilters(animated) {
 
 function filterCommands(commands, tokens) {
   return commands
-    .filter((item) => state.activeCategory === "all" || item.category === state.activeCategory)
+    .filter((item) => {
+      if (state.activeCategory === "pinned") return state.pinned.has(item.id);
+      return state.activeCategory === "all" || item.category === state.activeCategory;
+    })
     .map((item) => ({ item, score: getMatchScore(item, tokens) }))
     .filter((entry) => entry.score >= 0)
     .sort((left, right) => {
@@ -1203,6 +1222,11 @@ function togglePin(commandId, buttonEl = null) {
 
   savePinned();
 
+  // If unpinned the last item while in pinned view, fall back to "all"
+  if (state.pinned.size === 0 && state.activeCategory === "pinned") {
+    state.activeCategory = "all";
+  }
+
   if (buttonEl) {
     const isPinned = !wasPinned;
     buttonEl.setAttribute("aria-pressed", String(isPinned));
@@ -1211,6 +1235,7 @@ function togglePin(commandId, buttonEl = null) {
     buttonEl.closest(".command-card")?.classList.toggle("is-pinned", isPinned);
   }
 
+  renderFilters();
   applyFiltersAnimated();
 }
 
