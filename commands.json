@@ -18,10 +18,10 @@
   {
     "id": "git-switch-create",
     "category": "Git",
-    "command": "git switch -c feature/add-search-shortcuts",
+    "command": "git switch -c <分支名稱>",
     "description": "建立並切換到新的功能分支。",
     "tags": ["git", "branch", "switch"],
-    "notes": "把 `feature/add-search-shortcuts` 換成你的實際分支名稱。"
+    "notes": "把 `<分支名稱>` 換成你的實際分支名稱，例如 `feature/test`。"
   },
   {
     "id": "docker-compose-up",
@@ -89,18 +89,18 @@
   },
   {
     "id": "wslpath-convert",
-    "category": "Bash",
-    "command": "wslpath 'C:\\Users\\<使用者>\\Downloads\\example.md'",
+    "category": "WSL",
+    "command": "wslpath '<Windows 路徑>'",
     "description": "把 Windows 路徑轉成 WSL 可用的路徑。",
-    "tags": ["bash", "wsl", "path", "convert"],
-    "notes": "把引號內換成你要轉換的實際 Windows 路徑。跨 Windows / WSL 工作時先轉路徑可以少踩很多坑。"
+    "tags": ["wsl", "path", "convert", "windows"],
+    "notes": "把 `<Windows 路徑>` 換成實際 Windows 路徑，例如 `C:\\Users\\moonk\\Downloads\\file.txt`。跨 Windows / WSL 工作時先轉路徑可以少踩很多坑。"
   },
   {
     "id": "explorer-open",
-    "category": "Bash",
+    "category": "WSL",
     "command": "explorer.exe .",
     "description": "從 WSL 直接打開目前資料夾對應的 Windows 檔案總管。",
-    "tags": ["bash", "windows", "explorer"],
+    "tags": ["wsl", "windows", "explorer"],
     "notes": "很適合確認目前你手上的其實是哪一側檔案。"
   },
   {
@@ -486,5 +486,941 @@
     "description": "直接開啟 Windows 網路狀態設定頁。",
     "tags": ["windows", "shortcut", "settings", "network", "ms-settings"],
     "notes": "這裡用的是 `network-status`，比泛用的 `network` 寫法更明確也更穩。"
+  },
+  {
+    "id": "windows-taskmgr",
+    "category": "Windows Shortcut",
+    "command": "taskmgr",
+    "description": "開啟工作管理員。",
+    "tags": ["windows", "shortcut", "task-manager", "process", "gui"],
+    "notes": "想快速看 CPU、記憶體、程序或啟動項時很常用。"
+  },
+  {
+    "id": "windows-lusrmgr-msc",
+    "category": "Windows Shortcut",
+    "command": "lusrmgr.msc",
+    "description": "開啟本機使用者與群組管理。",
+    "tags": ["windows", "shortcut", "users", "groups", "msc"],
+    "notes": "Home 版通常沒有這個工具，較常見於 Pro / Enterprise。"
+  },
+  {
+    "id": "windows-secpol-msc",
+    "category": "Windows Shortcut",
+    "command": "secpol.msc",
+    "description": "開啟本機安全性原則。",
+    "tags": ["windows", "shortcut", "security", "policy", "msc"],
+    "notes": "Home 版通常沒有，適合調整本機安全性原則。"
+  },
+  {
+    "id": "windows-gpedit-msc",
+    "category": "Windows Shortcut",
+    "command": "gpedit.msc",
+    "description": "開啟本機群組原則編輯器。",
+    "tags": ["windows", "shortcut", "group-policy", "policy", "msc"],
+    "notes": "Home 版通常沒有，常用來調整本機群組原則。"
+  },
+  {
+    "id": "windows-msconfig",
+    "category": "Windows Shortcut",
+    "command": "msconfig",
+    "description": "開啟系統設定工具，管理開機、服務與啟動相關設定。",
+    "tags": ["windows", "shortcut", "boot", "startup", "config"],
+    "notes": "排查開機選項、服務啟停與系統啟動問題時很常用。"
+  },
+  {
+    "id": "windows-msinfo32",
+    "category": "Windows Shortcut",
+    "command": "msinfo32",
+    "description": "查看系統資訊，包括硬體、驅動、元件與軟體環境。",
+    "tags": ["windows", "shortcut", "system-info", "hardware", "driver"],
+    "notes": "收集主機環境資訊時很好用。"
+  },
+  {
+    "id": "windows-resmon",
+    "category": "Windows Shortcut",
+    "command": "resmon",
+    "description": "開啟資源監視器，查看 CPU、記憶體、磁碟與網路即時使用情況。",
+    "tags": ["windows", "shortcut", "resource-monitor", "cpu", "memory"],
+    "notes": "想快速找出哪個程序在吃資源時很好用。"
+  },
+  {
+    "id": "windows-perfmon",
+    "category": "Windows Shortcut",
+    "command": "perfmon",
+    "description": "開啟效能監視器。",
+    "tags": ["windows", "shortcut", "performance", "monitor", "counter"],
+    "notes": "適合看計數器、資料收集器與長時間效能紀錄。"
+  },
+  {
+    "id": "windows-regedit",
+    "category": "Windows Shortcut",
+    "command": "regedit",
+    "description": "開啟登錄編輯器。",
+    "tags": ["windows", "shortcut", "registry", "regedit", "system"],
+    "notes": "高風險，修改前建議先確認鍵值與備份。"
+  },
+  {
+    "id": "windows-dxdiag",
+    "category": "Windows Shortcut",
+    "command": "dxdiag",
+    "description": "開啟 DirectX 診斷工具。",
+    "tags": ["windows", "shortcut", "directx", "gpu", "audio"],
+    "notes": "查顯示卡、音效與 DirectX 元件資訊時很好用。"
+  },
+  {
+    "id": "windows-cmd",
+    "category": "Windows Shortcut",
+    "command": "cmd",
+    "description": "開啟命令提示字元。",
+    "tags": ["windows", "shortcut", "cmd", "shell", "terminal"],
+    "notes": "想進入傳統 Windows 命令列時可直接用這條。"
+  },
+  {
+    "id": "windows-powershell",
+    "category": "Windows Shortcut",
+    "command": "powershell",
+    "description": "開啟 Windows PowerShell。",
+    "tags": ["windows", "shortcut", "powershell", "shell", "terminal"],
+    "notes": "適合進入 Windows PowerShell 5.x 環境。"
+  },
+  {
+    "id": "windows-pwsh",
+    "category": "Windows Shortcut",
+    "command": "pwsh",
+    "description": "開啟 PowerShell 7。",
+    "tags": ["windows", "shortcut", "powershell", "pwsh", "terminal"],
+    "notes": "前提是你已安裝 PowerShell 7。"
+  },
+  {
+    "id": "windows-shutdown-poweroff",
+    "category": "Windows Process & Service",
+    "command": "shutdown /s /t 0",
+    "description": "立即關機。",
+    "tags": ["windows", "shutdown", "power", "system", "risk"],
+    "notes": "高風險，會立刻關機；正式環境與遠端主機請先確認影響。"
+  },
+  {
+    "id": "windows-shutdown-restart",
+    "category": "Windows Process & Service",
+    "command": "shutdown /r /t 0",
+    "description": "立即重新開機。",
+    "tags": ["windows", "shutdown", "restart", "system", "risk"],
+    "notes": "高風險，會立刻重開；遠端或正式環境操作前請先確認。"
+  },
+  {
+    "id": "windows-dir",
+    "category": "Windows File & Directory",
+    "command": "dir",
+    "description": "列出目前目錄內容。",
+    "tags": ["windows", "file", "directory", "dir", "cmd"],
+    "notes": "命令提示字元最基本的看檔指令。"
+  },
+  {
+    "id": "windows-cd-temp",
+    "category": "Windows File & Directory",
+    "command": "cd C:\\Temp",
+    "description": "切換到指定目錄。",
+    "tags": ["windows", "file", "directory", "cd", "cmd"],
+    "notes": "把 `C:\\Temp` 換成你的實際目標路徑。"
+  },
+  {
+    "id": "windows-mkdir-temp",
+    "category": "Windows File & Directory",
+    "command": "mkdir C:\\Temp\\test",
+    "description": "建立資料夾。",
+    "tags": ["windows", "file", "directory", "mkdir", "cmd"],
+    "notes": "可改成你要建立的實際路徑。"
+  },
+  {
+    "id": "windows-rmdir-recursive",
+    "category": "Windows File & Directory",
+    "command": "rmdir /s /q C:\\Temp\\test",
+    "description": "遞迴刪除資料夾。",
+    "tags": ["windows", "file", "directory", "delete", "risk"],
+    "notes": "高風險，會遞迴刪除整個目錄內容，請先確認路徑。"
+  },
+  {
+    "id": "windows-del-file",
+    "category": "Windows File & Directory",
+    "command": "del C:\\Temp\\a.txt",
+    "description": "刪除檔案。",
+    "tags": ["windows", "file", "delete", "cmd", "risk"],
+    "notes": "刪除前先確認路徑是否正確。"
+  },
+  {
+    "id": "windows-copy-file",
+    "category": "Windows File & Directory",
+    "command": "copy a.txt b.txt",
+    "description": "複製檔案。",
+    "tags": ["windows", "file", "copy", "cmd", "directory"],
+    "notes": "也可把目標換成其他資料夾路徑。"
+  },
+  {
+    "id": "windows-move-file",
+    "category": "Windows File & Directory",
+    "command": "move a.txt C:\\Temp\\",
+    "description": "搬移檔案到指定目錄。",
+    "tags": ["windows", "file", "move", "cmd", "directory"],
+    "notes": "如果目標檔名不同，也可視為搬移加改名。"
+  },
+  {
+    "id": "windows-ren-file",
+    "category": "Windows File & Directory",
+    "command": "ren a.txt b.txt",
+    "description": "重新命名檔案。",
+    "tags": ["windows", "file", "rename", "cmd", "directory"],
+    "notes": "只改檔名不改所在路徑時用這條最直接。"
+  },
+  {
+    "id": "windows-type-file",
+    "category": "Windows File & Directory",
+    "command": "type C:\\Temp\\a.txt",
+    "description": "顯示文字檔內容。",
+    "tags": ["windows", "file", "type", "view", "cmd"],
+    "notes": "適合快速看小型文字檔內容。"
+  },
+  {
+    "id": "powershell-get-location",
+    "category": "PowerShell",
+    "command": "Get-Location",
+    "description": "顯示目前所在路徑。",
+    "tags": ["powershell", "path", "pwd", "location"],
+    "notes": "PowerShell 版 `pwd`。"
+  },
+  {
+    "id": "powershell-set-location",
+    "category": "PowerShell",
+    "command": "Set-Location C:\\Temp",
+    "description": "切換到指定路徑。",
+    "tags": ["powershell", "path", "cd", "location"],
+    "notes": "把 `C:\\Temp` 換成你的實際目標路徑；也可直接用別名 `cd`。"
+  },
+  {
+    "id": "powershell-new-directory",
+    "category": "PowerShell",
+    "command": "New-Item -ItemType Directory -Path C:\\Temp\\test",
+    "description": "建立資料夾。",
+    "tags": ["powershell", "directory", "mkdir", "new-item"],
+    "notes": "想在腳本裡建立目錄時很常用。"
+  },
+  {
+    "id": "powershell-new-file",
+    "category": "PowerShell",
+    "command": "New-Item -ItemType File -Path C:\\Temp\\a.txt",
+    "description": "建立空白檔案。",
+    "tags": ["powershell", "file", "new-item", "create"],
+    "notes": "若檔案已存在，會視情況回報衝突或保留原檔。"
+  },
+  {
+    "id": "powershell-copy-item",
+    "category": "PowerShell",
+    "command": "Copy-Item .\\a.txt .\\b.txt",
+    "description": "複製檔案或資料夾。",
+    "tags": ["powershell", "file", "copy", "copy-item"],
+    "notes": "若要複製資料夾，通常需要再搭配 `-Recurse`。"
+  },
+  {
+    "id": "powershell-move-item",
+    "category": "PowerShell",
+    "command": "Move-Item .\\a.txt C:\\Temp\\",
+    "description": "搬移檔案或資料夾。",
+    "tags": ["powershell", "file", "move", "move-item"],
+    "notes": "也可以用來順手改名。"
+  },
+  {
+    "id": "powershell-remove-item",
+    "category": "PowerShell",
+    "command": "Remove-Item .\\a.txt",
+    "description": "刪除檔案或項目。",
+    "tags": ["powershell", "file", "remove", "delete", "risk"],
+    "notes": "刪除前先確認路徑，避免誤刪。"
+  },
+  {
+    "id": "powershell-remove-item-recurse",
+    "category": "PowerShell",
+    "command": "Remove-Item C:\\Temp\\test -Recurse -Force",
+    "description": "遞迴刪除資料夾與內容。",
+    "tags": ["powershell", "directory", "remove", "recurse", "risk"],
+    "notes": "高風險，正式環境請先確認路徑與影響範圍。"
+  },
+  {
+    "id": "powershell-get-content",
+    "category": "PowerShell",
+    "command": "Get-Content .\\a.txt",
+    "description": "讀取檔案內容。",
+    "tags": ["powershell", "file", "content", "view"],
+    "notes": "純文字檔案最常用；大檔案可再搭配 `-Tail` 或 `-Wait`。"
+  },
+  {
+    "id": "powershell-get-process",
+    "category": "PowerShell",
+    "command": "Get-Process",
+    "description": "查看目前程序清單。",
+    "tags": ["powershell", "process", "system", "task"],
+    "notes": "可搭配 `Where-Object`、`Sort-Object` 進一步篩選。"
+  },
+  {
+    "id": "powershell-stop-process-name",
+    "category": "PowerShell",
+    "command": "Stop-Process -Name notepad -Force",
+    "description": "用程序名稱強制結束程序。",
+    "tags": ["powershell", "process", "stop", "risk", "name"],
+    "notes": "高風險，未儲存資料會直接丟失。"
+  },
+  {
+    "id": "powershell-stop-process-id",
+    "category": "PowerShell",
+    "command": "Stop-Process -Id <PID> -Force",
+    "description": "用 PID 強制結束程序。",
+    "tags": ["powershell", "process", "stop", "risk", "pid"],
+    "notes": "把 `<PID>` 換成實際程序 ID。"
+  },
+  {
+    "id": "powershell-start-service",
+    "category": "PowerShell",
+    "command": "Start-Service Spooler",
+    "description": "啟動指定服務。",
+    "tags": ["powershell", "service", "start", "windows"],
+    "notes": "把 `Spooler` 換成實際服務名稱。"
+  },
+  {
+    "id": "powershell-stop-service",
+    "category": "PowerShell",
+    "command": "Stop-Service Spooler",
+    "description": "停止指定服務。",
+    "tags": ["powershell", "service", "stop", "windows"],
+    "notes": "正式環境先確認服務影響範圍。"
+  },
+  {
+    "id": "powershell-restart-service",
+    "category": "PowerShell",
+    "command": "Restart-Service Spooler",
+    "description": "重新啟動指定服務。",
+    "tags": ["powershell", "service", "restart", "windows"],
+    "notes": "印表機、Agent 或某些卡住的 Windows 服務很常這樣處理。"
+  },
+  {
+    "id": "powershell-get-pnpdevice",
+    "category": "PowerShell",
+    "command": "Get-PnpDevice",
+    "description": "查看 Plug and Play 裝置資訊。",
+    "tags": ["powershell", "device", "pnp", "driver", "windows"],
+    "notes": "查裝置狀態、驅動問題或硬體辨識情況時很好用。"
+  },
+  {
+    "id": "powershell-env-list",
+    "category": "PowerShell",
+    "command": "Get-ChildItem Env:",
+    "description": "查看目前環境變數。",
+    "tags": ["powershell", "environment", "env", "windows"],
+    "notes": "排查 PATH、代理或環境變數設定時很常用。"
+  },
+  {
+    "id": "wsl-open-default",
+    "category": "WSL",
+    "command": "wsl",
+    "description": "進入預設的 WSL 發行版。",
+    "tags": ["wsl", "windows", "linux", "shell"],
+    "notes": "從 Windows PowerShell 或 CMD 進入 WSL 時最常用。"
+  },
+  {
+    "id": "wsl-open-distro",
+    "category": "WSL",
+    "command": "wsl -d <發行版名稱>",
+    "description": "指定發行版進入 WSL。",
+    "tags": ["wsl", "windows", "linux", "distribution"],
+    "notes": "把 `<發行版名稱>` 換成實際名稱，例如 `Ubuntu`。"
+  },
+  {
+    "id": "wsl-run-linux-command",
+    "category": "WSL",
+    "command": "wsl ls -la",
+    "description": "從 Windows 直接執行 Linux 指令。",
+    "tags": ["wsl", "windows", "linux", "command"],
+    "notes": "適合從 PowerShell 或 CMD 直接呼叫單次 Linux 指令。"
+  },
+  {
+    "id": "wslpath-to-windows",
+    "category": "WSL",
+    "command": "wslpath -w <WSL 路徑>",
+    "description": "把 WSL 路徑轉成 Windows 路徑。",
+    "tags": ["wsl", "path", "convert", "windows"],
+    "notes": "把 `<WSL 路徑>` 換成實際 WSL 路徑，例如 `/home/moonk/file.txt`。"
+  },
+  {
+    "id": "wsl-open-file-default",
+    "category": "WSL",
+    "command": "cmd.exe /c start \"\" <檔案路徑>",
+    "description": "用 Windows 預設程式開啟檔案。",
+    "tags": ["wsl", "windows", "open", "file", "cmd"],
+    "notes": "把 `<檔案路徑>` 換成實際檔案；從 WSL 呼叫 Windows 預設關聯很方便。"
+  },
+  {
+    "id": "wsl-call-powershell",
+    "category": "WSL",
+    "command": "powershell.exe -Command \"Get-Process\"",
+    "description": "從 WSL 呼叫 Windows PowerShell 指令。",
+    "tags": ["wsl", "windows", "powershell", "interop"],
+    "notes": "適合在 WSL 內快速借用 Windows 指令或系統資訊。"
+  },
+  {
+    "id": "bash-pwd",
+    "category": "Bash",
+    "command": "pwd",
+    "description": "顯示目前所在路徑。",
+    "tags": ["bash", "linux", "path", "pwd"],
+    "notes": "最基本的目前目錄確認指令。"
+  },
+  {
+    "id": "bash-ls",
+    "category": "Bash",
+    "command": "ls",
+    "description": "列出目前目錄內容。",
+    "tags": ["bash", "linux", "files", "list"],
+    "notes": "快速看目前資料夾有哪些檔案。"
+  },
+  {
+    "id": "bash-ls-la",
+    "category": "Bash",
+    "command": "ls -la",
+    "description": "列出包含隱藏檔與權限資訊的詳細清單。",
+    "tags": ["bash", "linux", "files", "permissions"],
+    "notes": "排查隱藏檔與權限時最常用。"
+  },
+  {
+    "id": "bash-cd-var-log",
+    "category": "Bash",
+    "command": "cd /var/log",
+    "description": "切換到指定目錄。",
+    "tags": ["bash", "linux", "path", "cd"],
+    "notes": "把 `/var/log` 換成你的實際目標路徑。"
+  },
+  {
+    "id": "bash-mkdir",
+    "category": "Bash",
+    "command": "mkdir test",
+    "description": "建立資料夾。",
+    "tags": ["bash", "linux", "mkdir", "directory"],
+    "notes": "建立單一層資料夾時很常用。"
+  },
+  {
+    "id": "bash-mkdir-p",
+    "category": "Bash",
+    "command": "mkdir -p a/b/c",
+    "description": "一次建立多層資料夾。",
+    "tags": ["bash", "linux", "mkdir", "directory", "recursive"],
+    "notes": "上層不存在時也會一併建立。"
+  },
+  {
+    "id": "bash-touch",
+    "category": "Bash",
+    "command": "touch a.txt",
+    "description": "建立空白檔案或更新檔案時間戳記。",
+    "tags": ["bash", "linux", "file", "touch"],
+    "notes": "快速建立測試檔時很好用。"
+  },
+  {
+    "id": "bash-cp",
+    "category": "Bash",
+    "command": "cp a.txt b.txt",
+    "description": "複製檔案。",
+    "tags": ["bash", "linux", "copy", "file"],
+    "notes": "複製資料夾時通常要再加 `-r`。"
+  },
+  {
+    "id": "bash-mv",
+    "category": "Bash",
+    "command": "mv a.txt /tmp/",
+    "description": "搬移或重新命名檔案。",
+    "tags": ["bash", "linux", "move", "rename", "file"],
+    "notes": "目標若是新檔名，也可以直接當 rename 使用。"
+  },
+  {
+    "id": "bash-rm",
+    "category": "Bash",
+    "command": "rm a.txt",
+    "description": "刪除檔案。",
+    "tags": ["bash", "linux", "delete", "file", "risk"],
+    "notes": "刪除前先確認路徑與檔名。"
+  },
+  {
+    "id": "bash-rm-rf",
+    "category": "Bash",
+    "command": "rm -rf test",
+    "description": "遞迴強制刪除資料夾。",
+    "tags": ["bash", "linux", "delete", "directory", "risk"],
+    "notes": "高風險，路徑打錯會很傷，正式環境務必再三確認。"
+  },
+  {
+    "id": "bash-cat",
+    "category": "Bash",
+    "command": "cat a.txt",
+    "description": "顯示檔案內容。",
+    "tags": ["bash", "linux", "file", "view", "cat"],
+    "notes": "適合快速看小型文字檔內容。"
+  },
+  {
+    "id": "bash-less",
+    "category": "Bash",
+    "command": "less a.txt",
+    "description": "分頁查看檔案內容。",
+    "tags": ["bash", "linux", "file", "pager", "less"],
+    "notes": "大檔案比 `cat` 更好讀。"
+  },
+  {
+    "id": "bash-head",
+    "category": "Bash",
+    "command": "head -n 20 a.txt",
+    "description": "只看檔案前 20 行。",
+    "tags": ["bash", "linux", "file", "head", "logs"],
+    "notes": "快速看檔頭或設定檔前段內容很方便。"
+  },
+  {
+    "id": "bash-tail",
+    "category": "Bash",
+    "command": "tail -n 20 a.txt",
+    "description": "只看檔案最後 20 行。",
+    "tags": ["bash", "linux", "file", "tail", "logs"],
+    "notes": "查 log 尾端錯誤時很好用。"
+  },
+  {
+    "id": "bash-tail-follow",
+    "category": "Bash",
+    "command": "tail -f app.log",
+    "description": "持續追蹤檔案新增內容。",
+    "tags": ["bash", "linux", "logs", "tail", "follow"],
+    "notes": "即時看應用程式 log 最常用的起手式。"
+  },
+  {
+    "id": "bash-find-name",
+    "category": "Bash",
+    "command": "find . -name \"*.log\"",
+    "description": "依檔名模式搜尋檔案。",
+    "tags": ["bash", "linux", "find", "file", "search"],
+    "notes": "找特定副檔名或檔名模式時很好用。"
+  },
+  {
+    "id": "bash-grep-recursive",
+    "category": "Bash",
+    "command": "grep -R \"error\" .",
+    "description": "遞迴搜尋目錄中的文字內容。",
+    "tags": ["bash", "linux", "grep", "search", "text"],
+    "notes": "專案不大時很好用；大型專案通常 `rg` 更快。"
+  },
+  {
+    "id": "bash-du-current",
+    "category": "Bash",
+    "command": "du -sh .",
+    "description": "查看目前目錄總大小。",
+    "tags": ["bash", "linux", "disk", "size", "du"],
+    "notes": "想快速看整個資料夾占多少空間時很好用。"
+  },
+  {
+    "id": "bash-du-each",
+    "category": "Bash",
+    "command": "du -sh *",
+    "description": "查看目前目錄下各項目的大小。",
+    "tags": ["bash", "linux", "disk", "size", "du"],
+    "notes": "很適合先找出哪個資料夾特別大。"
+  },
+  {
+    "id": "bash-df-h",
+    "category": "Bash",
+    "command": "df -h",
+    "description": "查看磁碟使用量。",
+    "tags": ["bash", "linux", "disk", "filesystem", "df"],
+    "notes": "用 `-h` 直接看人類可讀單位。"
+  },
+  {
+    "id": "bash-du-largest",
+    "category": "Bash",
+    "command": "du -ah . | sort -h | tail -n 20",
+    "description": "排序找出目前目錄中最大的檔案或資料夾。",
+    "tags": ["bash", "linux", "disk", "du", "sort"],
+    "notes": "清磁碟空間時很實用。"
+  },
+  {
+    "id": "bash-ps-aux",
+    "category": "Bash",
+    "command": "ps aux",
+    "description": "查看目前程序清單。",
+    "tags": ["bash", "linux", "process", "ps", "system"],
+    "notes": "排程序或資源使用時很常用。"
+  },
+  {
+    "id": "bash-top",
+    "category": "Bash",
+    "command": "top",
+    "description": "即時查看程序與資源使用情況。",
+    "tags": ["bash", "linux", "process", "top", "monitor"],
+    "notes": "想看系統即時負載時最直覺。"
+  },
+  {
+    "id": "bash-ps-grep",
+    "category": "Bash",
+    "command": "ps aux | grep nginx",
+    "description": "用程序清單查特定程序。",
+    "tags": ["bash", "linux", "process", "ps", "grep"],
+    "notes": "把 `nginx` 換成你要找的程序名稱。"
+  },
+  {
+    "id": "bash-pgrep",
+    "category": "Bash",
+    "command": "pgrep nginx",
+    "description": "依程序名稱查 PID。",
+    "tags": ["bash", "linux", "process", "pgrep", "pid"],
+    "notes": "比 `ps aux | grep` 更乾淨地拿到 PID。"
+  },
+  {
+    "id": "bash-kill",
+    "category": "Bash",
+    "command": "kill <PID>",
+    "description": "送出預設訊號結束程序。",
+    "tags": ["bash", "linux", "process", "kill", "pid"],
+    "notes": "把 `<PID>` 換成實際程序 ID。"
+  },
+  {
+    "id": "bash-kill-9",
+    "category": "Bash",
+    "command": "kill -9 <PID>",
+    "description": "強制終止指定程序。",
+    "tags": ["bash", "linux", "process", "kill", "risk"],
+    "notes": "高風險，只有一般 `kill` 無效時再考慮使用。"
+  },
+  {
+    "id": "bash-pkill",
+    "category": "Bash",
+    "command": "pkill nginx",
+    "description": "依程序名稱終止程序。",
+    "tags": ["bash", "linux", "process", "pkill", "signal"],
+    "notes": "把 `nginx` 換成你要終止的程序名稱。"
+  },
+  {
+    "id": "bash-ss-lntp",
+    "category": "Bash",
+    "command": "ss -lntp",
+    "description": "查看目前監聽中的 TCP 埠與程序。",
+    "tags": ["bash", "linux", "socket", "port", "ss"],
+    "notes": "查哪個服務正在 listen 時非常好用。"
+  },
+  {
+    "id": "bash-ss-port",
+    "category": "Bash",
+    "command": "ss -lntp | grep 8080",
+    "description": "查看某個埠是否正在被監聽。",
+    "tags": ["bash", "linux", "socket", "port", "grep"],
+    "notes": "把 `8080` 換成你要檢查的埠號。"
+  },
+  {
+    "id": "bash-ip-addr",
+    "category": "Bash",
+    "command": "ip addr",
+    "description": "查看網路介面與 IP 設定。",
+    "tags": ["bash", "linux", "network", "ip", "address"],
+    "notes": "Linux 上看網卡與位址資訊的常用指令。"
+  },
+  {
+    "id": "bash-ip-route",
+    "category": "Bash",
+    "command": "ip route",
+    "description": "查看路由表。",
+    "tags": ["bash", "linux", "network", "route", "ip"],
+    "notes": "排查預設 gateway 或路由走向很有幫助。"
+  },
+  {
+    "id": "bash-ping",
+    "category": "Bash",
+    "command": "ping -c 4 8.8.8.8",
+    "description": "做基本 ICMP 連線測試。",
+    "tags": ["bash", "linux", "network", "ping", "icmp"],
+    "notes": "Linux 常用 `-c` 指定次數，避免一直打下去。"
+  },
+  {
+    "id": "bash-nslookup",
+    "category": "Bash",
+    "command": "nslookup example.com",
+    "description": "查 DNS 解析。",
+    "tags": ["bash", "linux", "dns", "lookup", "network"],
+    "notes": "快速確認網域是否能正常解析。"
+  },
+  {
+    "id": "bash-dig",
+    "category": "Bash",
+    "command": "dig example.com",
+    "description": "查詢 DNS 詳細資訊。",
+    "tags": ["bash", "linux", "dns", "dig", "network"],
+    "notes": "前提是系統有安裝 `dig`，通常來自 `dnsutils` 或類似套件。"
+  },
+  {
+    "id": "bash-curl-o",
+    "category": "Bash",
+    "command": "curl -O https://example.com/file.tar.gz",
+    "description": "下載檔案並保留原檔名。",
+    "tags": ["bash", "linux", "download", "curl", "http"],
+    "notes": "很適合抓 tarball、安裝包或測試檔。"
+  },
+  {
+    "id": "bash-wget",
+    "category": "Bash",
+    "command": "wget https://example.com/file.tar.gz",
+    "description": "下載檔案。",
+    "tags": ["bash", "linux", "download", "wget", "http"],
+    "notes": "若系統有安裝 `wget`，這條也很常用。"
+  },
+  {
+    "id": "bash-env",
+    "category": "Bash",
+    "command": "env",
+    "description": "列出目前環境變數。",
+    "tags": ["bash", "linux", "environment", "env"],
+    "notes": "快速看目前 shell 的環境狀態。"
+  },
+  {
+    "id": "bash-printenv",
+    "category": "Bash",
+    "command": "printenv",
+    "description": "列出目前環境變數。",
+    "tags": ["bash", "linux", "environment", "printenv"],
+    "notes": "和 `env` 類似，習慣不同時可擇一使用。"
+  },
+  {
+    "id": "bash-export-app-env",
+    "category": "Bash",
+    "command": "export APP_ENV=dev",
+    "description": "在目前 shell 暫時設定環境變數。",
+    "tags": ["bash", "linux", "environment", "export", "shell"],
+    "notes": "只對目前 shell session 生效，開新終端通常就沒了。"
+  },
+  {
+    "id": "bash-which-python",
+    "category": "Bash",
+    "command": "which python",
+    "description": "查看某個指令實際會呼叫到哪個可執行檔。",
+    "tags": ["bash", "linux", "which", "path", "binary"],
+    "notes": "排 PATH 或多版本 Python 衝突時很好用。"
+  },
+  {
+    "id": "bash-whereis-python",
+    "category": "Bash",
+    "command": "whereis python",
+    "description": "查找指令、source 與 man page 位置。",
+    "tags": ["bash", "linux", "whereis", "path", "binary"],
+    "notes": "比 `which` 更廣，但用途稍有不同。"
+  },
+  {
+    "id": "bash-man-ls",
+    "category": "Bash",
+    "command": "man ls",
+    "description": "查看指令說明頁。",
+    "tags": ["bash", "linux", "man", "help", "docs"],
+    "notes": "若只想看簡短參數，也可改用 `ls --help`。"
+  },
+  {
+    "id": "bash-jq-pretty",
+    "category": "Bash",
+    "command": "jq . a.json",
+    "description": "格式化並美化 JSON 檔案內容。",
+    "tags": ["bash", "linux", "json", "jq", "format"],
+    "notes": "前提是有安裝 `jq`；比 `cat a.json | jq` 更直接。"
+  },
+  {
+    "id": "bash-base64-encode",
+    "category": "Bash",
+    "command": "echo -n \"test\" | base64",
+    "description": "把文字做 Base64 編碼。",
+    "tags": ["bash", "linux", "base64", "encode", "text"],
+    "notes": "常用在測試 token、basic auth 或資料轉換。"
+  },
+  {
+    "id": "bash-base64-decode",
+    "category": "Bash",
+    "command": "echo \"dGVzdA==\" | base64 -d",
+    "description": "把 Base64 字串解碼。",
+    "tags": ["bash", "linux", "base64", "decode", "text"],
+    "notes": "若系統不是 GNU coreutils，參數可能略有差異。"
+  },
+  {
+    "id": "git-diff",
+    "category": "Git",
+    "command": "git diff",
+    "description": "查看工作區尚未暫存的變更。",
+    "tags": ["git", "diff", "changes", "working-tree"],
+    "notes": "commit 前先看一次差異很重要。"
+  },
+  {
+    "id": "git-diff-staged",
+    "category": "Git",
+    "command": "git diff --staged",
+    "description": "查看已加入暫存區、準備 commit 的變更。",
+    "tags": ["git", "diff", "staged", "changes"],
+    "notes": "很適合 commit 前做最後確認。"
+  },
+  {
+    "id": "git-add-file",
+    "category": "Git",
+    "command": "git add file.txt",
+    "description": "只把指定檔案加入暫存區。",
+    "tags": ["git", "add", "staging", "file"],
+    "notes": "比 `git add .` 更精準，適合分批提交。"
+  },
+  {
+    "id": "git-commit-message",
+    "category": "Git",
+    "command": "git commit -m \"fix: adjust config\"",
+    "description": "建立一個附帶訊息的 commit。",
+    "tags": ["git", "commit", "message", "history"],
+    "notes": "把訊息換成這次變更的實際內容。"
+  },
+  {
+    "id": "git-branch",
+    "category": "Git",
+    "command": "git branch",
+    "description": "查看本機分支清單。",
+    "tags": ["git", "branch", "list"],
+    "notes": "快速確認目前有哪些本機分支。"
+  },
+  {
+    "id": "git-branch-all",
+    "category": "Git",
+    "command": "git branch -a",
+    "description": "查看本機與遠端分支清單。",
+    "tags": ["git", "branch", "remote", "list"],
+    "notes": "想看 origin 上有哪些分支時很常用。"
+  },
+  {
+    "id": "git-switch-main",
+    "category": "Git",
+    "command": "git switch main",
+    "description": "切換到 `main` 分支。",
+    "tags": ["git", "branch", "switch", "main"],
+    "notes": "常用在回主線更新或發版前整理狀態。"
+  },
+  {
+    "id": "git-pull",
+    "category": "Git",
+    "command": "git pull",
+    "description": "拉取遠端最新變更。",
+    "tags": ["git", "pull", "remote", "update"],
+    "notes": "正式操作前先確認目前分支與未提交變更。"
+  },
+  {
+    "id": "git-push",
+    "category": "Git",
+    "command": "git push",
+    "description": "把目前分支推送到遠端。",
+    "tags": ["git", "push", "remote", "deploy"],
+    "notes": "這個專案 push 後會觸發 GitHub Pages / Actions 部署。"
+  },
+  {
+    "id": "git-blame-file",
+    "category": "Git",
+    "command": "git blame file.txt",
+    "description": "查看檔案每一行最後是誰修改的。",
+    "tags": ["git", "blame", "history", "file"],
+    "notes": "追問題來源或確認某段修改是誰做的時很好用。"
+  },
+  {
+    "id": "docker-ps-all",
+    "category": "Docker",
+    "command": "docker ps -a",
+    "description": "查看所有容器，包含已停止的。",
+    "tags": ["docker", "container", "list", "status"],
+    "notes": "排查容器是不是其實啟動後就退出時很好用。"
+  },
+  {
+    "id": "docker-images",
+    "category": "Docker",
+    "command": "docker images",
+    "description": "查看本機映像清單。",
+    "tags": ["docker", "image", "list", "registry"],
+    "notes": "確認映像標籤、大小與是否真的拉下來時很常用。"
+  },
+  {
+    "id": "docker-logs-follow",
+    "category": "Docker",
+    "command": "docker logs -f <容器名稱或 ID>",
+    "description": "持續追蹤容器日誌。",
+    "tags": ["docker", "logs", "follow", "container"],
+    "notes": "即時看後端、代理或 worker 啟動錯誤時很好用。"
+  },
+  {
+    "id": "docker-exec-sh",
+    "category": "Docker",
+    "command": "docker exec -it <容器名稱或 ID> sh",
+    "description": "進入容器內的 `sh` shell。",
+    "tags": ["docker", "exec", "shell", "container"],
+    "notes": "很多輕量映像只有 `sh` 沒有 `bash`。"
+  },
+  {
+    "id": "docker-exec-bash",
+    "category": "Docker",
+    "command": "docker exec -it <容器名稱或 ID> bash",
+    "description": "進入容器內的 `bash` shell。",
+    "tags": ["docker", "exec", "bash", "container"],
+    "notes": "前提是容器映像內真的有安裝 `bash`。"
+  },
+  {
+    "id": "docker-start",
+    "category": "Docker",
+    "command": "docker start <容器名稱或 ID>",
+    "description": "啟動容器。",
+    "tags": ["docker", "container", "start", "runtime"],
+    "notes": "常用在手動重啟之前先把已停止容器拉起來。"
+  },
+  {
+    "id": "docker-stop",
+    "category": "Docker",
+    "command": "docker stop <容器名稱或 ID>",
+    "description": "停止容器。",
+    "tags": ["docker", "container", "stop", "runtime"],
+    "notes": "正式環境先確認中斷影響。"
+  },
+  {
+    "id": "docker-restart",
+    "category": "Docker",
+    "command": "docker restart <容器名稱或 ID>",
+    "description": "重新啟動容器。",
+    "tags": ["docker", "container", "restart", "runtime"],
+    "notes": "容器卡住或改完設定後很常用。"
+  },
+  {
+    "id": "docker-rm",
+    "category": "Docker",
+    "command": "docker rm <容器名稱或 ID>",
+    "description": "刪除容器。",
+    "tags": ["docker", "container", "remove", "risk"],
+    "notes": "刪掉前先確認不是還要保留的容器。"
+  },
+  {
+    "id": "docker-rmi",
+    "category": "Docker",
+    "command": "docker rmi <映像名稱或 ID>",
+    "description": "刪除映像。",
+    "tags": ["docker", "image", "remove", "risk"],
+    "notes": "若有容器仍在使用該映像，可能需要先停用或刪除容器。"
+  },
+  {
+    "id": "docker-compose-ps",
+    "category": "Docker",
+    "command": "docker compose ps",
+    "description": "查看 compose 服務狀態。",
+    "tags": ["docker", "compose", "container", "status"],
+    "notes": "多服務專案排查起來很方便。"
+  },
+  {
+    "id": "docker-compose-down",
+    "category": "Docker",
+    "command": "docker compose down",
+    "description": "停止並移除 compose 建立的服務與網路。",
+    "tags": ["docker", "compose", "stop", "remove"],
+    "notes": "要整組關掉本機開發環境時很常用。"
+  },
+  {
+    "id": "docker-compose-logs-follow",
+    "category": "Docker",
+    "command": "docker compose logs -f",
+    "description": "持續追蹤 compose 服務日誌。",
+    "tags": ["docker", "compose", "logs", "follow"],
+    "notes": "同時看多個服務輸出時很方便。"
   }
 ]
