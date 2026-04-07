@@ -411,6 +411,10 @@ kbd {
   gap: 0.3rem;
 }
 
+.category-picker[hidden] {
+  display: none;
+}
+
 .picker-item {
   display: flex;
   align-items: center;
