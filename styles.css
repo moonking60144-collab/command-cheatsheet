@@ -581,6 +581,76 @@ kbd {
   background: linear-gradient(180deg, rgba(121, 184, 255, 0.06), rgba(16, 23, 34, 1) 28%);
 }
 
+.pagination {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.9rem;
+  margin-top: 0.9rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--border);
+}
+
+.pagination-meta {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.pagination-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.4rem;
+}
+
+.pagination-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.3rem;
+  padding: 0.38rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-soft);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.8rem;
+  transition:
+    border-color 0.16s ease,
+    color 0.16s ease,
+    background 0.16s ease,
+    transform 0.12s ease;
+}
+
+.pagination-button:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: rgba(121, 184, 255, 0.08);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+}
+
+.pagination-button.is-active,
+.pagination-button[aria-current="page"] {
+  border-color: var(--accent);
+  background: rgba(121, 184, 255, 0.16);
+  color: var(--text-primary);
+}
+
+.pagination-button:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.pagination-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(121, 184, 255, 0.16);
+}
+
 .section-header {
   display: flex;
   align-items: flex-end;
@@ -940,6 +1010,15 @@ mark {
 
   .footer p:last-child {
     display: none;
+  }
+
+  .pagination {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .pagination-actions {
+    justify-content: flex-start;
   }
 
   .category-picker {

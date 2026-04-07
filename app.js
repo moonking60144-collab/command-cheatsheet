@@ -3,6 +3,7 @@ const DATA_URL = "./commands.json";
 const SECURE_DATA_URL = "./secure-categories.json";
 const SEARCH_DEBOUNCE_MS = 150;
 const SCROLL_TOP_THRESHOLD = 280;
+const RESULTS_PER_PAGE = 100;
 const PBKDF2_ITERATIONS = 250000;
 const PBKDF2_KEY_SIZE = 256 / 32;
 
@@ -14,7 +15,11 @@ const state = {
   commands: [],
   categories: [],
   query: "",
-  activeCategory: "all"
+  activeCategory: "all",
+  pagination: {
+    public: 1,
+    protected: 1
+  }
 };
 
 const ui = {
@@ -24,8 +29,10 @@ const ui = {
   categoryPicker: document.getElementById("category-picker"),
   publicResultsSection: document.getElementById("public-results-section"),
   results: document.getElementById("results"),
+  publicPagination: document.getElementById("public-pagination"),
   protectedResultsSection: document.getElementById("protected-results-section"),
   protectedResults: document.getElementById("protected-results"),
+  protectedPagination: document.getElementById("protected-pagination"),
   resultSummary: document.getElementById("result-summary"),
   commandCount: document.getElementById("command-count"),
   categoryCount: document.getElementById("category-count"),
@@ -66,6 +73,7 @@ async function init() {
 function bindEvents() {
   ui.searchInput.addEventListener("input", (event) => {
     state.query = event.target.value.trim();
+    resetPagination();
     saveState();
     window.clearTimeout(searchDebounceId);
     searchDebounceId = window.setTimeout(() => {
@@ -76,6 +84,7 @@ function bindEvents() {
   ui.clearButton.addEventListener("click", () => {
     state.query = "";
     state.activeCategory = "all";
+    resetPagination();
     ui.searchInput.value = "";
     saveState();
     renderFilters();
@@ -92,6 +101,7 @@ function bindEvents() {
     }
 
     state.activeCategory = button.dataset.category;
+    resetPagination();
     saveState();
     renderFilters();
     applyFilters();
@@ -144,6 +154,7 @@ function bindEvents() {
 
       if (categoryButton) {
         state.activeCategory = categoryButton.dataset.category;
+        resetPagination();
         saveState();
         renderFilters();
         applyFilters();
@@ -172,6 +183,30 @@ function bindEvents() {
       const card = placeholderInput.closest(".command-card");
       syncCardPlaceholderValues(card);
       updateCommandPreview(card);
+    });
+  });
+
+  [ui.publicPagination, ui.protectedPagination].forEach((container) => {
+    container?.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-page-target][data-page-number]");
+
+      if (!button) {
+        return;
+      }
+
+      const target = button.dataset.pageTarget;
+      const nextPage = Number.parseInt(button.dataset.pageNumber ?? "", 10);
+
+      if (!Number.isFinite(nextPage)) {
+        return;
+      }
+
+      if (target === "public" || target === "protected") {
+        state.pagination[target] = nextPage;
+        applyFilters();
+        (target === "public" ? ui.publicResultsSection : ui.protectedResultsSection)
+          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
     });
   });
 
@@ -204,6 +239,7 @@ function bindEvents() {
 
       state.query = "";
       ui.searchInput.value = "";
+      resetPagination();
       saveState();
       applyFilters();
       ui.searchInput.blur();
@@ -320,6 +356,11 @@ function getUnlockedCommands() {
   return Array.from(state.unlockedCommands.values()).flat();
 }
 
+function resetPagination() {
+  state.pagination.public = 1;
+  state.pagination.protected = 1;
+}
+
 function rebuildCommandState() {
   const unlocked = getUnlockedCommands();
   state.commands = [...state.publicCommands, ...unlocked];
@@ -417,6 +458,7 @@ function renderCategoryPicker() {
     `;
     button.addEventListener("click", () => {
       state.activeCategory = key;
+      resetPagination();
       saveState();
       renderFilters();
       applyFilters();
@@ -510,6 +552,7 @@ async function unlockProtectedCategory(form) {
   try {
     const decrypted = decryptProtectedCommands(target, password);
     state.unlockedCommands.set(target.id, decrypted);
+    resetPagination();
     form.reset();
     renderProtectedCategories();
     rebuildCommandState();
@@ -622,6 +665,10 @@ function filterCommands(commands, tokens) {
 function renderResultSections(publicItems, protectedItems, totalResults) {
   const hasPublicItems = publicItems.length > 0;
   const hasProtectedItems = protectedItems.length > 0;
+  const publicPage = getValidPage("public", publicItems.length);
+  const protectedPage = getValidPage("protected", protectedItems.length);
+  const visiblePublicItems = paginateItems(publicItems, publicPage);
+  const visibleProtectedItems = paginateItems(protectedItems, protectedPage);
 
   if (ui.publicResultsSection) {
     ui.publicResultsSection.hidden = !hasPublicItems && totalResults > 0;
@@ -634,20 +681,113 @@ function renderResultSections(publicItems, protectedItems, totalResults) {
   if (!totalResults) {
     renderResults(ui.results, []);
     ui.protectedResults?.replaceChildren();
+    renderPagination(ui.publicPagination, "public", 0, 1);
+    renderPagination(ui.protectedPagination, "protected", 0, 1);
     return;
   }
 
   if (hasPublicItems) {
-    renderResults(ui.results, publicItems);
+    renderResults(ui.results, visiblePublicItems);
   } else {
     ui.results.replaceChildren();
   }
 
   if (hasProtectedItems && ui.protectedResults) {
-    renderResults(ui.protectedResults, protectedItems);
+    renderResults(ui.protectedResults, visibleProtectedItems);
   } else {
     ui.protectedResults?.replaceChildren();
   }
+
+  renderPagination(ui.publicPagination, "public", publicItems.length, publicPage);
+  renderPagination(ui.protectedPagination, "protected", protectedItems.length, protectedPage);
+}
+
+function getPageCount(totalItems) {
+  return Math.max(1, Math.ceil(totalItems / RESULTS_PER_PAGE));
+}
+
+function getValidPage(target, totalItems) {
+  const totalPages = getPageCount(totalItems);
+  const nextPage = Math.min(Math.max(state.pagination[target] ?? 1, 1), totalPages);
+  state.pagination[target] = nextPage;
+  return nextPage;
+}
+
+function paginateItems(items, page) {
+  const startIndex = (page - 1) * RESULTS_PER_PAGE;
+  return items.slice(startIndex, startIndex + RESULTS_PER_PAGE);
+}
+
+function renderPagination(container, target, totalItems, currentPage) {
+  if (!container) {
+    return;
+  }
+
+  const totalPages = getPageCount(totalItems);
+
+  if (totalItems <= RESULTS_PER_PAGE) {
+    container.hidden = true;
+    container.replaceChildren();
+    return;
+  }
+
+  const pageNumbers = getVisiblePageNumbers(currentPage, totalPages);
+  const buttonsHtml = pageNumbers
+    .map((pageNumber) => `
+      <button
+        class="pagination-button pagination-number${pageNumber === currentPage ? " is-active" : ""}"
+        type="button"
+        data-page-target="${target}"
+        data-page-number="${pageNumber}"
+        aria-label="第 ${pageNumber} 頁"
+        ${pageNumber === currentPage ? 'aria-current="page"' : ""}
+      >
+        ${pageNumber}
+      </button>
+    `)
+    .join("");
+
+  container.hidden = false;
+  container.innerHTML = `
+    <p class="pagination-meta">第 ${currentPage} / ${totalPages} 頁 · 每頁 ${RESULTS_PER_PAGE} 筆 · 共 ${totalItems} 筆</p>
+    <div class="pagination-actions">
+      <button
+        class="pagination-button"
+        type="button"
+        data-page-target="${target}"
+        data-page-number="${Math.max(1, currentPage - 1)}"
+        ${currentPage <= 1 ? "disabled" : ""}
+      >
+        上一頁
+      </button>
+      ${buttonsHtml}
+      <button
+        class="pagination-button"
+        type="button"
+        data-page-target="${target}"
+        data-page-number="${Math.min(totalPages, currentPage + 1)}"
+        ${currentPage >= totalPages ? "disabled" : ""}
+      >
+        下一頁
+      </button>
+    </div>
+  `;
+}
+
+function getVisiblePageNumbers(currentPage, totalPages) {
+  if (totalPages <= 5) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1);
+  }
+
+  if (currentPage <= 3) {
+    return [1, 2, 3, 4, totalPages];
+  }
+
+  if (currentPage >= totalPages - 2) {
+    return [1, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+  }
+
+  return [1, currentPage - 1, currentPage, currentPage + 1, totalPages];
 }
 
 function tokenize(query) {
@@ -771,6 +911,15 @@ function renderError(error) {
 
   if (ui.protectedResultsSection) {
     ui.protectedResultsSection.hidden = true;
+  }
+
+  ui.publicPagination?.replaceChildren();
+  ui.protectedPagination?.replaceChildren();
+  if (ui.publicPagination) {
+    ui.publicPagination.hidden = true;
+  }
+  if (ui.protectedPagination) {
+    ui.protectedPagination.hidden = true;
   }
 }
 
