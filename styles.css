@@ -97,7 +97,38 @@ kbd {
   text-transform: uppercase;
 }
 
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.brand-monogram {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  flex-shrink: 0;
+  border-radius: 7px;
+  border: 1px solid rgba(121, 184, 255, 0.38);
+  background: linear-gradient(135deg, rgba(121, 184, 255, 0.18), rgba(121, 184, 255, 0.06));
+  color: var(--accent-strong);
+  font-family: var(--mono-font);
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
 .eyebrow {
+  color: var(--accent-strong);
+}
+
+.brand-word-dim {
+  color: var(--text-muted);
+}
+
+.brand-word-accent {
   color: var(--accent-strong);
 }
 
