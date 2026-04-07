@@ -310,17 +310,19 @@ function normalizeCommands(rawData, fallbackCategory = "") {
         notes: String(item.notes ?? "").trim()
       };
 
+      const commandLower = normalized.command.toLowerCase();
+      const categoryLower = normalized.category.toLowerCase();
+      const descriptionLower = normalized.description.toLowerCase();
+      const notesLower = normalized.notes.toLowerCase();
+
       return {
         ...normalized,
-        searchBlob: [
-          normalized.command,
-          normalized.description,
-          normalized.category,
-          normalized.notes,
-          normalized.tags.join(" ")
-        ]
-          .join(" ")
-          .toLowerCase()
+        commandLower,
+        categoryLower,
+        descriptionLower,
+        notesLower,
+        tagsLower: normalized.tags.map((t) => t.toLowerCase()),
+        searchBlob: [commandLower, descriptionLower, categoryLower, notesLower, normalized.tags.join(" ").toLowerCase()].join(" ")
       };
     })
     .filter((item) => {
@@ -401,7 +403,6 @@ function renderFilters() {
   const activeButton = ui.filterBar.querySelector(`[data-category="${escapeCssSelector(state.activeCategory)}"]`);
   activeButton?.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" });
 
-  renderCategoryPickers();
   updateStickySearchState();
 }
 
@@ -436,7 +437,7 @@ function openCategoryPicker(panel) {
   }
 
   closeAllCategoryPickers(panel);
-  renderCategoryPickers();
+  renderCategoryPicker(panel);
   panel.hidden = false;
   const button = getCategoryPickerButton(panel);
   button?.setAttribute("aria-expanded", "true");
@@ -856,29 +857,27 @@ function getMatchScore(item, tokens) {
   let score = 0;
 
   for (const token of tokens) {
-    const tagMatch = item.tags.some((tag) => tag.toLowerCase() === token);
-
-    if (item.command.toLowerCase().startsWith(token)) {
+    if (item.commandLower.startsWith(token)) {
       score += 12;
       continue;
     }
 
-    if (item.command.toLowerCase().includes(token)) {
+    if (item.commandLower.includes(token)) {
       score += 8;
       continue;
     }
 
-    if (tagMatch) {
+    if (item.tagsLower.some((tag) => tag === token)) {
       score += 7;
       continue;
     }
 
-    if (item.category.toLowerCase().includes(token)) {
+    if (item.categoryLower.includes(token)) {
       score += 5;
       continue;
     }
 
-    if (item.description.toLowerCase().includes(token) || item.notes.toLowerCase().includes(token) || item.searchBlob.includes(token)) {
+    if (item.searchBlob.includes(token)) {
       score += 3;
       continue;
     }
@@ -901,7 +900,7 @@ function renderResults(container, items) {
   }
 
   const fragment = document.createDocumentFragment();
-  const highlightTokens = tokenize(state.query);
+  const highlightPattern = compileHighlightPattern(tokenize(state.query));
 
   items.forEach((item) => {
     const placeholders = extractPlaceholders(item.command);
@@ -921,15 +920,15 @@ function renderResults(container, items) {
         </button>
       </div>
       <div class="command-block">
-        <pre class="command-line"><code>${highlightText(previewCommand, highlightTokens)}</code></pre>
+        <pre class="command-line"><code>${highlightText(previewCommand, highlightPattern)}</code></pre>
         ${renderPlaceholderFields(placeholders, placeholderValues)}
         <button class="copy-button" type="button" data-copy-command="${escapeAttribute(item.command)}">複製</button>
       </div>
-      <p class="description">${highlightText(item.description, highlightTokens)}</p>
-      ${item.notes ? `<p class="notes">${highlightText(item.notes, highlightTokens)}</p>` : ""}
+      <p class="description">${highlightText(item.description, highlightPattern)}</p>
+      ${item.notes ? `<p class="notes">${highlightText(item.notes, highlightPattern)}</p>` : ""}
       <div class="card-footer">
         <div class="tag-list">
-          ${item.tags.map((tag) => `<span class="tag">#${highlightText(tag, highlightTokens)}</span>`).join("")}
+          ${item.tags.map((tag) => `<span class="tag">#${highlightText(tag, highlightPattern)}</span>`).join("")}
         </div>
       </div>
     `;
@@ -1249,29 +1248,39 @@ function warnOnDuplicateCommandIds(commands) {
   });
 }
 
-function highlightText(text, tokens) {
-  const escaped = escapeHtml(text);
-
+function compileHighlightPattern(tokens) {
   if (!tokens.length) {
-    return escaped;
+    return null;
   }
 
   const uniqueTokens = [...new Set(tokens.map((token) => token.trim()).filter(Boolean))]
     .sort((left, right) => right.length - left.length);
 
   if (!uniqueTokens.length) {
-    return escaped;
+    return null;
   }
 
   const pattern = uniqueTokens
     .map((token) => escapeRegex(escapeHtml(token)))
     .join("|");
 
-  if (!pattern) {
+  return pattern ? new RegExp(`(${pattern})`, "gi") : null;
+}
+
+function highlightText(text, tokensOrPattern) {
+  const escaped = escapeHtml(text);
+
+  if (!tokensOrPattern) {
     return escaped;
   }
 
-  return escaped.replace(new RegExp(`(${pattern})`, "gi"), "<mark>$1</mark>");
+  if (tokensOrPattern instanceof RegExp) {
+    tokensOrPattern.lastIndex = 0;
+    return escaped.replace(tokensOrPattern, "<mark>$1</mark>");
+  }
+
+  const pattern = compileHighlightPattern(tokensOrPattern);
+  return pattern ? escaped.replace(pattern, "<mark>$1</mark>") : escaped;
 }
 
 function escapeRegex(value) {
