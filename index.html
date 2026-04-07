@@ -43,6 +43,30 @@
           <div class="filter-bar-wrap">
             <div id="filter-bar" class="filter-bar" aria-label="分類篩選"></div>
           </div>
+          <div class="picker-wrap">
+            <button
+              id="category-picker-btn"
+              class="category-picker-btn"
+              type="button"
+              aria-label="所有分類"
+              aria-expanded="false"
+              title="所有分類"
+            >
+              <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                <rect x="1" y="1" width="6" height="6" rx="1.2"></rect>
+                <rect x="9" y="1" width="6" height="6" rx="1.2"></rect>
+                <rect x="1" y="9" width="6" height="6" rx="1.2"></rect>
+                <rect x="9" y="9" width="6" height="6" rx="1.2"></rect>
+              </svg>
+            </button>
+            <div
+              id="category-picker"
+              class="category-picker"
+              hidden
+              role="dialog"
+              aria-label="選擇分類"
+            ></div>
+          </div>
         </div>
 
         <div class="toolbar">

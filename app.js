@@ -20,6 +20,8 @@ const state = {
 const ui = {
   searchInput: document.getElementById("search-input"),
   filterBar: document.getElementById("filter-bar"),
+  categoryPickerBtn: document.getElementById("category-picker-btn"),
+  categoryPicker: document.getElementById("category-picker"),
   publicResultsSection: document.getElementById("public-results-section"),
   results: document.getElementById("results"),
   protectedResultsSection: document.getElementById("protected-results-section"),
@@ -79,6 +81,7 @@ function bindEvents() {
     renderFilters();
     applyFilters();
     ui.searchInput.focus();
+    closeCategoryPicker();
   });
 
   ui.filterBar.addEventListener("click", (event) => {
@@ -92,6 +95,30 @@ function bindEvents() {
     saveState();
     renderFilters();
     applyFilters();
+    closeCategoryPicker();
+  });
+
+  ui.categoryPickerBtn?.addEventListener("click", (event) => {
+    event.stopPropagation();
+
+    if (ui.categoryPicker?.hidden) {
+      openCategoryPicker();
+    } else {
+      closeCategoryPicker();
+    }
+  });
+
+  document.addEventListener("click", (event) => {
+    if (!ui.categoryPicker || ui.categoryPicker.hidden) {
+      return;
+    }
+
+    const clickedInsidePicker = ui.categoryPicker.contains(event.target);
+    const clickedButton = ui.categoryPickerBtn?.contains(event.target);
+
+    if (!clickedInsidePicker && !clickedButton) {
+      closeCategoryPicker();
+    }
   });
 
   ui.scrollTopButton?.addEventListener("click", () => {
@@ -100,13 +127,14 @@ function bindEvents() {
 
   [ui.results, ui.protectedResults].forEach((container) => {
     container?.addEventListener("click", async (event) => {
-      const categoryButton = event.target.closest("[data-filter-category]");
+      const categoryButton = event.target.closest("[data-category]");
 
       if (categoryButton) {
-        state.activeCategory = categoryButton.dataset.filterCategory;
+        state.activeCategory = categoryButton.dataset.category;
         saveState();
         renderFilters();
         applyFilters();
+        closeCategoryPicker();
         return;
       }
 
@@ -156,6 +184,11 @@ function bindEvents() {
     }
 
     if (event.key === "Escape") {
+      if (!ui.categoryPicker?.hidden) {
+        closeCategoryPicker();
+        return;
+      }
+
       state.query = "";
       ui.searchInput.value = "";
       saveState();
@@ -304,6 +337,8 @@ function renderFilters() {
 
   const activeButton = ui.filterBar.querySelector(`[data-category="${escapeCssSelector(state.activeCategory)}"]`);
   activeButton?.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" });
+
+  renderCategoryPicker();
 }
 
 function createFilterButton(category, label) {
@@ -314,6 +349,74 @@ function createFilterButton(category, label) {
   button.setAttribute("aria-pressed", String(state.activeCategory === category));
   button.textContent = label;
   return button;
+}
+
+function openCategoryPicker() {
+  renderCategoryPicker();
+
+  if (!ui.categoryPicker) {
+    return;
+  }
+
+  ui.categoryPicker.hidden = false;
+  ui.categoryPickerBtn?.setAttribute("aria-expanded", "true");
+  ui.categoryPickerBtn?.classList.add("is-open");
+}
+
+function closeCategoryPicker() {
+  if (ui.categoryPicker) {
+    ui.categoryPicker.hidden = true;
+  }
+
+  ui.categoryPickerBtn?.setAttribute("aria-expanded", "false");
+  ui.categoryPickerBtn?.classList.remove("is-open");
+}
+
+function renderCategoryPicker() {
+  if (!ui.categoryPicker) {
+    return;
+  }
+
+  const counts = {};
+  state.commands.forEach((command) => {
+    counts[command.category] = (counts[command.category] || 0) + 1;
+  });
+
+  const categories = [
+    { key: "all", label: "全部", count: state.commands.length },
+    ...state.categories.map((category) => ({
+      key: category,
+      label: category,
+      count: counts[category] || 0
+    }))
+  ];
+
+  const fragment = document.createDocumentFragment();
+
+  categories.forEach(({ key, label, count }) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `picker-item${state.activeCategory === key ? " is-active" : ""}`;
+    button.dataset.category = key;
+    button.innerHTML = `
+      <span class="picker-item-label">${escapeHtml(label)}</span>
+      <span class="picker-item-count">${count}</span>
+    `;
+    button.addEventListener("click", () => {
+      state.activeCategory = key;
+      saveState();
+      renderFilters();
+      applyFilters();
+      closeCategoryPicker();
+    });
+    fragment.appendChild(button);
+  });
+
+  ui.categoryPicker.replaceChildren(fragment);
+
+  const activeLabel = state.activeCategory === "all" ? "全部分類" : state.activeCategory;
+  ui.categoryPickerBtn?.setAttribute("aria-label", `分類選單，當前 ${activeLabel}`);
+  ui.categoryPickerBtn?.setAttribute("title", `分類選單：${activeLabel}`);
 }
 
 function renderProtectedCategories() {
@@ -603,7 +706,7 @@ function renderResults(container, items) {
     card.dataset.commandId = item.id;
     card.innerHTML = `
       <div class="card-top">
-        <button class="category-badge category-badge-button" type="button" data-filter-category="${escapeAttribute(item.category)}" aria-label="篩選分類 ${escapeAttribute(item.category)}">
+        <button class="category-badge category-badge-button" type="button" data-category="${escapeAttribute(item.category)}" aria-label="篩選分類 ${escapeAttribute(item.category)}" title="篩選分類 ${escapeAttribute(item.category)}">
           ${escapeHtml(item.category)}
         </button>
       </div>
