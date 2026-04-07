@@ -1,4 +1,5 @@
 const STORAGE_KEY = "command-atlas-state-v1";
+const PINNED_KEY = "command-atlas-pinned-v1";
 const DATA_URL = "./commands.json";
 const SECURE_DATA_URL = "./secure-categories.json";
 const SEARCH_DEBOUNCE_MS = 80;
@@ -12,6 +13,7 @@ const state = {
   protectedCategories: [],
   unlockedCommands: new Map(),
   placeholderValues: new Map(),
+  pinned: new Set(),
   commands: [],
   categories: [],
   query: "",
@@ -58,6 +60,7 @@ init();
 async function init() {
   bindEvents();
   restoreState();
+  restorePinned();
 
   try {
     const [publicPayload, protectedPayload] = await Promise.all([
@@ -143,6 +146,20 @@ function bindEvents() {
       if (categoryButton) {
         applyCategoryFilter(categoryButton.dataset.category);
         closeAllCategoryPickers();
+        return;
+      }
+
+      const pinButton = event.target.closest("[data-pin-id]");
+
+      if (pinButton) {
+        togglePin(pinButton.dataset.pinId, pinButton);
+        return;
+      }
+
+      const tagButton = event.target.closest("[data-tag]");
+
+      if (tagButton) {
+        filterByTag(tagButton.dataset.tag);
         return;
       }
 
@@ -419,6 +436,8 @@ function renderFilters() {
 }
 
 function updateFilterPillActive() {
+  document.body.classList.toggle("has-active-filter", state.activeCategory !== "all");
+
   ui.filterBar.querySelectorAll(".filter-pill[data-category]").forEach((btn) => {
     const isActive = btn.dataset.category === state.activeCategory;
     btn.classList.toggle("is-active", isActive);
@@ -776,7 +795,12 @@ function filterCommands(commands, tokens) {
     .filter((item) => state.activeCategory === "all" || item.category === state.activeCategory)
     .map((item) => ({ item, score: getMatchScore(item, tokens) }))
     .filter((entry) => entry.score >= 0)
-    .sort((left, right) => right.score - left.score || left.item.category.localeCompare(right.item.category, "zh-Hant"))
+    .sort((left, right) => {
+      const lp = state.pinned.has(left.item.id);
+      const rp = state.pinned.has(right.item.id);
+      if (lp !== rp) return lp ? -1 : 1;
+      return right.score - left.score || left.item.category.localeCompare(right.item.category, "zh-Hant");
+    })
     .map((entry) => entry.item);
 }
 
@@ -974,8 +998,9 @@ function renderResults(container, items) {
     const placeholderValues = state.placeholderValues.get(item.id) ?? {};
     const previewCommand = resolveCommandTemplate(item.command, placeholderValues);
     const accent = getCategoryAccent(item.category);
+    const isPinned = state.pinned.has(item.id);
     const card = document.createElement("article");
-    card.className = "command-card";
+    card.className = `command-card${isPinned ? " is-pinned" : ""}`;
     card.dataset.commandId = item.id;
     card.style.setProperty("--category-accent", accent.color);
     card.style.setProperty("--category-accent-soft", accent.soft);
@@ -984,6 +1009,9 @@ function renderResults(container, items) {
       <div class="card-top">
         <button class="category-badge category-badge-button" type="button" data-category="${escapeAttribute(item.category)}" aria-label="篩選分類 ${escapeAttribute(item.category)}" title="篩選分類 ${escapeAttribute(item.category)}">
           ${escapeHtml(item.category)}
+        </button>
+        <button class="pin-button" type="button" data-pin-id="${escapeAttribute(item.id)}" aria-label="${isPinned ? "取消釘選" : "釘選此指令"}" aria-pressed="${isPinned}" title="${isPinned ? "取消釘選" : "釘選"}">
+          <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><polygon points="8,1.5 10.2,6 15,6.6 11.5,9.9 12.5,14.5 8,12.1 3.5,14.5 4.5,9.9 1,6.6 5.8,6"/></svg>
         </button>
       </div>
       <div class="command-block">
@@ -995,7 +1023,7 @@ function renderResults(container, items) {
       ${item.notes ? `<p class="notes">${highlightText(item.notes, highlightPattern)}</p>` : ""}
       <div class="card-footer">
         <div class="tag-list">
-          ${item.tags.map((tag) => `<span class="tag">#${highlightText(tag, highlightPattern)}</span>`).join("")}
+          ${item.tags.map((tag) => `<button class="tag tag-btn" type="button" data-tag="${escapeAttribute(tag)}">#${highlightText(tag, highlightPattern)}</button>`).join("")}
         </div>
       </div>
     `;
@@ -1141,6 +1169,57 @@ function restoreState() {
     console.warn("restoreState failed", error);
     localStorage.removeItem(STORAGE_KEY);
   }
+}
+
+function restorePinned() {
+  try {
+    const raw = localStorage.getItem(PINNED_KEY);
+
+    if (raw) {
+      const ids = JSON.parse(raw);
+
+      if (Array.isArray(ids)) {
+        state.pinned = new Set(ids);
+      }
+    }
+  } catch (error) {
+    console.warn("restorePinned failed", error);
+    localStorage.removeItem(PINNED_KEY);
+  }
+}
+
+function savePinned() {
+  localStorage.setItem(PINNED_KEY, JSON.stringify([...state.pinned]));
+}
+
+function togglePin(commandId, buttonEl = null) {
+  const wasPinned = state.pinned.has(commandId);
+
+  if (wasPinned) {
+    state.pinned.delete(commandId);
+  } else {
+    state.pinned.add(commandId);
+  }
+
+  savePinned();
+
+  if (buttonEl) {
+    const isPinned = !wasPinned;
+    buttonEl.setAttribute("aria-pressed", String(isPinned));
+    buttonEl.setAttribute("aria-label", isPinned ? "取消釘選" : "釘選此指令");
+    buttonEl.setAttribute("title", isPinned ? "取消釘選" : "釘選");
+    buttonEl.closest(".command-card")?.classList.toggle("is-pinned", isPinned);
+  }
+
+  applyFiltersAnimated();
+}
+
+function filterByTag(tag) {
+  state.query = tag;
+  resetPagination();
+  syncSearchInputs();
+  saveState();
+  applyFiltersAnimated();
 }
 
 async function copyToClipboard(text, button, card = null) {

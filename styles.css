@@ -934,6 +934,63 @@ kbd {
     0 0 0 1px rgba(158, 221, 170, 0.18);
 }
 
+.command-card.is-pinned {
+  border-color: rgba(121, 184, 255, 0.32);
+  box-shadow:
+    inset 3px 0 0 0 var(--category-accent, var(--accent)),
+    inset 0 0 0 1px rgba(121, 184, 255, 0.08);
+}
+
+.pin-button {
+  appearance: none;
+  border: none;
+  background: none;
+  padding: 0.28rem;
+  border-radius: var(--radius-sm);
+  color: var(--text-dim);
+  cursor: pointer;
+  line-height: 0;
+  opacity: 0;
+  transition: opacity 0.16s ease, color 0.16s ease, background 0.14s ease;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.command-card:hover .pin-button,
+.pin-button[aria-pressed="true"],
+.pin-button:focus-visible {
+  opacity: 1;
+}
+
+.pin-button[aria-pressed="true"] {
+  color: var(--accent);
+}
+
+.pin-button:hover {
+  background: rgba(121, 184, 255, 0.1);
+  color: var(--accent);
+}
+
+.pin-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.pin-button svg {
+  width: 0.9rem;
+  height: 0.9rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  transition: fill 0.16s ease;
+}
+
+.pin-button[aria-pressed="true"] svg {
+  fill: var(--accent);
+  stroke: var(--accent);
+}
+
 .command-card:hover .command-line {
   border-color: var(--category-accent-border, rgba(121, 184, 255, 0.34));
   box-shadow:
@@ -1107,6 +1164,24 @@ mark {
   background: rgba(255, 255, 255, 0.07);
   color: var(--text-muted);
   font-size: 0.78rem;
+}
+
+.tag-btn {
+  appearance: none;
+  border: none;
+  font: inherit;
+  cursor: pointer;
+  transition: background 0.14s ease, color 0.14s ease;
+}
+
+.tag-btn:hover {
+  background: rgba(121, 184, 255, 0.14);
+  color: var(--accent);
+}
+
+.tag-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent);
 }
 
 .empty-state,
