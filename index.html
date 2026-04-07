@@ -31,6 +31,7 @@
           <label class="search-panel" for="search-input">
             <input
               id="search-input"
+              class="search-input"
               type="search"
               autocomplete="off"
               aria-label="搜尋指令、描述、標籤或分類"
@@ -84,6 +85,47 @@
         <div id="secure-category-list" class="secure-category-list"></div>
       </details>
     </header>
+
+    <div id="sticky-search-bar" class="sticky-search-bar" aria-hidden="true">
+      <div class="sticky-search-shell">
+        <label class="sticky-search-input-wrap" for="sticky-search-input">
+          <input
+            id="sticky-search-input"
+            class="search-input search-input-sticky"
+            type="search"
+            autocomplete="off"
+            aria-label="快速搜尋指令"
+            placeholder="快速搜尋指令…"
+          >
+        </label>
+        <span id="sticky-active-category" class="sticky-active-category">全部分類</span>
+        <div class="picker-wrap picker-wrap-sticky">
+          <button
+            id="sticky-category-picker-btn"
+            class="category-picker-btn category-picker-btn-sticky"
+            type="button"
+            aria-label="所有分類"
+            aria-expanded="false"
+            title="所有分類"
+          >
+            <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+              <rect x="1" y="1" width="6" height="6" rx="1.2"></rect>
+              <rect x="9" y="1" width="6" height="6" rx="1.2"></rect>
+              <rect x="1" y="9" width="6" height="6" rx="1.2"></rect>
+              <rect x="9" y="9" width="6" height="6" rx="1.2"></rect>
+            </svg>
+          </button>
+          <div
+            id="sticky-category-picker"
+            class="category-picker category-picker-sticky"
+            hidden
+            role="dialog"
+            aria-label="選擇分類"
+          ></div>
+        </div>
+        <button id="sticky-clear-btn" class="ghost-button sticky-clear-btn" type="button" hidden>清空</button>
+      </div>
+    </div>
 
     <main class="layout">
       <section id="public-results-section" class="results-section" aria-labelledby="results-title">

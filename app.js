@@ -23,7 +23,14 @@ const state = {
 };
 
 const ui = {
+  hero: document.querySelector(".hero"),
   searchInput: document.getElementById("search-input"),
+  stickySearchBar: document.getElementById("sticky-search-bar"),
+  stickySearchInput: document.getElementById("sticky-search-input"),
+  stickyActiveCategory: document.getElementById("sticky-active-category"),
+  stickyCategoryPickerBtn: document.getElementById("sticky-category-picker-btn"),
+  stickyCategoryPicker: document.getElementById("sticky-category-picker"),
+  stickyClearButton: document.getElementById("sticky-clear-btn"),
   filterBar: document.getElementById("filter-bar"),
   categoryPickerBtn: document.getElementById("category-picker-btn"),
   categoryPicker: document.getElementById("category-picker"),
@@ -71,26 +78,17 @@ async function init() {
 }
 
 function bindEvents() {
-  ui.searchInput.addEventListener("input", (event) => {
-    state.query = event.target.value.trim();
-    resetPagination();
-    saveState();
-    window.clearTimeout(searchDebounceId);
-    searchDebounceId = window.setTimeout(() => {
-      applyFilters();
-    }, SEARCH_DEBOUNCE_MS);
+  [ui.searchInput, ui.stickySearchInput].forEach((input) => {
+    input?.addEventListener("input", (event) => {
+      updateQuery(event.target.value, event.target);
+    });
   });
 
-  ui.clearButton.addEventListener("click", () => {
-    state.query = "";
-    state.activeCategory = "all";
-    resetPagination();
-    ui.searchInput.value = "";
-    saveState();
-    renderFilters();
-    applyFilters();
-    ui.searchInput.focus();
-    closeCategoryPicker();
+  [ui.clearButton, ui.stickyClearButton].forEach((button) => {
+    button?.addEventListener("click", () => {
+      clearFilters();
+      (button === ui.stickyClearButton ? ui.stickySearchInput : ui.searchInput)?.focus();
+    });
   });
 
   ui.filterBar.addEventListener("click", (event) => {
@@ -100,48 +98,38 @@ function bindEvents() {
       return;
     }
 
-    state.activeCategory = button.dataset.category;
-    resetPagination();
-    saveState();
-    renderFilters();
-    applyFilters();
-    closeCategoryPicker();
+    applyCategoryFilter(button.dataset.category);
   });
 
-  ui.categoryPickerBtn?.addEventListener("click", (event) => {
-    event.stopPropagation();
+  getCategoryPickerPairs().forEach(({ button, panel }) => {
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
 
-    if (ui.categoryPicker?.hidden) {
-      openCategoryPicker();
-    } else {
-      closeCategoryPicker();
-    }
+      if (panel.hidden) {
+        openCategoryPicker(panel);
+      } else {
+        closeCategoryPicker(panel);
+      }
+    });
+
+    panel.addEventListener("click", (event) => {
+      const categoryButton = event.target.closest("[data-category]");
+
+      if (!categoryButton) {
+        return;
+      }
+
+      applyCategoryFilter(categoryButton.dataset.category);
+      closeCategoryPicker(panel);
+    });
   });
 
   document.addEventListener("click", (event) => {
-    if (!ui.categoryPicker || ui.categoryPicker.hidden) {
-      return;
-    }
-
-    const clickedInsidePicker = ui.categoryPicker.contains(event.target);
-    const clickedButton = ui.categoryPickerBtn?.contains(event.target);
-
-    if (!clickedInsidePicker && !clickedButton) {
-      closeCategoryPicker();
-    }
+    handleOutsideCategoryPickerClick(event.target);
   });
 
   window.addEventListener("pointerdown", (event) => {
-    if (!ui.categoryPicker || ui.categoryPicker.hidden) {
-      return;
-    }
-
-    const clickedInsidePicker = ui.categoryPicker.contains(event.target);
-    const clickedButton = ui.categoryPickerBtn?.contains(event.target);
-
-    if (!clickedInsidePicker && !clickedButton) {
-      closeCategoryPicker();
-    }
+    handleOutsideCategoryPickerClick(event.target);
   }, { capture: true });
 
   ui.scrollTopButton?.addEventListener("click", () => {
@@ -153,12 +141,8 @@ function bindEvents() {
       const categoryButton = event.target.closest("[data-category]");
 
       if (categoryButton) {
-        state.activeCategory = categoryButton.dataset.category;
-        resetPagination();
-        saveState();
-        renderFilters();
-        applyFilters();
-        closeCategoryPicker();
+        applyCategoryFilter(categoryButton.dataset.category);
+        closeAllCategoryPickers();
         return;
       }
 
@@ -232,23 +216,20 @@ function bindEvents() {
     }
 
     if (event.key === "Escape") {
-      if (!ui.categoryPicker?.hidden) {
-        closeCategoryPicker();
+      if (hasOpenCategoryPicker()) {
+        closeAllCategoryPickers();
         return;
       }
 
-      state.query = "";
-      ui.searchInput.value = "";
-      resetPagination();
-      saveState();
-      applyFilters();
+      clearFilters();
       ui.searchInput.blur();
     }
   });
 
-  window.addEventListener("scroll", toggleScrollTopButton, { passive: true });
-  window.addEventListener("resize", toggleScrollTopButton, { passive: true });
+  window.addEventListener("scroll", toggleUtilityChrome, { passive: true });
+  window.addEventListener("resize", toggleUtilityChrome, { passive: true });
   toggleScrollTopButton();
+  toggleStickySearchBar();
 }
 
 async function fetchJson(url, label) {
@@ -392,7 +373,8 @@ function renderFilters() {
   const activeButton = ui.filterBar.querySelector(`[data-category="${escapeCssSelector(state.activeCategory)}"]`);
   activeButton?.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" });
 
-  renderCategoryPicker();
+  renderCategoryPickers();
+  updateStickySearchState();
 }
 
 function createFilterButton(category, label) {
@@ -405,29 +387,77 @@ function createFilterButton(category, label) {
   return button;
 }
 
-function openCategoryPicker() {
-  renderCategoryPicker();
+function getCategoryPickerPairs() {
+  return [
+    { button: ui.categoryPickerBtn, panel: ui.categoryPicker },
+    { button: ui.stickyCategoryPickerBtn, panel: ui.stickyCategoryPicker }
+  ].filter((entry) => entry.button && entry.panel);
+}
 
-  if (!ui.categoryPicker) {
+function getCategoryPickerButton(panel) {
+  return getCategoryPickerPairs().find((entry) => entry.panel === panel)?.button ?? null;
+}
+
+function hasOpenCategoryPicker() {
+  return getCategoryPickerPairs().some(({ panel }) => !panel.hidden);
+}
+
+function openCategoryPicker(panel) {
+  if (!panel) {
     return;
   }
 
-  ui.categoryPicker.hidden = false;
-  ui.categoryPickerBtn?.setAttribute("aria-expanded", "true");
-  ui.categoryPickerBtn?.classList.add("is-open");
+  closeAllCategoryPickers(panel);
+  renderCategoryPickers();
+  panel.hidden = false;
+  const button = getCategoryPickerButton(panel);
+  button?.setAttribute("aria-expanded", "true");
+  button?.classList.add("is-open");
 }
 
-function closeCategoryPicker() {
-  if (ui.categoryPicker) {
-    ui.categoryPicker.hidden = true;
+function closeCategoryPicker(panel) {
+  if (!panel) {
+    return;
   }
 
-  ui.categoryPickerBtn?.setAttribute("aria-expanded", "false");
-  ui.categoryPickerBtn?.classList.remove("is-open");
+  panel.hidden = true;
+  const button = getCategoryPickerButton(panel);
+  button?.setAttribute("aria-expanded", "false");
+  button?.classList.remove("is-open");
 }
 
-function renderCategoryPicker() {
-  if (!ui.categoryPicker) {
+function closeAllCategoryPickers(exceptPanel = null) {
+  getCategoryPickerPairs().forEach(({ panel }) => {
+    if (panel !== exceptPanel) {
+      closeCategoryPicker(panel);
+    }
+  });
+}
+
+function handleOutsideCategoryPickerClick(target) {
+  const openPickers = getCategoryPickerPairs().filter(({ panel }) => !panel.hidden);
+
+  if (!openPickers.length) {
+    return;
+  }
+
+  const clickedInsideAnyPicker = openPickers.some(({ panel, button }) =>
+    panel.contains(target) || button.contains(target)
+  );
+
+  if (!clickedInsideAnyPicker) {
+    closeAllCategoryPickers();
+  }
+}
+
+function renderCategoryPickers() {
+  getCategoryPickerPairs().forEach(({ panel }) => {
+    renderCategoryPicker(panel);
+  });
+}
+
+function renderCategoryPicker(panel) {
+  if (!panel) {
     return;
   }
 
@@ -456,22 +486,14 @@ function renderCategoryPicker() {
       <span class="picker-item-label">${escapeHtml(label)}</span>
       <span class="picker-item-count">${count}</span>
     `;
-    button.addEventListener("click", () => {
-      state.activeCategory = key;
-      resetPagination();
-      saveState();
-      renderFilters();
-      applyFilters();
-      closeCategoryPicker();
-    });
     fragment.appendChild(button);
   });
 
-  ui.categoryPicker.replaceChildren(fragment);
+  panel.replaceChildren(fragment);
 
   const activeLabel = state.activeCategory === "all" ? "全部分類" : state.activeCategory;
-  ui.categoryPickerBtn?.setAttribute("aria-label", `分類選單，當前 ${activeLabel}`);
-  ui.categoryPickerBtn?.setAttribute("title", `分類選單：${activeLabel}`);
+  getCategoryPickerButton(panel)?.setAttribute("aria-label", `分類選單，當前 ${activeLabel}`);
+  getCategoryPickerButton(panel)?.setAttribute("title", `分類選單：${activeLabel}`);
 }
 
 function renderProtectedCategories() {
@@ -857,9 +879,13 @@ function renderResults(container, items) {
     const placeholders = extractPlaceholders(item.command);
     const placeholderValues = state.placeholderValues.get(item.id) ?? {};
     const previewCommand = resolveCommandTemplate(item.command, placeholderValues);
+    const accent = getCategoryAccent(item.category);
     const card = document.createElement("article");
     card.className = "command-card";
     card.dataset.commandId = item.id;
+    card.style.setProperty("--category-accent", accent.color);
+    card.style.setProperty("--category-accent-soft", accent.soft);
+    card.style.setProperty("--category-accent-border", accent.border);
     card.innerHTML = `
       <div class="card-top">
         <button class="category-badge category-badge-button" type="button" data-category="${escapeAttribute(item.category)}" aria-label="篩選分類 ${escapeAttribute(item.category)}" title="篩選分類 ${escapeAttribute(item.category)}">
@@ -937,8 +963,62 @@ function updateSummary(resultCount) {
   ui.activeState.textContent = `目前：${categoryLabel}${queryLabel}`;
   ui.resultSummary.textContent = `共找到 ${resultCount} 筆結果`;
   ui.clearButton.hidden = !hasActiveFilters;
+  if (ui.stickyClearButton) {
+    ui.stickyClearButton.hidden = !hasActiveFilters;
+  }
   document.body.classList.toggle("has-active-filter", hasActiveCategoryFilter);
-  toggleScrollTopButton();
+  updateStickySearchState();
+  toggleUtilityChrome();
+}
+
+function updateQuery(value, sourceInput = null) {
+  state.query = String(value ?? "").trim();
+  resetPagination();
+  syncSearchInputs(sourceInput);
+  saveState();
+  window.clearTimeout(searchDebounceId);
+  searchDebounceId = window.setTimeout(() => {
+    applyFilters();
+  }, SEARCH_DEBOUNCE_MS);
+}
+
+function syncSearchInputs(sourceInput = null) {
+  [ui.searchInput, ui.stickySearchInput].forEach((input) => {
+    if (!input || input === sourceInput) {
+      return;
+    }
+
+    input.value = state.query;
+  });
+}
+
+function clearFilters() {
+  state.query = "";
+  state.activeCategory = "all";
+  resetPagination();
+  syncSearchInputs();
+  saveState();
+  renderFilters();
+  applyFilters();
+  closeAllCategoryPickers();
+}
+
+function applyCategoryFilter(category) {
+  state.activeCategory = category;
+  resetPagination();
+  saveState();
+  renderFilters();
+  applyFilters();
+}
+
+function updateStickySearchState() {
+  const activeLabel = state.activeCategory === "all" ? "全部分類" : state.activeCategory;
+
+  if (ui.stickyActiveCategory) {
+    ui.stickyActiveCategory.textContent = activeLabel;
+  }
+
+  syncSearchInputs();
 }
 
 function saveState() {
@@ -962,7 +1042,7 @@ function restoreState() {
     const parsed = JSON.parse(rawState);
     state.query = typeof parsed.query === "string" ? parsed.query : "";
     state.activeCategory = typeof parsed.activeCategory === "string" ? parsed.activeCategory : "all";
-    ui.searchInput.value = state.query;
+    syncSearchInputs();
   } catch (error) {
     console.warn("restoreState failed", error);
     localStorage.removeItem(STORAGE_KEY);
@@ -1179,6 +1259,36 @@ function announce(message) {
   }, 20);
 }
 
+function getCategoryAccent(category) {
+  const palette = {
+    Git: { color: "#7ee787", soft: "rgba(126, 231, 135, 0.14)", border: "rgba(126, 231, 135, 0.34)" },
+    Docker: { color: "#79b8ff", soft: "rgba(121, 184, 255, 0.14)", border: "rgba(121, 184, 255, 0.34)" },
+    GitHub: { color: "#a78bfa", soft: "rgba(167, 139, 250, 0.14)", border: "rgba(167, 139, 250, 0.34)" },
+    Python: { color: "#f2cc60", soft: "rgba(242, 204, 96, 0.14)", border: "rgba(242, 204, 96, 0.34)" },
+    PowerShell: { color: "#9a8cff", soft: "rgba(154, 140, 255, 0.14)", border: "rgba(154, 140, 255, 0.34)" },
+    WSL: { color: "#66d1c1", soft: "rgba(102, 209, 193, 0.14)", border: "rgba(102, 209, 193, 0.34)" },
+    Bash: { color: "#93d977", soft: "rgba(147, 217, 119, 0.14)", border: "rgba(147, 217, 119, 0.34)" },
+    "Windows Network & DNS": { color: "#5bb0ff", soft: "rgba(91, 176, 255, 0.14)", border: "rgba(91, 176, 255, 0.34)" },
+    "Windows Port & Firewall": { color: "#ff9d5c", soft: "rgba(255, 157, 92, 0.14)", border: "rgba(255, 157, 92, 0.34)" },
+    "Windows Process & Service": { color: "#7cc8a5", soft: "rgba(124, 200, 165, 0.14)", border: "rgba(124, 200, 165, 0.34)" },
+    "Windows Event Log": { color: "#c792ea", soft: "rgba(199, 146, 234, 0.14)", border: "rgba(199, 146, 234, 0.34)" },
+    "Windows Repair": { color: "#f28b82", soft: "rgba(242, 139, 130, 0.14)", border: "rgba(242, 139, 130, 0.34)" },
+    "Windows Shortcut": { color: "#d1b36a", soft: "rgba(209, 179, 106, 0.14)", border: "rgba(209, 179, 106, 0.34)" },
+    "Windows File & Directory": { color: "#8fb0ff", soft: "rgba(143, 176, 255, 0.14)", border: "rgba(143, 176, 255, 0.34)" }
+  };
+
+  return palette[category] ?? {
+    color: "#79b8ff",
+    soft: "rgba(121, 184, 255, 0.14)",
+    border: "rgba(121, 184, 255, 0.34)"
+  };
+}
+
+function toggleUtilityChrome() {
+  toggleScrollTopButton();
+  toggleStickySearchBar();
+}
+
 function toggleScrollTopButton() {
   if (!ui.scrollTopButton) {
     return;
@@ -1187,4 +1297,15 @@ function toggleScrollTopButton() {
   const shouldShow = window.scrollY > SCROLL_TOP_THRESHOLD;
   ui.scrollTopButton.hidden = !shouldShow;
   ui.scrollTopButton.classList.toggle("is-visible", shouldShow);
+}
+
+function toggleStickySearchBar() {
+  if (!ui.stickySearchBar || !ui.hero) {
+    return;
+  }
+
+  const stickyThreshold = Math.max(160, ui.hero.offsetHeight - 72);
+  const shouldShow = window.scrollY > stickyThreshold;
+  ui.stickySearchBar.classList.toggle("is-visible", shouldShow);
+  ui.stickySearchBar.setAttribute("aria-hidden", String(!shouldShow));
 }
