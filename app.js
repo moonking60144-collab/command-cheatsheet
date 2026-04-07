@@ -29,7 +29,6 @@ const ui = {
   categoryCount: document.getElementById("category-count"),
   activeState: document.getElementById("active-state"),
   clearButton: document.getElementById("clear-btn"),
-  categorySelect: document.getElementById("category-select"),
   scrollTopButton: document.getElementById("scroll-top-btn"),
   securePanel: document.getElementById("secure-panel"),
   secureCategoryList: document.getElementById("secure-category-list"),
@@ -95,19 +94,22 @@ function bindEvents() {
     applyFilters();
   });
 
-  ui.categorySelect?.addEventListener("change", (event) => {
-    state.activeCategory = event.target.value;
-    saveState();
-    renderFilters();
-    applyFilters();
-  });
-
   ui.scrollTopButton?.addEventListener("click", () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   });
 
   [ui.results, ui.protectedResults].forEach((container) => {
     container?.addEventListener("click", async (event) => {
+      const categoryButton = event.target.closest("[data-filter-category]");
+
+      if (categoryButton) {
+        state.activeCategory = categoryButton.dataset.filterCategory;
+        saveState();
+        renderFilters();
+        applyFilters();
+        return;
+      }
+
       const copyButton = event.target.closest("[data-copy-command]");
 
       if (!copyButton) {
@@ -300,21 +302,8 @@ function renderFilters() {
 
   ui.filterBar.replaceChildren(...buttons);
 
-  if (ui.categorySelect) {
-    const options = [
-      createSelectOption("all", "全部"),
-      ...state.categories.map((category) => createSelectOption(category, category))
-    ];
-    ui.categorySelect.replaceChildren(...options);
-    ui.categorySelect.value = state.activeCategory;
-  }
-}
-
-function createSelectOption(value, label) {
-  const option = document.createElement("option");
-  option.value = value;
-  option.textContent = label;
-  return option;
+  const activeButton = ui.filterBar.querySelector(`[data-category="${CSS.escape(state.activeCategory)}"]`);
+  activeButton?.scrollIntoView({ block: "nearest", inline: "center" });
 }
 
 function createFilterButton(category, label) {
@@ -350,16 +339,16 @@ function renderProtectedCategories() {
       <div class="secure-card-header">
         <div>
           <p class="secure-card-title">${escapeHtml(entry.label)}</p>
-          <p class="secure-card-meta">AES-256 受保護分類</p>
+          <p class="secure-card-meta">鎖定指令庫</p>
         </div>
         <span class="secure-badge${isUnlocked ? " is-unlocked" : ""}">
-          ${isUnlocked ? "已解鎖" : "待解鎖"}
+          ${isUnlocked ? "已解鎖" : "鎖定中"}
         </span>
       </div>
       ${entry.description ? `<p class="secure-card-copy">${escapeHtml(entry.description)}</p>` : ""}
       ${isUnlocked ? `
         <p class="secure-status is-success" data-status-for="${escapeAttribute(entry.id)}">
-          此分類已解鎖，結果會顯示在下方的私人分類分段。
+          已解鎖，結果會自動顯示在下方的私人結果區。
         </p>
       ` : `
         <form class="secure-form" data-secure-form data-protected-id="${escapeAttribute(entry.id)}">
@@ -378,7 +367,7 @@ function renderProtectedCategories() {
           <button class="secure-submit" type="submit">解鎖</button>
         </form>
         <p class="secure-status" data-status-for="${escapeAttribute(entry.id)}">
-          解鎖後會顯示在私人分類分段，不會混進公開卡片結果。
+          輸入密碼後，這些指令會顯示在下方的私人結果區。
         </p>
       `}
     `;
@@ -408,6 +397,11 @@ async function unlockProtectedCategory(form) {
     form.reset();
     renderProtectedCategories();
     rebuildCommandState();
+    window.setTimeout(() => {
+      if (!ui.protectedResultsSection?.hidden) {
+        ui.protectedResultsSection.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }, 50);
   } catch (error) {
     console.warn("unlock failed", error);
     form.reset();
@@ -590,8 +584,8 @@ function renderResults(container, items) {
   if (!items.length) {
     container.innerHTML = `
       <article class="empty-state">
-        <h3>沒有符合的結果</h3>
-        <p>你可以換個關鍵字、切回全部分類，或到 commands.json / secure-categories.json 補上需要的資料。</p>
+        <h3>沒有找到符合的指令</h3>
+        <p>可以換個關鍵字，或先切回「全部」再看看。</p>
       </article>
     `;
     return;
@@ -609,7 +603,9 @@ function renderResults(container, items) {
     card.dataset.commandId = item.id;
     card.innerHTML = `
       <div class="card-top">
-        <span class="category-badge">${escapeHtml(item.category)}</span>
+        <button class="category-badge category-badge-button" type="button" data-filter-category="${escapeAttribute(item.category)}" aria-label="篩選分類 ${escapeAttribute(item.category)}">
+          ${escapeHtml(item.category)}
+        </button>
       </div>
       <div class="command-block">
         <pre class="command-line"><code>${highlightText(previewCommand, highlightTokens)}</code></pre>
@@ -667,9 +663,11 @@ function updateMetrics() {
 function updateSummary(resultCount) {
   const categoryLabel = state.activeCategory === "all" ? "全部分類" : state.activeCategory;
   const queryLabel = state.query ? `，關鍵字「${state.query}」` : "";
+  const hasActiveFilters = state.query.length > 0 || state.activeCategory !== "all";
 
   ui.activeState.textContent = `目前：${categoryLabel}${queryLabel}`;
   ui.resultSummary.textContent = `共找到 ${resultCount} 筆結果`;
+  ui.clearButton.hidden = !hasActiveFilters;
   toggleScrollTopButton();
 }
 
