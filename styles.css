@@ -1304,3 +1304,73 @@ mark {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
+
+/* ── Card entrance animation ─────────────────────────────── */
+@keyframes card-in {
+  from { translate: 0 8px; opacity: 0; }
+  to   { translate: 0 0;   opacity: 1; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .command-card {
+    animation: card-in 0.18s ease both;
+  }
+
+  .command-card:nth-child(2) { animation-delay: 20ms; }
+  .command-card:nth-child(3) { animation-delay: 40ms; }
+  .command-card:nth-child(4) { animation-delay: 60ms; }
+  .command-card:nth-child(5) { animation-delay: 80ms; }
+  .command-card:nth-child(6) { animation-delay: 100ms; }
+}
+
+/* ── Filter pill sliding indicator ──────────────────────── */
+.filter-bar {
+  position: relative;
+}
+
+.filter-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: 999px;
+  background: rgba(121, 184, 255, 0.1);
+  border: 1px solid rgba(121, 184, 255, 0.38);
+  pointer-events: none;
+  opacity: 0;
+  z-index: 0;
+}
+
+.filter-indicator.is-ready {
+  transition:
+    transform 0.26s cubic-bezier(0.4, 0, 0.2, 1),
+    width 0.24s cubic-bezier(0.4, 0, 0.2, 1),
+    height 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.18s ease;
+}
+
+.filter-pill {
+  position: relative;
+  z-index: 1;
+}
+
+/* ── View Transition ─────────────────────────────────────── */
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root) {
+    animation-duration: 0.14s;
+    animation-timing-function: ease;
+  }
+
+  ::view-transition-new(root) {
+    animation-duration: 0.18s;
+    animation-timing-function: ease;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-image-pair(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}

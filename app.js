@@ -1,7 +1,7 @@
 const STORAGE_KEY = "command-atlas-state-v1";
 const DATA_URL = "./commands.json";
 const SECURE_DATA_URL = "./secure-categories.json";
-const SEARCH_DEBOUNCE_MS = 150;
+const SEARCH_DEBOUNCE_MS = 80;
 const SCROLL_TOP_THRESHOLD = 280;
 const RESULTS_PER_PAGE = 100;
 const PBKDF2_ITERATIONS = 250000;
@@ -196,7 +196,7 @@ function bindEvents() {
 
       if (target === "public" || target === "protected") {
         state.pagination[target] = nextPage;
-        applyFilters();
+        applyFiltersAnimated();
         (target === "public" ? ui.publicResultsSection : ui.protectedResultsSection)
           ?.scrollIntoView({ behavior: "smooth", block: "start" });
       }
@@ -393,17 +393,69 @@ function getCategories(commands) {
 }
 
 function renderFilters() {
+  const indicator = document.createElement("span");
+  indicator.className = "filter-indicator";
+  indicator.setAttribute("aria-hidden", "true");
+
   const buttons = [
     createFilterButton("all", "全部"),
     ...state.categories.map((category) => createFilterButton(category, category))
   ];
 
-  ui.filterBar.replaceChildren(...buttons);
+  ui.filterBar.replaceChildren(indicator, ...buttons);
+
+  // Position indicator instantly (no transition), then enable transition after paint
+  syncFilterIndicator();
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      ui.filterBar.querySelector(".filter-indicator")?.classList.add("is-ready");
+    });
+  });
 
   const activeButton = ui.filterBar.querySelector(`[data-category="${escapeCssSelector(state.activeCategory)}"]`);
   activeButton?.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" });
 
   updateStickySearchState();
+}
+
+function updateFilterPillActive() {
+  ui.filterBar.querySelectorAll(".filter-pill[data-category]").forEach((btn) => {
+    const isActive = btn.dataset.category === state.activeCategory;
+    btn.classList.toggle("is-active", isActive);
+    btn.setAttribute("aria-pressed", String(isActive));
+  });
+
+  const activeButton = ui.filterBar.querySelector(".filter-pill.is-active");
+  activeButton?.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" });
+
+  const pickerLabel = state.activeCategory === "all" ? "全部分類" : state.activeCategory;
+  getCategoryPickerPairs().forEach(({ button }) => {
+    button?.setAttribute("aria-label", `分類選單，當前 ${pickerLabel}`);
+    button?.setAttribute("title", `分類選單：${pickerLabel}`);
+  });
+
+  syncFilterIndicator();
+  updateStickySearchState();
+}
+
+function syncFilterIndicator() {
+  const activeBtn = ui.filterBar.querySelector(".filter-pill.is-active");
+  const indicator = ui.filterBar.querySelector(".filter-indicator");
+
+  if (!indicator) {
+    return;
+  }
+
+  if (!activeBtn) {
+    indicator.style.opacity = "0";
+    return;
+  }
+
+  indicator.style.opacity = "1";
+  indicator.style.width = `${activeBtn.offsetWidth}px`;
+  indicator.style.height = `${activeBtn.offsetHeight}px`;
+  indicator.style.top = `${activeBtn.offsetTop}px`;
+  indicator.style.transform = `translateX(${activeBtn.offsetLeft}px)`;
 }
 
 function createFilterButton(category, label) {
@@ -695,13 +747,28 @@ function setProtectedStatus(protectedId, message, isError) {
 }
 
 function applyFilters() {
+  _runFilters(false);
+}
+
+function applyFiltersAnimated() {
+  _runFilters(true);
+}
+
+function _runFilters(animated) {
   const tokens = tokenize(state.query);
   const filteredPublic = filterCommands(state.publicCommands, tokens);
   const filteredProtected = filterCommands(getUnlockedCommands(), tokens);
   const totalResults = filteredPublic.length + filteredProtected.length;
 
   updateSummary(totalResults);
-  renderResultSections(filteredPublic, filteredProtected, totalResults);
+
+  const doRender = () => renderResultSections(filteredPublic, filteredProtected, totalResults);
+
+  if (animated && document.startViewTransition) {
+    document.startViewTransition(doRender);
+  } else {
+    doRender();
+  }
 }
 
 function filterCommands(commands, tokens) {
@@ -1025,8 +1092,8 @@ function clearFilters() {
   resetPagination();
   syncSearchInputs();
   saveState();
-  renderFilters();
-  applyFilters();
+  updateFilterPillActive();
+  applyFiltersAnimated();
   closeAllCategoryPickers();
 }
 
@@ -1034,8 +1101,8 @@ function applyCategoryFilter(category) {
   state.activeCategory = category;
   resetPagination();
   saveState();
-  renderFilters();
-  applyFilters();
+  updateFilterPillActive();
+  applyFiltersAnimated();
 }
 
 function updateStickySearchState() {
