@@ -1,5 +1,6 @@
 const STORAGE_KEY = "command-atlas-state-v1";
 const PINNED_KEY = "command-atlas-pinned-v1";
+const PLACEHOLDER_KEY = "command-atlas-placeholders-v1";
 const DATA_URL = "./commands.json";
 const SECURE_DATA_URL = "./secure-categories.json";
 const SEARCH_DEBOUNCE_MS = 80;
@@ -54,6 +55,9 @@ const ui = {
 };
 
 let searchDebounceId = 0;
+let searchWorker = null;
+let workerSeq = 0;
+let lastFilterAnimated = false;
 
 init();
 
@@ -61,6 +65,7 @@ async function init() {
   bindEvents();
   restoreState();
   restorePinned();
+  restorePlaceholders();
 
   try {
     const [publicPayload, protectedPayload] = await Promise.all([
@@ -193,6 +198,34 @@ function bindEvents() {
       const card = placeholderInput.closest(".command-card");
       syncCardPlaceholderValues(card);
       updateCommandPreview(card);
+    });
+
+    container?.addEventListener("keydown", (event) => {
+      const card = event.target.closest(".command-card");
+
+      if (!card) {
+        return;
+      }
+
+      if (event.target === card && (event.key === "Enter" || event.key === " ")) {
+        event.preventDefault();
+        card.querySelector("[data-copy-command]")?.click();
+        return;
+      }
+
+      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)) {
+        const activeTag = event.target.tagName;
+
+        if (activeTag === "INPUT" || activeTag === "TEXTAREA") {
+          return;
+        }
+
+        event.preventDefault();
+        const cards = Array.from(container.querySelectorAll(".command-card"));
+        const idx = cards.indexOf(card);
+        const delta = event.key === "ArrowDown" || event.key === "ArrowRight" ? 1 : -1;
+        cards[idx + delta]?.focus();
+      }
     });
   });
 
@@ -403,6 +436,7 @@ function rebuildCommandState() {
 
   updateMetrics();
   renderFilters();
+  syncWorkerData();
   applyFilters();
 }
 
@@ -791,12 +825,28 @@ function applyFiltersAnimated() {
 
 function _runFilters(animated) {
   const tokens = tokenize(state.query);
-  const filteredPublic = filterCommands(state.publicCommands, tokens);
-  const filteredProtected = filterCommands(getUnlockedCommands(), tokens);
+  const seq = ++workerSeq;
+  lastFilterAnimated = animated;
+  const worker = getSearchWorker();
+
+  if (worker) {
+    worker.postMessage({
+      type: "search",
+      seq,
+      tokens,
+      activeCategory: state.activeCategory,
+      pinned: Array.from(state.pinned)
+    });
+  } else {
+    const filteredPublic = filterCommands(state.publicCommands, tokens);
+    const filteredProtected = filterCommands(getUnlockedCommands(), tokens);
+    _renderFilterResults(filteredPublic, filteredProtected, animated);
+  }
+}
+
+function _renderFilterResults(filteredPublic, filteredProtected, animated) {
   const totalResults = filteredPublic.length + filteredProtected.length;
-
   updateSummary(totalResults);
-
   const doRender = () => renderResultSections(filteredPublic, filteredProtected, totalResults);
 
   if (animated && document.startViewTransition) {
@@ -806,17 +856,27 @@ function _runFilters(animated) {
   }
 }
 
-function filterCommands(commands, tokens) {
+function handleWorkerResult(event) {
+  const { seq, filteredPublic, filteredProtected } = event.data;
+
+  if (seq !== workerSeq) {
+    return;
+  }
+
+  _renderFilterResults(filteredPublic, filteredProtected, lastFilterAnimated);
+}
+
+function filterCommands(commands, tokens, activeCategory = state.activeCategory, pinned = state.pinned) {
   return commands
     .filter((item) => {
-      if (state.activeCategory === "pinned") return state.pinned.has(item.id);
-      return state.activeCategory === "all" || item.category === state.activeCategory;
+      if (activeCategory === "pinned") return pinned.has(item.id);
+      return activeCategory === "all" || item.category === activeCategory;
     })
     .map((item) => ({ item, score: getMatchScore(item, tokens) }))
     .filter((entry) => entry.score >= 0)
     .sort((left, right) => {
-      const lp = state.pinned.has(left.item.id);
-      const rp = state.pinned.has(right.item.id);
+      const lp = pinned.has(left.item.id);
+      const rp = pinned.has(right.item.id);
       if (lp !== rp) return lp ? -1 : 1;
       return right.score - left.score || left.item.category.localeCompare(right.item.category, "zh-Hant");
     })
@@ -1085,16 +1145,6 @@ function renderResults(container, items) {
       </div>
     `;
     card.setAttribute("tabindex", "0");
-    card.addEventListener("keydown", (e) => {
-      if (e.target !== card) {
-        return;
-      }
-
-      if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
-        card.querySelector("[data-copy-command]")?.click();
-      }
-    });
     fragment.appendChild(card);
   });
 
@@ -1249,6 +1299,41 @@ function savePinned() {
   localStorage.setItem(PINNED_KEY, JSON.stringify([...state.pinned]));
 }
 
+function savePlaceholders() {
+  const data = {};
+
+  state.placeholderValues.forEach((values, id) => {
+    if (Object.values(values).some(Boolean)) {
+      data[id] = values;
+    }
+  });
+
+  localStorage.setItem(PLACEHOLDER_KEY, JSON.stringify(data));
+}
+
+function restorePlaceholders() {
+  try {
+    const raw = localStorage.getItem(PLACEHOLDER_KEY);
+
+    if (!raw) {
+      return;
+    }
+
+    const data = JSON.parse(raw);
+
+    if (data && typeof data === "object" && !Array.isArray(data)) {
+      Object.entries(data).forEach(([id, values]) => {
+        if (values && typeof values === "object") {
+          state.placeholderValues.set(id, values);
+        }
+      });
+    }
+  } catch (error) {
+    console.warn("restorePlaceholders failed", error);
+    localStorage.removeItem(PLACEHOLDER_KEY);
+  }
+}
+
 function togglePin(commandId, buttonEl = null) {
   const wasPinned = state.pinned.has(commandId);
 
@@ -1377,6 +1462,7 @@ function syncCardPlaceholderValues(card) {
   }
 
   state.placeholderValues.set(card.dataset.commandId, getPlaceholderValues(card));
+  savePlaceholders();
 }
 
 function resolveCommandTemplate(template, values) {
@@ -1421,6 +1507,44 @@ function registerServiceWorker() {
   }
 
   window.addEventListener("load", register, { once: true });
+}
+
+function getSearchWorker() {
+  if (searchWorker) {
+    return searchWorker;
+  }
+
+  if (typeof Worker === "undefined") {
+    return null;
+  }
+
+  try {
+    const worker = new Worker("./search.worker.js");
+    worker.onmessage = handleWorkerResult;
+    worker.onerror = (e) => {
+      console.warn("Search worker error, falling back to sync", e);
+      searchWorker = null;
+    };
+    searchWorker = worker;
+  } catch (e) {
+    console.warn("Search worker unavailable, using sync fallback", e);
+  }
+
+  return searchWorker;
+}
+
+function syncWorkerData() {
+  const worker = getSearchWorker();
+
+  if (!worker) {
+    return;
+  }
+
+  worker.postMessage({
+    type: "init",
+    publicCommands: state.publicCommands,
+    unlockedCommands: getUnlockedCommands()
+  });
 }
 
 function escapeHtml(value) {
@@ -1525,11 +1649,26 @@ function getCategoryAccent(category) {
     "Windows File & Directory": { color: "#8fb0ff", soft: "rgba(143, 176, 255, 0.14)", border: "rgba(143, 176, 255, 0.34)" }
   };
 
-  return palette[category] ?? {
-    color: "#79b8ff",
-    soft: "rgba(121, 184, 255, 0.14)",
-    border: "rgba(121, 184, 255, 0.34)"
+  if (palette[category]) {
+    return palette[category];
+  }
+
+  const hue = hashToHue(category);
+  return {
+    color: `hsl(${hue}, 65%, 72%)`,
+    soft: `hsla(${hue}, 65%, 60%, 0.14)`,
+    border: `hsla(${hue}, 65%, 60%, 0.34)`
   };
+}
+
+function hashToHue(str) {
+  let hash = 0;
+
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash * 31 + str.charCodeAt(i)) & 0xffffffff;
+  }
+
+  return Math.abs(hash) % 360;
 }
 
 function toggleUtilityChrome() {

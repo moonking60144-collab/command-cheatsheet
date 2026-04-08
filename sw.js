@@ -1,9 +1,11 @@
-const CACHE_NAME = "command-atlas-shell-__CACHE_BUSTER__";
+const CACHE_VERSION = "v2"; // Increment this when deploying to bust the cache
+const CACHE_NAME = `command-atlas-shell-${CACHE_VERSION}`;
 const ASSETS = [
   "./",
   "./index.html",
   "./styles.css",
   "./app.js",
+  "./search.worker.js",
   "./commands.json",
   "./secure-categories.json",
   "./manifest.json",
