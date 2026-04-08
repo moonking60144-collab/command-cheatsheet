@@ -9,6 +9,21 @@ const RESULTS_PER_PAGE = 100;
 const PBKDF2_ITERATIONS = 250000;
 const PBKDF2_KEY_SIZE = 256 / 32;
 
+const CATEGORY_GROUPS = [
+  {
+    label: "開發工具",
+    match: (c) => ["Bash", "Git", "GitHub", "Docker", "npm", "Python", "PowerShell"].includes(c)
+  },
+  {
+    label: "Windows 系統",
+    match: (c) => c.startsWith("Windows")
+  },
+  {
+    label: "系統與環境",
+    match: () => true
+  }
+];
+
 const state = {
   publicCommands: [],
   protectedCategories: [],
@@ -129,6 +144,31 @@ function bindEvents() {
 
       applyCategoryFilter(categoryButton.dataset.category);
       closeCategoryPicker(panel);
+    });
+
+    panel.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        closeCategoryPicker(panel);
+        getCategoryPickerButton(panel)?.focus();
+        return;
+      }
+
+      if (event.key !== "ArrowDown" && event.key !== "ArrowUp") {
+        return;
+      }
+
+      event.preventDefault();
+      const items = Array.from(panel.querySelectorAll(".picker-item:not([hidden])"));
+      const idx = items.indexOf(document.activeElement);
+
+      if (idx === -1) {
+        (event.key === "ArrowDown" ? items[0] : items[items.length - 1])?.focus();
+      } else if (event.key === "ArrowUp" && idx === 0) {
+        panel.querySelector(".picker-search")?.focus();
+      } else {
+        const delta = event.key === "ArrowDown" ? 1 : -1;
+        items[Math.max(0, Math.min(items.length - 1, idx + delta))]?.focus();
+      }
     });
   });
 
@@ -563,6 +603,10 @@ function openCategoryPicker(panel) {
   const button = getCategoryPickerButton(panel);
   button?.setAttribute("aria-expanded", "true");
   button?.classList.add("is-open");
+
+  window.requestAnimationFrame(() => {
+    panel.querySelector(".picker-search")?.focus();
+  });
 }
 
 function closeCategoryPicker(panel) {
@@ -606,6 +650,60 @@ function renderCategoryPickers() {
   });
 }
 
+function groupCategories(categories) {
+  const assigned = new Set();
+  return CATEGORY_GROUPS
+    .map(({ label, match }) => {
+      const items = categories.filter((c) => !assigned.has(c) && match(c));
+      items.forEach((c) => assigned.add(c));
+      return { label, items };
+    })
+    .filter((g) => g.items.length > 0);
+}
+
+function createPickerButton(key, label, count) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = `picker-item${state.activeCategory === key ? " is-active" : ""}`;
+  button.dataset.category = key;
+  button.innerHTML = `
+    <span class="picker-item-label">${escapeHtml(label)}</span>
+    <span class="picker-item-count">${count}</span>
+  `;
+  return button;
+}
+
+function filterPickerCategories(panel, query) {
+  const groups = panel.querySelectorAll(".picker-group");
+  const allWrap = panel.querySelector(".picker-group-all");
+  const emptyEl = panel.querySelector(".picker-empty");
+  let totalVisible = 0;
+
+  if (allWrap) {
+    const allBtn = allWrap.querySelector(".picker-item");
+    const visible = !query || "全部".includes(query);
+    if (allBtn) allBtn.hidden = !visible;
+    if (visible) totalVisible++;
+  }
+
+  groups.forEach((group) => {
+    const items = group.querySelectorAll(".picker-item");
+    let groupVisible = 0;
+
+    items.forEach((item) => {
+      const label = item.querySelector(".picker-item-label")?.textContent?.toLowerCase() ?? "";
+      const visible = !query || label.includes(query);
+      item.hidden = !visible;
+      if (visible) groupVisible++;
+    });
+
+    group.hidden = groupVisible === 0;
+    totalVisible += groupVisible;
+  });
+
+  if (emptyEl) emptyEl.hidden = totalVisible > 0;
+}
+
 function renderCategoryPicker(panel) {
   if (!panel) {
     return;
@@ -616,28 +714,56 @@ function renderCategoryPicker(panel) {
     counts[command.category] = (counts[command.category] || 0) + 1;
   });
 
-  const categories = [
-    { key: "all", label: "全部", count: state.commands.length },
-    ...state.categories.map((category) => ({
-      key: category,
-      label: category,
-      count: counts[category] || 0
-    }))
-  ];
-
   const fragment = document.createDocumentFragment();
 
-  categories.forEach(({ key, label, count }) => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = `picker-item${state.activeCategory === key ? " is-active" : ""}`;
-    button.dataset.category = key;
-    button.innerHTML = `
-      <span class="picker-item-label">${escapeHtml(label)}</span>
-      <span class="picker-item-count">${count}</span>
-    `;
-    fragment.appendChild(button);
+  // Search input
+  const searchWrap = document.createElement("div");
+  searchWrap.className = "picker-search-wrap";
+  const searchInput = document.createElement("input");
+  searchInput.type = "text";
+  searchInput.className = "picker-search";
+  searchInput.placeholder = "搜尋分類…";
+  searchInput.autocomplete = "off";
+  searchInput.setAttribute("spellcheck", "false");
+  searchInput.setAttribute("aria-label", "搜尋分類");
+  searchInput.addEventListener("input", (e) => {
+    filterPickerCategories(panel, e.target.value.trim().toLowerCase());
   });
+  searchInput.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      panel.querySelector(".picker-item:not([hidden])")?.focus();
+    }
+  });
+  searchWrap.appendChild(searchInput);
+  fragment.appendChild(searchWrap);
+
+  // "全部" row
+  const allWrap = document.createElement("div");
+  allWrap.className = "picker-group-all";
+  allWrap.appendChild(createPickerButton("all", "全部", state.commands.length));
+  fragment.appendChild(allWrap);
+
+  // Grouped categories
+  groupCategories(state.categories).forEach(({ label, items }) => {
+    const groupEl = document.createElement("div");
+    groupEl.className = "picker-group";
+
+    const groupLabel = document.createElement("p");
+    groupLabel.className = "picker-group-label";
+    groupLabel.textContent = label;
+    groupEl.appendChild(groupLabel);
+
+    items.forEach((cat) => groupEl.appendChild(createPickerButton(cat, cat, counts[cat] || 0)));
+    fragment.appendChild(groupEl);
+  });
+
+  // Empty state
+  const emptyEl = document.createElement("p");
+  emptyEl.className = "picker-empty";
+  emptyEl.textContent = "沒有符合的分類";
+  emptyEl.hidden = true;
+  fragment.appendChild(emptyEl);
 
   panel.replaceChildren(fragment);
 
