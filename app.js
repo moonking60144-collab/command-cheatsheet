@@ -605,6 +605,7 @@ function openCategoryPicker(panel) {
   button?.classList.add("is-open");
 
   window.requestAnimationFrame(() => {
+    positionPicker(panel);
     panel.querySelector(".picker-search")?.focus();
   });
 }
@@ -618,6 +619,24 @@ function closeCategoryPicker(panel) {
   const button = getCategoryPickerButton(panel);
   button?.setAttribute("aria-expanded", "false");
   button?.classList.remove("is-open");
+}
+
+function positionPicker(panel) {
+  if (!panel) {
+    return;
+  }
+
+  // Reset to CSS default (right: 0 = expand left) before measuring
+  panel.style.right = "";
+  panel.style.left = "";
+
+  const rect = panel.getBoundingClientRect();
+
+  if (rect.left < 8) {
+    // Overflows left viewport edge → switch to expand right from button
+    panel.style.right = "auto";
+    panel.style.left = "0";
+  }
 }
 
 function closeAllCategoryPickers(exceptPanel = null) {
