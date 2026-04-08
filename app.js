@@ -629,13 +629,15 @@ function positionPicker(panel) {
   // Reset to CSS default (right: 0 = expand left) before measuring
   panel.style.right = "";
   panel.style.left = "";
+  panel.classList.remove("expand-right");
 
   const rect = panel.getBoundingClientRect();
 
   if (rect.left < 8) {
-    // Overflows left viewport edge → switch to expand right from button
+    // Overflows left viewport edge → expand right from button
     panel.style.right = "auto";
     panel.style.left = "0";
+    panel.classList.add("expand-right");
   }
 }
 

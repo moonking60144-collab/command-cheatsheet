@@ -575,6 +575,28 @@ kbd {
   display: none;
 }
 
+@media (prefers-reduced-motion: no-preference) {
+  .category-picker:not([hidden]) {
+    animation: picker-in 0.18s cubic-bezier(0.2, 0, 0, 1) both;
+    transform-origin: top right;
+  }
+
+  .category-picker.expand-right:not([hidden]) {
+    transform-origin: top left;
+  }
+}
+
+@keyframes picker-in {
+  from {
+    opacity: 0;
+    transform: scale(0.88) translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
 .picker-search-wrap {
   padding-bottom: 0.45rem;
   margin-bottom: 0.2rem;
