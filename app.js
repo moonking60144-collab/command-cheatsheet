@@ -626,15 +626,27 @@ function positionPicker(panel) {
     return;
   }
 
-  // Reset to CSS default (right: 0 = expand left) before measuring
+  const button = getCategoryPickerButton(panel);
+
+  if (!button) {
+    return;
+  }
+
+  const btnRect = button.getBoundingClientRect();
+  const margin = 8;
+  const maxWidth = 860;
+
+  // Fill leftward from button's right edge to viewport left edge, capped at maxWidth
+  const desiredWidth = Math.min(Math.floor(btnRect.right) - margin, maxWidth);
+  panel.style.width = `${Math.max(desiredWidth, 280)}px`;
   panel.style.right = "";
   panel.style.left = "";
   panel.classList.remove("expand-right");
 
+  // After setting width, re-check if left edge overflows viewport
   const rect = panel.getBoundingClientRect();
 
-  if (rect.left < 8) {
-    // Overflows left viewport edge → expand right from button
+  if (rect.left < margin) {
     panel.style.right = "auto";
     panel.style.left = "0";
     panel.classList.add("expand-right");
@@ -696,6 +708,7 @@ function createPickerButton(key, label, count) {
 
 function filterPickerCategories(panel, query) {
   const groups = panel.querySelectorAll(".picker-group");
+  const groupsGrid = panel.querySelector(".picker-groups-grid");
   const allWrap = panel.querySelector(".picker-group-all");
   const emptyEl = panel.querySelector(".picker-empty");
   let totalVisible = 0;
@@ -721,6 +734,10 @@ function filterPickerCategories(panel, query) {
     group.hidden = groupVisible === 0;
     totalVisible += groupVisible;
   });
+
+  if (groupsGrid) {
+    groupsGrid.hidden = totalVisible - (allWrap?.querySelector(".picker-item:not([hidden])") ? 1 : 0) === 0;
+  }
 
   if (emptyEl) emptyEl.hidden = totalVisible > 0;
 }
@@ -765,7 +782,10 @@ function renderCategoryPicker(panel) {
   allWrap.appendChild(createPickerButton("all", "全部", state.commands.length));
   fragment.appendChild(allWrap);
 
-  // Grouped categories
+  // Grouped categories inside a multi-column grid
+  const groupsGrid = document.createElement("div");
+  groupsGrid.className = "picker-groups-grid";
+
   groupCategories(state.categories).forEach(({ label, items }) => {
     const groupEl = document.createElement("div");
     groupEl.className = "picker-group";
@@ -776,8 +796,10 @@ function renderCategoryPicker(panel) {
     groupEl.appendChild(groupLabel);
 
     items.forEach((cat) => groupEl.appendChild(createPickerButton(cat, cat, counts[cat] || 0)));
-    fragment.appendChild(groupEl);
+    groupsGrid.appendChild(groupEl);
   });
+
+  fragment.appendChild(groupsGrid);
 
   // Empty state
   const emptyEl = document.createElement("p");
