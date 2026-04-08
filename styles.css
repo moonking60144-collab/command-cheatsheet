@@ -627,7 +627,7 @@ kbd {
 
 .picker-groups-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   align-items: start;
   column-gap: 0.3rem;
   row-gap: 0.4rem;

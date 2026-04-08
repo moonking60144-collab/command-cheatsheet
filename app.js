@@ -605,6 +605,7 @@ function openCategoryPicker(panel) {
   button?.classList.add("is-open");
 
   window.requestAnimationFrame(() => {
+    calibratePickerGrid(panel);
     positionPicker(panel);
     panel.querySelector(".picker-search")?.focus();
   });
@@ -619,6 +620,40 @@ function closeCategoryPicker(panel) {
   const button = getCategoryPickerButton(panel);
   button?.setAttribute("aria-expanded", "false");
   button?.classList.remove("is-open");
+}
+
+function calibratePickerGrid(panel) {
+  const grid = panel.querySelector(".picker-groups-grid");
+
+  if (!grid) {
+    return;
+  }
+
+  const items = Array.from(grid.querySelectorAll(".picker-item"));
+
+  if (!items.length) {
+    return;
+  }
+
+  // Measure longest label text with canvas for pixel-perfect result
+  const sampleLabel = items[0]?.querySelector(".picker-item-label");
+  const computedFont = sampleLabel ? getComputedStyle(sampleLabel).font : "13px system-ui";
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  ctx.font = computedFont;
+
+  let maxLabelPx = 0;
+
+  items.forEach((item) => {
+    const text = item.querySelector(".picker-item-label")?.textContent?.trim() ?? "";
+    maxLabelPx = Math.max(maxLabelPx, ctx.measureText(text).width);
+  });
+
+  // item padding (0.6rem × 2) + count badge (~38px) + flex gap (0.5rem)
+  const rootFs = parseFloat(getComputedStyle(document.documentElement).fontSize);
+  const minCol = Math.ceil(maxLabelPx + rootFs * 1.2 + 38 + rootFs * 0.5) + 4;
+
+  grid.style.gridTemplateColumns = `repeat(auto-fill, minmax(${minCol}px, 1fr))`;
 }
 
 function positionPicker(panel) {
