@@ -352,6 +352,11 @@ function bindEvents() {
       .filter(({ panel }) => !panel.hidden)
       .forEach(({ panel }) => positionPicker(panel));
   }, { passive: true });
+
+  ui.filterBar?.addEventListener("scroll", () => {
+    ui.filterBar.parentElement?.classList.toggle("has-left-overflow", ui.filterBar.scrollLeft > 4);
+  }, { passive: true });
+
   toggleScrollTopButton();
   toggleStickySearchBar();
 }
@@ -1918,8 +1923,8 @@ function toggleScrollTopButton() {
   }
 
   const shouldShow = window.scrollY > SCROLL_TOP_THRESHOLD;
-  ui.scrollTopButton.hidden = !shouldShow;
   ui.scrollTopButton.classList.toggle("is-visible", shouldShow);
+  ui.scrollTopButton.setAttribute("aria-hidden", String(!shouldShow));
 }
 
 function toggleStickySearchBar() {

@@ -772,15 +772,31 @@ kbd {
   color: var(--text-muted);
 }
 
+.filter-bar-wrap::before,
 .filter-bar-wrap::after {
   content: "";
   position: absolute;
   top: 0;
-  right: 0;
   width: 3rem;
   height: calc(100% - 0.3rem);
-  background: linear-gradient(to right, transparent, var(--surface));
   pointer-events: none;
+  z-index: 1;
+}
+
+.filter-bar-wrap::before {
+  left: 0;
+  background: linear-gradient(to left, transparent, var(--surface));
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+
+.filter-bar-wrap.has-left-overflow::before {
+  opacity: 1;
+}
+
+.filter-bar-wrap::after {
+  right: 0;
+  background: linear-gradient(to right, transparent, var(--surface));
 }
 
 .filter-bar {
@@ -1027,14 +1043,25 @@ kbd {
 }
 
 .command-card:hover {
-  border-color: var(--border-strong);
+  border-color: var(--category-accent-border, var(--border-strong));
   background: var(--surface-strong);
   transform: translateY(-1px);
+  box-shadow:
+    inset 3px 0 0 0 var(--category-accent, var(--accent)),
+    0 0 18px var(--category-accent-soft, rgba(121, 184, 255, 0.06));
 }
 
 .command-card:active {
   transform: translateY(0) scale(0.988);
   transition: transform 0.06s ease;
+}
+
+.command-card:focus-visible {
+  outline: none;
+  border-color: var(--category-accent-border, rgba(121, 184, 255, 0.42));
+  box-shadow:
+    inset 3px 0 0 0 var(--category-accent, var(--accent)),
+    0 0 0 3px rgba(121, 184, 255, 0.16);
 }
 
 .command-card.is-copied {
@@ -1128,10 +1155,13 @@ kbd {
   font-size: 0.72rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  transition: opacity 0.18s ease, transform 0.18s ease;
 }
 
 body.has-active-filter .category-badge {
-  display: none;
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.9);
 }
 
 .category-badge-button {
@@ -1194,6 +1224,13 @@ body.has-active-filter .category-badge-button:hover {
   color: #0c1610;
   background: var(--success);
   border-color: rgba(158, 221, 170, 0.5);
+  animation: copy-pop 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes copy-pop {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.08); }
+  100% { transform: scale(1); }
 }
 
 .command-line {
@@ -1272,7 +1309,8 @@ mark {
 .tag {
   padding: 0.25rem 0.5rem;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.05);
   color: var(--text-muted);
   font-size: 0.78rem;
 }
@@ -1353,11 +1391,20 @@ mark {
   color: var(--accent-strong);
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.24);
   cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(8px);
   transition:
-    transform 0.18s ease,
-    opacity 0.18s ease,
+    transform 0.22s ease,
+    opacity 0.22s ease,
     border-color 0.18s ease,
     background 0.18s ease;
+}
+
+.scroll-top-btn.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
 }
 
 .scroll-top-btn:hover {
@@ -1371,10 +1418,6 @@ mark {
   box-shadow:
     0 0 0 3px rgba(121, 184, 255, 0.16),
     0 16px 36px rgba(0, 0, 0, 0.24);
-}
-
-.scroll-top-btn[hidden] {
-  display: none;
 }
 
 .scroll-top-btn svg {
