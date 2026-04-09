@@ -1475,9 +1475,6 @@ mark {
     justify-content: flex-start;
   }
 
-  .category-picker {
-    right: 0;
-  }
 }
 
 @media (min-width: 1500px) {

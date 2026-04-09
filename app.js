@@ -74,6 +74,10 @@ let searchWorker = null;
 let workerSeq = 0;
 let lastFilterAnimated = false;
 
+// Reusable canvas for text measurement; cached column width avoids re-measuring on every picker open
+const _pickerMeasureCanvas = document.createElement("canvas");
+let _pickerGridMinCol = 0;
+
 init();
 
 async function init() {
@@ -617,6 +621,7 @@ function closeCategoryPicker(panel) {
   }
 
   panel.hidden = true;
+  panel.classList.remove("expand-right");
   const button = getCategoryPickerButton(panel);
   button?.setAttribute("aria-expanded", "false");
   button?.classList.remove("is-open");
@@ -629,17 +634,22 @@ function calibratePickerGrid(panel) {
     return;
   }
 
+  // Re-use cached result — categories are fixed at runtime
+  if (_pickerGridMinCol > 0) {
+    grid.style.gridTemplateColumns = `repeat(auto-fill, minmax(${_pickerGridMinCol}px, 1fr))`;
+    return;
+  }
+
   const items = Array.from(grid.querySelectorAll(".picker-item"));
 
   if (!items.length) {
     return;
   }
 
-  // Measure longest label text with canvas for pixel-perfect result
+  // Measure longest label text with reusable module-level canvas
   const sampleLabel = items[0]?.querySelector(".picker-item-label");
   const computedFont = sampleLabel ? getComputedStyle(sampleLabel).font : "13px system-ui";
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
+  const ctx = _pickerMeasureCanvas.getContext("2d");
   ctx.font = computedFont;
 
   let maxLabelPx = 0;
@@ -651,9 +661,9 @@ function calibratePickerGrid(panel) {
 
   // item padding (0.6rem × 2) + count badge (~38px) + flex gap (0.5rem)
   const rootFs = parseFloat(getComputedStyle(document.documentElement).fontSize);
-  const minCol = Math.ceil(maxLabelPx + rootFs * 1.2 + 38 + rootFs * 0.5) + 4;
+  _pickerGridMinCol = Math.ceil(maxLabelPx + rootFs * 1.2 + 38 + rootFs * 0.5) + 4;
 
-  grid.style.gridTemplateColumns = `repeat(auto-fill, minmax(${minCol}px, 1fr))`;
+  grid.style.gridTemplateColumns = `repeat(auto-fill, minmax(${_pickerGridMinCol}px, 1fr))`;
 }
 
 function positionPicker(panel) {
@@ -678,7 +688,10 @@ function positionPicker(panel) {
   panel.style.left = "";
   panel.classList.remove("expand-right");
 
-  // After setting width, re-check if left edge overflows viewport
+  // Explicitly force reflow so getBoundingClientRect reflects the new width
+  void panel.offsetWidth;
+
+  // Re-check if left edge overflows viewport after applying new width
   const rect = panel.getBoundingClientRect();
 
   if (rect.left < margin) {
