@@ -18,6 +18,7 @@ const state = {
   categories: [],
   query: "",
   activeCategory: "all",
+  viewMode: "cards",
   pagination: {
     public: 1,
     protected: 1
@@ -46,6 +47,7 @@ const ui = {
   commandCount: document.getElementById("command-count"),
   categoryCount: document.getElementById("category-count"),
   activeState: document.getElementById("active-state"),
+  viewToggleButton: document.getElementById("view-toggle-btn"),
   clearButton: document.getElementById("clear-btn"),
   scrollTopButton: document.getElementById("scroll-top-btn"),
   securePanel: document.getElementById("secure-panel"),
@@ -92,6 +94,13 @@ function bindEvents() {
       clearFilters();
       (button === ui.stickyClearButton ? ui.stickySearchInput : ui.searchInput)?.focus();
     });
+  });
+
+  ui.viewToggleButton?.addEventListener("click", () => {
+    state.viewMode = state.viewMode === "list" ? "cards" : "list";
+    saveState();
+    updateViewModeUI();
+    applyFiltersAnimated();
   });
 
   ui.filterBar.addEventListener("click", (event) => {
@@ -239,6 +248,12 @@ function bindEvents() {
       event.preventDefault();
       ui.searchInput.focus();
       ui.searchInput.select();
+    }
+
+    if (!isTyping && (event.key === "[" || event.key === "]" || event.key === "ArrowLeft" || event.key === "ArrowRight")) {
+      event.preventDefault();
+      cycleCategory(event.key === "[" || event.key === "ArrowLeft" ? -1 : 1);
+      return;
     }
 
     if (event.key === "Escape") {
@@ -392,6 +407,7 @@ function resetPagination() {
 function rebuildCommandState() {
   const unlocked = getUnlockedCommands();
   state.commands = [...state.publicCommands, ...unlocked];
+  prunePinnedIds();
   warnOnDuplicateCommandIds(state.commands);
   state.categories = getCategories(state.commands);
 
@@ -401,8 +417,10 @@ function rebuildCommandState() {
     state.activeCategory = "all";
   }
 
+  saveState();
   updateMetrics();
   renderFilters();
+  updateViewModeUI();
   applyFilters();
 }
 
@@ -416,12 +434,13 @@ function renderFilters() {
   indicator.className = "filter-indicator";
   indicator.setAttribute("aria-hidden", "true");
 
+  const counts = getCommandCounts();
   const pinnedPill = state.pinned.size > 0 ? [createPinnedFilterButton()] : [];
 
   const buttons = [
-    createFilterButton("all", "全部"),
+    createFilterButton("all", "全部", state.commands.length),
     ...pinnedPill,
-    ...state.categories.map((category) => createFilterButton(category, category))
+    ...state.categories.map((category) => createFilterButton(category, category, counts[category] || 0))
   ];
 
   ui.filterBar.replaceChildren(indicator, ...buttons);
@@ -437,6 +456,7 @@ function renderFilters() {
   const activeButton = ui.filterBar.querySelector(`[data-category="${escapeCssSelector(state.activeCategory)}"]`);
   activeButton?.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" });
 
+  renderCategoryPickers();
   updateStickySearchState();
 }
 
@@ -452,13 +472,14 @@ function updateFilterPillActive() {
   const activeButton = ui.filterBar.querySelector(".filter-pill.is-active");
   activeButton?.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" });
 
-  const pickerLabel = state.activeCategory === "all" ? "全部分類" : state.activeCategory;
+  const pickerLabel = getActiveCategoryLabel();
   getCategoryPickerPairs().forEach(({ button }) => {
     button?.setAttribute("aria-label", `分類選單，當前 ${pickerLabel}`);
     button?.setAttribute("title", `分類選單：${pickerLabel}`);
   });
 
   syncFilterIndicator();
+  renderCategoryPickers();
   updateStickySearchState();
 }
 
@@ -482,13 +503,16 @@ function syncFilterIndicator() {
   indicator.style.transform = `translateX(${activeBtn.offsetLeft}px)`;
 }
 
-function createFilterButton(category, label) {
+function createFilterButton(category, label, count = 0) {
   const button = document.createElement("button");
   button.type = "button";
   button.className = `filter-pill${state.activeCategory === category ? " is-active" : ""}`;
   button.dataset.category = category;
   button.setAttribute("aria-pressed", String(state.activeCategory === category));
-  button.textContent = label;
+  button.innerHTML = `
+    <span class="filter-pill-label">${escapeHtml(label)}</span>
+    <span class="filter-pill-count">${count}</span>
+  `;
   return button;
 }
 
@@ -501,6 +525,23 @@ function createPinnedFilterButton() {
   button.setAttribute("aria-pressed", String(isActive));
   button.innerHTML = `★ 已釘選 <span class="pin-pill-count">${state.pinned.size}</span>`;
   return button;
+}
+
+function getCommandCounts() {
+  return state.commands.reduce((accumulator, command) => {
+    accumulator[command.category] = (accumulator[command.category] || 0) + 1;
+    return accumulator;
+  }, {});
+}
+
+function prunePinnedIds() {
+  const validIds = new Set(state.commands.map((item) => item.id));
+  const beforeSize = state.pinned.size;
+  state.pinned = new Set([...state.pinned].filter((id) => validIds.has(id)));
+
+  if (state.pinned.size !== beforeSize) {
+    savePinned();
+  }
 }
 
 function getCategoryPickerPairs() {
@@ -577,13 +618,14 @@ function renderCategoryPicker(panel) {
     return;
   }
 
-  const counts = {};
-  state.commands.forEach((command) => {
-    counts[command.category] = (counts[command.category] || 0) + 1;
-  });
+  const counts = getCommandCounts();
+  const pinnedEntry = state.pinned.size > 0
+    ? [{ key: "pinned", label: "已釘選", count: state.pinned.size }]
+    : [];
 
   const categories = [
     { key: "all", label: "全部", count: state.commands.length },
+    ...pinnedEntry,
     ...state.categories.map((category) => ({
       key: category,
       label: category,
@@ -607,7 +649,7 @@ function renderCategoryPicker(panel) {
 
   panel.replaceChildren(fragment);
 
-  const activeLabel = state.activeCategory === "all" ? "全部分類" : state.activeCategory;
+  const activeLabel = getActiveCategoryLabel();
   getCategoryPickerButton(panel)?.setAttribute("aria-label", `分類選單，當前 ${activeLabel}`);
   getCategoryPickerButton(panel)?.setAttribute("title", `分類選單：${activeLabel}`);
 }
@@ -1134,9 +1176,10 @@ function updateMetrics() {
 }
 
 function updateSummary(resultCount) {
-  const categoryLabel = state.activeCategory === "all" ? "全部分類" : state.activeCategory;
-  const queryLabel = state.query ? `，關鍵字「${state.query}」` : "";
-  const hasActiveFilters = state.query.length > 0 || state.activeCategory !== "all";
+  const categoryLabel = getActiveCategoryLabel();
+  const trimmedQuery = state.query.trim();
+  const queryLabel = trimmedQuery ? `，關鍵字「${trimmedQuery}」` : "";
+  const hasActiveFilters = trimmedQuery.length > 0 || state.activeCategory !== "all";
   const hasActiveCategoryFilter = state.activeCategory !== "all";
 
   ui.activeState.textContent = `目前：${categoryLabel}${queryLabel}`;
@@ -1151,7 +1194,7 @@ function updateSummary(resultCount) {
 }
 
 function updateQuery(value, sourceInput = null) {
-  state.query = String(value ?? "").trim();
+  state.query = String(value ?? "");
   resetPagination();
   syncSearchInputs(sourceInput);
   saveState();
@@ -1191,13 +1234,11 @@ function applyCategoryFilter(category) {
 }
 
 function updateStickySearchState() {
-  const activeLabel = state.activeCategory === "all" ? "全部分類" : state.activeCategory;
+  const activeLabel = getActiveCategoryLabel();
 
   if (ui.stickyActiveCategory) {
     ui.stickyActiveCategory.textContent = activeLabel;
   }
-
-  syncSearchInputs();
 }
 
 function saveState() {
@@ -1205,27 +1246,48 @@ function saveState() {
     STORAGE_KEY,
     JSON.stringify({
       query: state.query,
-      activeCategory: state.activeCategory
+      activeCategory: state.activeCategory,
+      viewMode: state.viewMode
     })
   );
+  syncUrlState();
 }
 
 function restoreState() {
+  let nextQuery = "";
+  let nextCategory = "all";
+  let nextViewMode = "cards";
   const rawState = localStorage.getItem(STORAGE_KEY);
 
-  if (!rawState) {
-    return;
+  if (rawState) {
+    try {
+      const parsed = JSON.parse(rawState);
+      nextQuery = typeof parsed.query === "string" ? parsed.query : "";
+      nextCategory = typeof parsed.activeCategory === "string" ? parsed.activeCategory : "all";
+      nextViewMode = parsed.viewMode === "list" ? "list" : "cards";
+    } catch (error) {
+      console.warn("restoreState failed", error);
+      localStorage.removeItem(STORAGE_KEY);
+    }
   }
 
-  try {
-    const parsed = JSON.parse(rawState);
-    state.query = typeof parsed.query === "string" ? parsed.query : "";
-    state.activeCategory = typeof parsed.activeCategory === "string" ? parsed.activeCategory : "all";
-    syncSearchInputs();
-  } catch (error) {
-    console.warn("restoreState failed", error);
-    localStorage.removeItem(STORAGE_KEY);
+  const params = new URLSearchParams(window.location.search);
+  if (params.has("q")) {
+    nextQuery = params.get("q") ?? "";
   }
+  if (params.has("cat")) {
+    nextCategory = params.get("cat") ?? "all";
+  }
+  if (params.get("view") === "list") {
+    nextViewMode = "list";
+  } else if (params.has("view")) {
+    nextViewMode = "cards";
+  }
+
+  state.query = nextQuery;
+  state.activeCategory = nextCategory || "all";
+  state.viewMode = nextViewMode;
+  syncSearchInputs();
 }
 
 function restorePinned() {
@@ -1283,6 +1345,72 @@ function filterByTag(tag) {
   syncSearchInputs();
   saveState();
   applyFiltersAnimated();
+}
+
+function getActiveCategoryLabel() {
+  if (state.activeCategory === "all") {
+    return "全部分類";
+  }
+
+  if (state.activeCategory === "pinned") {
+    return "已釘選";
+  }
+
+  return state.activeCategory;
+}
+
+function getFilterSequence() {
+  return [
+    "all",
+    ...(state.pinned.size > 0 ? ["pinned"] : []),
+    ...state.categories
+  ];
+}
+
+function cycleCategory(direction) {
+  const sequence = getFilterSequence();
+  const currentIndex = Math.max(0, sequence.indexOf(state.activeCategory));
+  const nextIndex = (currentIndex + direction + sequence.length) % sequence.length;
+  applyCategoryFilter(sequence[nextIndex]);
+}
+
+function updateViewModeUI() {
+  const isListView = state.viewMode === "list";
+  document.body.classList.toggle("is-list-view", isListView);
+
+  if (ui.viewToggleButton) {
+    ui.viewToggleButton.classList.toggle("is-active", isListView);
+    ui.viewToggleButton.setAttribute("aria-pressed", String(isListView));
+    ui.viewToggleButton.setAttribute("title", isListView ? "切換成卡片檢視" : "切換成緊湊檢視");
+    ui.viewToggleButton.textContent = isListView ? "卡片" : "緊湊";
+  }
+}
+
+function syncUrlState() {
+  const params = new URLSearchParams(window.location.search);
+  const trimmedQuery = state.query.trim();
+
+  if (trimmedQuery) {
+    params.set("q", trimmedQuery);
+  } else {
+    params.delete("q");
+  }
+
+  if (state.activeCategory !== "all") {
+    params.set("cat", state.activeCategory);
+  } else {
+    params.delete("cat");
+  }
+
+  if (state.viewMode === "list") {
+    params.set("view", "list");
+  } else {
+    params.delete("view");
+  }
+
+  const nextSearch = params.toString();
+  const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ""}${window.location.hash}`;
+  window.history.replaceState(null, "", nextUrl);
 }
 
 async function copyToClipboard(text, button, card = null) {

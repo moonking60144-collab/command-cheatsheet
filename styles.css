@@ -738,7 +738,17 @@ kbd {
   font-size: 0.84rem;
 }
 
+.ghost-button.is-active,
+.view-toggle-btn[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: rgba(121, 184, 255, 0.16);
+  color: var(--text-primary);
+}
+
 .filter-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
   flex-shrink: 0;
   white-space: nowrap;
   margin-top: 0.2rem;
@@ -746,11 +756,33 @@ kbd {
   font-size: 0.84rem;
 }
 
+.filter-pill-label {
+  min-width: 0;
+}
+
+.filter-pill-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-dim);
+  font-size: 0.73rem;
+  font-variant-numeric: tabular-nums;
+}
+
 .filter-pill.is-active {
   border-width: 1px;
   border-color: var(--accent);
   background: rgba(121, 184, 255, 0.16);
   color: var(--text-primary);
+}
+
+.filter-pill.is-active .filter-pill-count {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text-secondary);
 }
 
 .filter-pill-pinned {
@@ -780,7 +812,7 @@ kbd {
 
 .toolbar {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
   align-items: center;
   gap: 0.9rem;
   margin-top: 0.55rem;
@@ -899,7 +931,7 @@ kbd {
   margin-bottom: 0.45rem;
 }
 
-.section-caption {
+.section-header .section-caption {
   display: none;
 }
 
@@ -1243,6 +1275,43 @@ mark {
   border-top: 1px solid var(--border);
   color: var(--text-dim);
   font-size: 0.8rem;
+}
+
+body.is-list-view .card-grid {
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+}
+
+body.is-list-view .command-card {
+  gap: 0.5rem;
+  padding: 0.72rem 0.82rem;
+}
+
+body.is-list-view .command-line {
+  padding: 0.56rem 0.75rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+body.is-list-view .description,
+body.is-list-view .notes,
+body.is-list-view .tag-list {
+  display: none;
+}
+
+body.is-list-view .command-card:hover .description,
+body.is-list-view .command-card:hover .notes,
+body.is-list-view .command-card:hover .tag-list,
+body.is-list-view .command-card:focus-within .description,
+body.is-list-view .command-card:focus-within .notes,
+body.is-list-view .command-card:focus-within .tag-list {
+  display: block;
+}
+
+body.is-list-view .command-card:hover .tag-list,
+body.is-list-view .command-card:focus-within .tag-list {
+  display: flex;
 }
 
 .footer p {
