@@ -176,10 +176,7 @@ function bindEvents() {
     });
   });
 
-  document.addEventListener("click", (event) => {
-    handleOutsideCategoryPickerClick(event.target);
-  });
-
+  // pointerdown with capture covers both mouse and touch, fires before click
   window.addEventListener("pointerdown", (event) => {
     handleOutsideCategoryPickerClick(event.target);
   }, { capture: true });
@@ -349,13 +346,18 @@ function bindEvents() {
   }
 
   window.addEventListener("scroll", toggleUtilityChrome, { passive: true });
-  window.addEventListener("resize", toggleUtilityChrome, { passive: true });
+  window.addEventListener("resize", () => {
+    toggleUtilityChrome();
+    getCategoryPickerPairs()
+      .filter(({ panel }) => !panel.hidden)
+      .forEach(({ panel }) => positionPicker(panel));
+  }, { passive: true });
   toggleScrollTopButton();
   toggleStickySearchBar();
 }
 
 async function fetchJson(url, label) {
-  const response = await fetch(url, { cache: "no-store" });
+  const response = await fetch(url);
 
   if (!response.ok) {
     throw new Error(`讀取${label}失敗：${response.status}`);
@@ -366,7 +368,7 @@ async function fetchJson(url, label) {
 
 async function fetchProtectedCategories() {
   try {
-    const response = await fetch(SECURE_DATA_URL, { cache: "no-store" });
+    const response = await fetch(SECURE_DATA_URL);
 
     if (response.status === 404) {
       return [];
@@ -478,6 +480,8 @@ function rebuildCommandState() {
     state.activeCategory = "all";
   }
 
+  _pickerGridMinCol = 0; // invalidate column-width cache — categories may have changed
+
   updateMetrics();
   renderFilters();
   syncWorkerData();
@@ -553,11 +557,17 @@ function syncFilterIndicator() {
     return;
   }
 
+  // Batch all layout reads before any writes to avoid forced reflows
+  const w = activeBtn.offsetWidth;
+  const h = activeBtn.offsetHeight;
+  const top = activeBtn.offsetTop;
+  const left = activeBtn.offsetLeft;
+
   indicator.style.opacity = "1";
-  indicator.style.width = `${activeBtn.offsetWidth}px`;
-  indicator.style.height = `${activeBtn.offsetHeight}px`;
-  indicator.style.top = `${activeBtn.offsetTop}px`;
-  indicator.style.transform = `translateX(${activeBtn.offsetLeft}px)`;
+  indicator.style.width = `${w}px`;
+  indicator.style.height = `${h}px`;
+  indicator.style.top = `${top}px`;
+  indicator.style.transform = `translateX(${left}px)`;
 }
 
 function createFilterButton(category, label) {
@@ -794,6 +804,18 @@ function renderCategoryPicker(panel) {
   if (!panel) {
     return;
   }
+
+  // If categories haven't changed since last build, only update the active class
+  const sig = state.categories.join("|");
+
+  if (panel.dataset.pickerSig === sig) {
+    panel.querySelectorAll(".picker-item[data-category]").forEach((btn) => {
+      btn.classList.toggle("is-active", btn.dataset.category === state.activeCategory);
+    });
+    return;
+  }
+
+  panel.dataset.pickerSig = sig;
 
   const counts = {};
   state.commands.forEach((command) => {
@@ -1217,15 +1239,28 @@ function getVisiblePageNumbers(currentPage, totalPages) {
     return Array.from({ length: totalPages }, (_, index) => index + 1);
   }
 
+  let pages;
+
   if (currentPage <= 3) {
-    return [1, 2, 3, 4, totalPages];
+    pages = [1, 2, 3, 4, totalPages];
+  } else if (currentPage >= totalPages - 2) {
+    pages = [1, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+  } else {
+    pages = [1, currentPage - 1, currentPage, currentPage + 1, totalPages];
   }
 
-  if (currentPage >= totalPages - 2) {
-    return [1, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+  // Fill single-page gaps (e.g. [1,2,3,4,6] → [1,2,3,4,5,6]) to avoid confusing skips
+  const result = [pages[0]];
+
+  for (let i = 1; i < pages.length; i++) {
+    if (pages[i] - result[result.length - 1] === 2) {
+      result.push(result[result.length - 1] + 1);
+    }
+
+    result.push(pages[i]);
   }
 
-  return [1, currentPage - 1, currentPage, currentPage + 1, totalPages];
+  return result;
 }
 
 function fuzzyScore(query, target) {
@@ -1589,11 +1624,7 @@ function filterByTag(tag) {
 
 async function copyToClipboard(text, button, card = null) {
   try {
-    if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(text);
-    } else {
-      fallbackCopy(text);
-    }
+    await navigator.clipboard.writeText(text);
 
     const originalLabel = button.textContent;
     button.textContent = "已複製";
@@ -1615,18 +1646,6 @@ async function copyToClipboard(text, button, card = null) {
     }, 1400);
     announce("複製失敗。");
   }
-}
-
-function fallbackCopy(text) {
-  const textarea = document.createElement("textarea");
-  textarea.value = text;
-  textarea.setAttribute("readonly", "");
-  textarea.style.position = "absolute";
-  textarea.style.left = "-9999px";
-  document.body.appendChild(textarea);
-  textarea.select();
-  document.execCommand("copy");
-  textarea.remove();
 }
 
 function extractPlaceholders(command) {
