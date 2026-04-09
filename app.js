@@ -161,6 +161,8 @@ function bindEvents() {
 
     panel.addEventListener("keydown", (event) => {
       if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
         closeCategoryPicker(panel);
         getCategoryPickerButton(panel)?.focus();
         return;
@@ -171,6 +173,7 @@ function bindEvents() {
       }
 
       event.preventDefault();
+      event.stopPropagation();
       const items = Array.from(panel.querySelectorAll(".picker-item:not([hidden])"));
       const idx = items.indexOf(document.activeElement);
 
@@ -259,6 +262,7 @@ function bindEvents() {
 
       if (event.target === card && (event.key === "Enter" || event.key === " ")) {
         event.preventDefault();
+        event.stopPropagation();
         card.querySelector("[data-copy-command]")?.click();
         return;
       }
@@ -271,6 +275,7 @@ function bindEvents() {
         }
 
         event.preventDefault();
+        event.stopPropagation();
         const cards = Array.from(container.querySelectorAll(".command-card"));
         const idx = cards.indexOf(card);
         const delta = event.key === "ArrowDown" || event.key === "ArrowRight" ? 1 : -1;
@@ -315,13 +320,21 @@ function bindEvents() {
   });
 
   document.addEventListener("keydown", (event) => {
-    const activeTag = document.activeElement?.tagName;
-    const isTyping = activeTag === "INPUT" || activeTag === "TEXTAREA";
+    const activeElement = document.activeElement;
+    const activeTag = activeElement?.tagName;
+    const isTyping = isTextEntryElement(activeElement);
 
     if ((event.key === "/" || (event.key.toLowerCase() === "k" && (event.metaKey || event.ctrlKey))) && !isTyping) {
       event.preventDefault();
       ui.searchInput.focus();
       ui.searchInput.select();
+    }
+
+    if (event.key === "Enter" && shouldFocusMainSearchOnEnter(event.target)) {
+      event.preventDefault();
+      ui.searchInput.focus();
+      ui.searchInput.select();
+      return;
     }
 
     if (!isTyping && (event.key === "[" || event.key === "]" || event.key === "ArrowLeft" || event.key === "ArrowRight")) {
@@ -877,6 +890,7 @@ function renderCategoryPicker(panel) {
   searchInput.addEventListener("keydown", (e) => {
     if (e.key === "ArrowDown") {
       e.preventDefault();
+      e.stopPropagation();
       panel.querySelector(".picker-item:not([hidden])")?.focus();
     }
   });
@@ -984,6 +998,39 @@ function renderProtectedCategories() {
   });
 
   ui.secureCategoryList.replaceChildren(fragment);
+}
+
+function isTextEntryElement(element) {
+  if (!element) {
+    return false;
+  }
+
+  const tagName = element.tagName;
+  return tagName === "INPUT" || tagName === "TEXTAREA" || tagName === "SELECT" || element.isContentEditable;
+}
+
+function shouldFocusMainSearchOnEnter(target) {
+  if (hasOpenCategoryPicker()) {
+    return false;
+  }
+
+  if (!(target instanceof Element)) {
+    return true;
+  }
+
+  if (isTextEntryElement(target)) {
+    return false;
+  }
+
+  if (target.closest(".command-card, .placeholder-fields, .secure-form, .category-picker, .help-wrap")) {
+    return false;
+  }
+
+  if (target.closest("button, a, summary, [role='button'], [role='dialog']")) {
+    return false;
+  }
+
+  return true;
 }
 
 async function unlockProtectedCategory(form) {
