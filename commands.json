@@ -2832,5 +2832,19 @@
       "parse"
     ],
     "notes": "取得的物件可以直接用 .屬性名 存取，例如 $obj.name。"
+  },
+  {
+    "id": "windows-powercfg-requests",
+    "category": "Windows Process & Service",
+    "command": "powercfg /requests",
+    "description": "列出目前阻止系統進入睡眠或休眠的電源請求（程序、驅動、服務）。",
+    "tags": [
+      "windows",
+      "powercfg",
+      "sleep",
+      "power",
+      "process"
+    ],
+    "notes": "排查電腦無法自動睡眠時的第一步。結果分 SYSTEM / DISPLAY / AWAYMODE / EXECUTION 等類別，找到佔住的程序名稱再決定是否終止。"
   }
 ]
