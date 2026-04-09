@@ -1,4 +1,4 @@
-const CACHE_VERSION = "v2"; // Increment this when deploying to bust the cache
+const CACHE_VERSION = "__CACHE_BUSTER__"; // Replaced in GitHub Actions; remains literal during local preview
 const CACHE_NAME = `command-atlas-shell-${CACHE_VERSION}`;
 const ASSETS = [
   "./",

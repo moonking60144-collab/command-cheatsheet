@@ -73,6 +73,7 @@ const ui = {
 
 let searchDebounceId = 0;
 let searchWorker = null;
+let searchWorkerDisabled = false;
 let workerSeq = 0;
 let lastFilterAnimated = false;
 
@@ -366,6 +367,10 @@ function bindEvents() {
   });
 
   document.addEventListener("click", () => closeShortcutsTooltip());
+
+  window.addEventListener("popstate", () => {
+    restoreStateFromUrl();
+  });
 
   function closeShortcutsTooltip() {
     shortcutsTooltip?.classList.remove("is-open");
@@ -1618,23 +1623,71 @@ function restoreState() {
     }
   }
 
-  const params = new URLSearchParams(window.location.search);
-  if (params.has("q")) {
-    nextQuery = params.get("q") ?? "";
-  }
-  if (params.has("cat")) {
-    nextCategory = params.get("cat") ?? "all";
-  }
-  if (params.get("view") === "list") {
-    nextViewMode = "list";
-  } else if (params.has("view")) {
-    nextViewMode = "cards";
+  const urlState = getUrlState();
+
+  if (urlState.hasAnyParam) {
+    nextQuery = urlState.query;
+    nextCategory = urlState.activeCategory;
+    nextViewMode = urlState.viewMode;
   }
 
   state.query = nextQuery;
   state.activeCategory = nextCategory || "all";
   state.viewMode = nextViewMode;
   syncSearchInputs();
+}
+
+function getUrlState() {
+  const params = new URLSearchParams(window.location.search);
+  const hasAnyParam = params.has("q") || params.has("cat") || params.has("view");
+  let query = "";
+  let activeCategory = "all";
+  let viewMode = "cards";
+
+  if (params.has("q")) {
+    query = params.get("q") ?? "";
+  }
+
+  if (params.has("cat")) {
+    activeCategory = params.get("cat") ?? "all";
+  }
+
+  if (params.get("view") === "list") {
+    viewMode = "list";
+  } else if (params.has("view")) {
+    viewMode = "cards";
+  }
+
+  return {
+    hasAnyParam,
+    query,
+    activeCategory: activeCategory || "all",
+    viewMode
+  };
+}
+
+function restoreStateFromUrl() {
+  const urlState = getUrlState();
+
+  state.query = urlState.query;
+  state.activeCategory = urlState.activeCategory;
+  state.viewMode = urlState.viewMode;
+  resetPagination();
+  syncSearchInputs();
+  updateViewModeUI();
+
+  if (!state.commands.length) {
+    return;
+  }
+
+  if (state.activeCategory === "pinned" && state.pinned.size === 0) {
+    state.activeCategory = "all";
+  } else if (state.activeCategory !== "all" && state.activeCategory !== "pinned" && !state.categories.includes(state.activeCategory)) {
+    state.activeCategory = "all";
+  }
+
+  updateFilterPillActive();
+  applyFilters();
 }
 
 function restorePinned() {
@@ -1923,6 +1976,10 @@ function getSearchWorker() {
     return searchWorker;
   }
 
+  if (searchWorkerDisabled) {
+    return null;
+  }
+
   if (typeof Worker === "undefined") {
     return null;
   }
@@ -1932,11 +1989,22 @@ function getSearchWorker() {
     worker.onmessage = handleWorkerResult;
     worker.onerror = (e) => {
       console.warn("Search worker error, falling back to sync", e);
+      try {
+        worker.terminate();
+      } catch (terminateError) {
+        console.warn("Search worker terminate failed", terminateError);
+      }
       searchWorker = null;
+      searchWorkerDisabled = true;
+      const tokens = tokenize(state.query);
+      const filteredPublic = filterCommands(state.publicCommands, tokens);
+      const filteredProtected = filterCommands(getUnlockedCommands(), tokens);
+      _renderFilterResults(filteredPublic, filteredProtected, lastFilterAnimated);
     };
     searchWorker = worker;
   } catch (e) {
     console.warn("Search worker unavailable, using sync fallback", e);
+    searchWorkerDisabled = true;
   }
 
   return searchWorker;
