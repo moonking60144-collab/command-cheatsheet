@@ -1953,11 +1953,12 @@
     "tags": [
       "bash",
       "linux",
+      "powershell",
       "download",
       "curl",
       "http"
     ],
-    "notes": "很適合抓 tarball、安裝包或測試檔。"
+    "notes": "很適合抓 tarball、安裝包或測試檔。Windows 10+ 內建 curl.exe，PowerShell 也可使用（PS 5.1 需打 curl.exe 避免 alias 衝突）。"
   },
   {
     "id": "bash-wget",
@@ -2855,12 +2856,13 @@
     "tags": [
       "bash",
       "linux",
+      "powershell",
       "curl",
       "http",
       "post",
       "api"
     ],
-    "notes": "-i 會印出 HTTP 狀態碼與 response headers，方便除錯。-X POST 指定方法，-H 設 Content-Type，-d 帶 JSON body。"
+    "notes": "-i 會印出 HTTP 狀態碼與 response headers，方便除錯。-X POST 指定方法，-H 設 Content-Type，-d 帶 JSON body。Windows 10+ 內建 curl.exe，PowerShell 也可使用（PS 5.1 需打 curl.exe 避免 alias 衝突）。"
   },
   {
     "id": "ps-iwr-post-token-query",
