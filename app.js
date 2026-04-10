@@ -32,6 +32,7 @@ const state = {
   pinned: new Set(),
   commands: [],
   categories: [],
+  commandCounts: {},
   query: "",
   activeCategory: "all",
   viewMode: "cards",
@@ -512,6 +513,7 @@ function rebuildCommandState() {
   prunePinnedIds();
   warnOnDuplicateCommandIds(state.commands);
   state.categories = getCategories(state.commands);
+  state.commandCounts = getCommandCounts();
 
   if (state.activeCategory === "pinned" && state.pinned.size === 0) {
     state.activeCategory = "all";
@@ -538,7 +540,7 @@ function renderFilters() {
   indicator.className = "filter-indicator";
   indicator.setAttribute("aria-hidden", "true");
 
-  const counts = getCommandCounts();
+  const counts = state.commandCounts;
   const pinnedPill = state.pinned.size > 0 ? [createPinnedFilterButton()] : [];
 
   const buttons = [
@@ -577,13 +579,16 @@ function updateFilterPillActive() {
   activeButton?.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" });
 
   const pickerLabel = getActiveCategoryLabel();
-  getCategoryPickerPairs().forEach(({ button }) => {
+  getCategoryPickerPairs().forEach(({ button, panel }) => {
     button?.setAttribute("aria-label", `分類選單，當前 ${pickerLabel}`);
     button?.setAttribute("title", `分類選單：${pickerLabel}`);
+
+    if (!panel.hidden) {
+      renderCategoryPicker(panel);
+    }
   });
 
   syncFilterIndicator();
-  renderCategoryPickers();
   updateStickySearchState();
 }
 
@@ -876,7 +881,7 @@ function renderCategoryPicker(panel) {
   if (!panel) {
     return;
   }
-  const counts = getCommandCounts();
+  const counts = state.commandCounts;
   const fragment = document.createDocumentFragment();
 
   // Search input
@@ -1169,8 +1174,8 @@ function _runFilters(animated) {
       pinned: Array.from(state.pinned)
     });
   } else {
-    const filteredPublic = filterCommands(state.publicCommands, tokens);
-    const filteredProtected = filterCommands(getUnlockedCommands(), tokens);
+    const filteredPublic = filterCommands(state.publicCommands, tokens, state.activeCategory, state.pinned);
+    const filteredProtected = filterCommands(getUnlockedCommands(), tokens, state.activeCategory, state.pinned);
     _renderFilterResults(filteredPublic, filteredProtected, animated);
   }
 }
@@ -1195,23 +1200,6 @@ function handleWorkerResult(event) {
   }
 
   _renderFilterResults(filteredPublic, filteredProtected, lastFilterAnimated);
-}
-
-function filterCommands(commands, tokens, activeCategory = state.activeCategory, pinned = state.pinned) {
-  return commands
-    .filter((item) => {
-      if (activeCategory === "pinned") return pinned.has(item.id);
-      return activeCategory === "all" || item.category === activeCategory;
-    })
-    .map((item) => ({ item, score: getMatchScore(item, tokens) }))
-    .filter((entry) => entry.score >= 0)
-    .sort((left, right) => {
-      const lp = pinned.has(left.item.id);
-      const rp = pinned.has(right.item.id);
-      if (lp !== rp) return lp ? -1 : 1;
-      return right.score - left.score || left.item.category.localeCompare(right.item.category, "zh-Hant");
-    })
-    .map((entry) => entry.item);
 }
 
 function renderResultSections(publicItems, protectedItems, totalResults) {
@@ -1355,89 +1343,12 @@ function getVisiblePageNumbers(currentPage, totalPages) {
   return result;
 }
 
-function fuzzyScore(query, target) {
-  let qi = 0, consecutive = 0, lastTi = -1, firstTi = -1, score = 0;
-
-  for (let ti = 0; ti < target.length && qi < query.length; ti++) {
-    if (query[qi] === target[ti]) {
-      if (firstTi === -1) firstTi = ti;
-      consecutive = lastTi === ti - 1 ? consecutive + 1 : 0;
-      score += 1 + consecutive;
-      lastTi = ti;
-      qi++;
-    }
-  }
-
-  if (qi < query.length) return -1;
-
-  // Discard matches where chars are too spread out (span > 5× query length)
-  if (lastTi - firstTi + 1 > query.length * 5) return -1;
-
-  return score;
-}
-
 function tokenize(query) {
   return query
     .toLowerCase()
     .split(/\s+/)
     .map((token) => token.trim())
     .filter(Boolean);
-}
-
-function getMatchScore(item, tokens) {
-  if (!tokens.length) {
-    return 1;
-  }
-
-  let score = 0;
-
-  for (const token of tokens) {
-    if (item.commandLower.startsWith(token)) {
-      score += 12;
-      continue;
-    }
-
-    if (item.commandLower.includes(token)) {
-      score += 8;
-      continue;
-    }
-
-    if (item.tagsLower.some((tag) => tag === token)) {
-      score += 7;
-      continue;
-    }
-
-    if (item.categoryLower.includes(token)) {
-      score += 5;
-      continue;
-    }
-
-    if (item.searchBlob.includes(token)) {
-      score += 3;
-      continue;
-    }
-
-    // Fuzzy subsequence fallback (only for tokens ≥ 3 chars to avoid noise)
-    if (token.length >= 3) {
-      const cmdFuzz = fuzzyScore(token, item.commandLower);
-
-      if (cmdFuzz >= 0) {
-        score += 2;
-        continue;
-      }
-
-      const descFuzz = fuzzyScore(token, item.descriptionLower);
-
-      if (descFuzz >= 0) {
-        score += 1;
-        continue;
-      }
-    }
-
-    return -1;
-  }
-
-  return score;
 }
 
 function renderResults(container, items) {
@@ -1454,7 +1365,7 @@ function renderResults(container, items) {
   const fragment = document.createDocumentFragment();
   const highlightPattern = compileHighlightPattern(tokenize(state.query));
 
-  items.forEach((item) => {
+  items.forEach((item, index) => {
     const placeholders = extractPlaceholders(item.command);
     const placeholderValues = state.placeholderValues.get(item.id) ?? {};
     const previewCommand = resolveCommandTemplate(item.command, placeholderValues);
@@ -1466,6 +1377,7 @@ function renderResults(container, items) {
     card.style.setProperty("--category-accent", accent.color);
     card.style.setProperty("--category-accent-soft", accent.soft);
     card.style.setProperty("--category-accent-border", accent.border);
+    card.style.setProperty("--card-index", String(Math.min(index, 5)));
     card.innerHTML = `
       <div class="card-top">
         <button class="category-badge category-badge-button" type="button" data-category="${escapeAttribute(item.category)}" aria-label="篩選分類 ${escapeAttribute(item.category)}" title="篩選分類 ${escapeAttribute(item.category)}">
@@ -1532,7 +1444,6 @@ function updateSummary(resultCount) {
   const trimmedQuery = state.query.trim();
   const queryLabel = trimmedQuery ? `，關鍵字「${trimmedQuery}」` : "";
   const hasActiveFilters = trimmedQuery.length > 0 || state.activeCategory !== "all";
-  const hasActiveCategoryFilter = state.activeCategory !== "all";
 
   ui.activeState.textContent = `目前：${categoryLabel}${queryLabel}`;
   ui.resultSummary.textContent = `共找到 ${resultCount} 筆結果`;
@@ -1540,7 +1451,6 @@ function updateSummary(resultCount) {
   if (ui.stickyClearButton) {
     ui.stickyClearButton.hidden = !hasActiveFilters;
   }
-  document.body.classList.toggle("has-active-filter", hasActiveCategoryFilter);
   updateStickySearchState();
   toggleUtilityChrome();
 }
@@ -1757,8 +1667,9 @@ function togglePin(commandId, buttonEl = null) {
 
   savePinned();
 
-  // If unpinned the last item while in pinned view, fall back to "all"
-  if (state.pinned.size === 0 && state.activeCategory === "pinned") {
+  const categoryChanged = state.pinned.size === 0 && state.activeCategory === "pinned";
+
+  if (categoryChanged) {
     state.activeCategory = "all";
   }
 
@@ -1770,8 +1681,45 @@ function togglePin(commandId, buttonEl = null) {
     buttonEl.closest(".command-card")?.classList.toggle("is-pinned", isPinned);
   }
 
-  renderFilters();
+  updatePinnedPill();
+
+  if (categoryChanged) {
+    updateFilterPillActive();
+  }
+
   applyFiltersAnimated();
+}
+
+function updatePinnedPill() {
+  const existingPill = ui.filterBar.querySelector(".filter-pill-pinned");
+
+  if (state.pinned.size === 0) {
+    if (existingPill) {
+      existingPill.remove();
+    }
+
+    syncFilterIndicator();
+    return;
+  }
+
+  if (existingPill) {
+    const countEl = existingPill.querySelector(".pin-pill-count");
+
+    if (countEl) {
+      countEl.textContent = state.pinned.size;
+    }
+  } else {
+    const allPill = ui.filterBar.querySelector('[data-category="all"]');
+    const newPill = createPinnedFilterButton();
+
+    if (allPill) {
+      allPill.after(newPill);
+    } else {
+      ui.filterBar.prepend(newPill);
+    }
+  }
+
+  syncFilterIndicator();
 }
 
 function filterByTag(tag) {
@@ -1997,8 +1945,8 @@ function getSearchWorker() {
       searchWorker = null;
       searchWorkerDisabled = true;
       const tokens = tokenize(state.query);
-      const filteredPublic = filterCommands(state.publicCommands, tokens);
-      const filteredProtected = filterCommands(getUnlockedCommands(), tokens);
+      const filteredPublic = filterCommands(state.publicCommands, tokens, state.activeCategory, state.pinned);
+      const filteredProtected = filterCommands(getUnlockedCommands(), tokens, state.activeCategory, state.pinned);
       _renderFilterResults(filteredPublic, filteredProtected, lastFilterAnimated);
     };
     searchWorker = worker;
@@ -2042,7 +1990,7 @@ function escapeCssSelector(value) {
     return window.CSS.escape(String(value));
   }
 
-  return String(value).replace(/["\\]/g, "\\$&");
+  return String(value).replace(/[!"#$%&'()*+,./:;<=>?@[\\\]^`{|}~]/g, "\\$&");
 }
 
 function warnOnDuplicateCommandIds(commands) {

@@ -1341,7 +1341,6 @@ mark {
 .tag {
   padding: 0.25rem 0.5rem;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.05);
   color: var(--text-muted);
   font-size: 0.78rem;
@@ -1349,15 +1348,16 @@ mark {
 
 .tag-btn {
   appearance: none;
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.08);
   font: inherit;
   cursor: pointer;
-  transition: background 0.14s ease, color 0.14s ease;
+  transition: background 0.14s ease, color 0.14s ease, border-color 0.14s ease;
 }
 
 .tag-btn:hover {
   background: rgba(121, 184, 255, 0.14);
   color: var(--accent);
+  border-color: rgba(121, 184, 255, 0.28);
 }
 
 .tag-btn:focus-visible {
@@ -1608,13 +1608,8 @@ body.is-list-view .command-card:focus-within .tag-list {
 @media (prefers-reduced-motion: no-preference) {
   .command-card {
     animation: card-in 0.18s ease both;
+    animation-delay: calc(var(--card-index, 0) * 20ms);
   }
-
-  .command-card:nth-child(2) { animation-delay: 20ms; }
-  .command-card:nth-child(3) { animation-delay: 40ms; }
-  .command-card:nth-child(4) { animation-delay: 60ms; }
-  .command-card:nth-child(5) { animation-delay: 80ms; }
-  .command-card:nth-child(6) { animation-delay: 100ms; }
 }
 
 /* ── Filter pill sliding indicator ──────────────────────── */

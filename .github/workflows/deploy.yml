@@ -25,13 +25,20 @@ jobs:
       - name: Stamp cache version
         run: sed -i "s/__CACHE_BUSTER__/${{ github.sha }}/g" sw.js
 
+      - name: Prepare deployment
+        run: |
+          mkdir _site
+          cp index.html styles.css app.js search-core.js search.worker.js sw.js _site/
+          cp commands.json secure-categories.json manifest.json _site/
+          cp -r assets _site/
+
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: _site
 
   deploy:
     needs: build

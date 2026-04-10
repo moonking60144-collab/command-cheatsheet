@@ -5,6 +5,7 @@ const ASSETS = [
   "./index.html",
   "./styles.css",
   "./app.js",
+  "./search-core.js",
   "./search.worker.js",
   "./commands.json",
   "./secure-categories.json",
@@ -51,7 +52,7 @@ async function handleRequest(request) {
     const fresh = await fetch(request);
 
     if (fresh.ok) {
-      cache.put(request, fresh.clone());
+      cache.put(request, fresh.clone()).catch(() => {});
     }
 
     return fresh;
