@@ -2846,5 +2846,36 @@
       "process"
     ],
     "notes": "排查電腦無法自動睡眠時的第一步。結果分 SYSTEM / DISPLAY / AWAYMODE / EXECUTION 等類別，找到佔住的程序名稱再決定是否終止。"
+  },
+  {
+    "id": "bash-curl-post",
+    "category": "Bash",
+    "command": "curl -i -X POST -H \"Content-Type: application/json\" -d '{\"key\":\"<值>\"}' <URL>",
+    "description": "發送 POST 請求並顯示完整回應標頭（-i）與 body。",
+    "tags": [
+      "bash",
+      "linux",
+      "curl",
+      "http",
+      "post",
+      "api"
+    ],
+    "notes": "-i 會印出 HTTP 狀態碼與 response headers，方便除錯。-X POST 指定方法，-H 設 Content-Type，-d 帶 JSON body。"
+  },
+  {
+    "id": "ps-iwr-post-token-query",
+    "category": "PowerShell",
+    "command": "Invoke-WebRequest -Method Post -Uri \"<URL>?token=<Token>\" -Body (ConvertTo-Json @{ key = \"<值>\" }) -ContentType \"application/json\"",
+    "description": "用 Invoke-WebRequest 發送 POST，Token 放在 query string 中。",
+    "tags": [
+      "powershell",
+      "http",
+      "post",
+      "token",
+      "query-string",
+      "invoke-webrequest",
+      "api"
+    ],
+    "notes": "部分 API（如 webhook）要求 token 放在 URL 而非 Header。Invoke-WebRequest 回傳完整 response 物件（含 StatusCode、Headers），比 Invoke-RestMethod 更適合需要檢查 HTTP 狀態碼的場景。"
   }
 ]
