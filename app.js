@@ -1440,12 +1440,14 @@ function renderResults(container, items) {
   const fragment = document.createDocumentFragment();
   const tokens = tokenize(state.query);
   const highlightPattern = compileHighlightPattern(tokens);
+  const commandHighlightPattern = compileTextHighlightPattern(tokens);
 
   items.forEach((item, index) => {
     const isFuzzy = tokens.length > 0 && hasFuzzyMatch(item, tokens);
     const placeholders = extractPlaceholders(item.command);
     const placeholderValues = state.placeholderValues.get(item.id) ?? {};
     const previewCommand = resolveCommandTemplate(item.command, placeholderValues);
+    const commandLanguage = getCommandHighlightLanguage(item);
     const accent = getCategoryAccent(item.category);
     const isPinned = state.pinned.has(item.id);
     const card = document.createElement("article");
@@ -1466,7 +1468,7 @@ function renderResults(container, items) {
         </button>
       </div>
       <div class="command-block">
-        <pre class="command-line"><code>${highlightText(previewCommand, highlightPattern)}</code></pre>
+        <pre class="command-line"><code class="command-code" data-command-language="${escapeAttribute(commandLanguage)}"></code></pre>
         ${renderPlaceholderFields(placeholders, placeholderValues)}
         <button class="copy-button" type="button" data-copy-command="${escapeAttribute(item.command)}">複製</button>
       </div>
@@ -1478,6 +1480,12 @@ function renderResults(container, items) {
         </div>
       </div>
     `;
+    renderCommandCode(
+      card.querySelector(".command-code"),
+      previewCommand,
+      commandLanguage,
+      commandHighlightPattern
+    );
     card.setAttribute("tabindex", "0");
     fragment.appendChild(card);
   });
@@ -1995,9 +2003,11 @@ function updateCommandPreview(card) {
     return;
   }
 
-  code.innerHTML = highlightText(
+  renderCommandCode(
+    code,
     buildResolvedCommand(card, copyButton.dataset.copyCommand),
-    compileHighlightPattern(tokenize(state.query))
+    code.dataset.commandLanguage || "bash",
+    compileTextHighlightPattern(tokenize(state.query))
   );
 }
 
@@ -2126,6 +2136,25 @@ function compileHighlightPattern(tokens) {
   return pattern ? new RegExp(`(${pattern})`, "gi") : null;
 }
 
+function compileTextHighlightPattern(tokens) {
+  if (!tokens.length) {
+    return null;
+  }
+
+  const uniqueTokens = [...new Set(tokens.map((token) => token.trim()).filter(Boolean))]
+    .sort((left, right) => right.length - left.length);
+
+  if (!uniqueTokens.length) {
+    return null;
+  }
+
+  const pattern = uniqueTokens
+    .map((token) => escapeRegex(token))
+    .join("|");
+
+  return pattern ? new RegExp(`(${pattern})`, "gi") : null;
+}
+
 function highlightText(text, tokensOrPattern) {
   const escaped = escapeHtml(text);
 
@@ -2144,6 +2173,122 @@ function highlightText(text, tokensOrPattern) {
 
 function escapeRegex(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function getCommandHighlightLanguage(item) {
+  if (!item?.category) {
+    return "bash";
+  }
+
+  if (item.category === "PowerShell") {
+    return "powershell";
+  }
+
+  if (item.category.startsWith("Windows")) {
+    return "dos";
+  }
+
+  return "bash";
+}
+
+function renderCommandCode(codeElement, commandText, language, highlightPattern = null) {
+  if (!codeElement) {
+    return;
+  }
+
+  codeElement.dataset.commandLanguage = language;
+  codeElement.className = "command-code";
+  codeElement.innerHTML = getCommandCodeHtml(commandText, language);
+
+  if (window.hljs) {
+    codeElement.classList.add("hljs");
+    if (language) {
+      codeElement.classList.add(`language-${language}`);
+    }
+  }
+
+  if (highlightPattern) {
+    applySearchMarksToCode(codeElement, highlightPattern);
+  }
+}
+
+function getCommandCodeHtml(commandText, language) {
+  const text = String(commandText ?? "");
+  const hljs = window.hljs;
+
+  if (!hljs?.highlight) {
+    return escapeHtml(text);
+  }
+
+  try {
+    if (language && hljs.getLanguage?.(language)) {
+      return hljs.highlight(text, { language, ignoreIllegals: true }).value;
+    }
+
+    if (hljs.highlightAuto) {
+      return hljs.highlightAuto(text, ["bash", "dos", "powershell"]).value;
+    }
+  } catch (error) {
+    console.warn("command syntax highlight failed", error);
+  }
+
+  return escapeHtml(text);
+}
+
+function applySearchMarksToCode(container, highlightPattern) {
+  const textNodes = [];
+  const walker = document.createTreeWalker(
+    container,
+    NodeFilter.SHOW_TEXT,
+    {
+      acceptNode(node) {
+        if (!node.nodeValue?.trim()) {
+          return NodeFilter.FILTER_REJECT;
+        }
+
+        if (node.parentElement?.closest("mark")) {
+          return NodeFilter.FILTER_REJECT;
+        }
+
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    }
+  );
+
+  while (walker.nextNode()) {
+    textNodes.push(walker.currentNode);
+  }
+
+  textNodes.forEach((node) => {
+    const text = node.nodeValue ?? "";
+    highlightPattern.lastIndex = 0;
+
+    if (!highlightPattern.test(text)) {
+      return;
+    }
+
+    highlightPattern.lastIndex = 0;
+    const fragment = document.createDocumentFragment();
+    let lastIndex = 0;
+    let match;
+
+    while ((match = highlightPattern.exec(text))) {
+      if (match.index > lastIndex) {
+        fragment.append(text.slice(lastIndex, match.index));
+      }
+
+      const mark = document.createElement("mark");
+      mark.textContent = match[0];
+      fragment.append(mark);
+      lastIndex = match.index + match[0].length;
+    }
+
+    if (lastIndex < text.length) {
+      fragment.append(text.slice(lastIndex));
+    }
+
+    node.parentNode?.replaceChild(fragment, node);
+  });
 }
 
 function announce(message) {

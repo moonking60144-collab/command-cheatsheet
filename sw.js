@@ -10,6 +10,9 @@ const ASSETS = [
   "./commands.json",
   "./manifest.json",
   "./assets/crypto-js.min.js",
+  "./assets/highlight.min.js",
+  "./assets/highlight-powershell.min.js",
+  "./assets/highlight-dos.min.js",
   "./assets/icons/icon-192.svg",
   "./assets/icons/icon-512.svg"
 ];

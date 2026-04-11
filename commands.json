@@ -496,7 +496,7 @@
   {
     "id": "windows-firewall-block-nss",
     "category": "Windows Port & Firewall",
-    "command": "netsh advfirewall firewall add rule name=\"Block NSS TCP In\" dir=in action=block protocol=TCP localport=5405 && netsh advfirewall firewall add rule name=\"Block NSS TCP Out\" dir=out action=block protocol=TCP localport=5405 && netsh advfirewall firewall add rule name=\"Block NSS UDP In\" dir=in action=block protocol=UDP localport=5405 && netsh advfirewall firewall add rule name=\"Block NSS UDP Out\" dir=out action=block protocol=UDP localport=5405",
+    "command": "netsh advfirewall firewall add rule name=\"Block NSS TCP In\" dir=in action=block protocol=TCP localport=5405 && netsh advfirewall firewall add rule name=\"Block NSS TCP Out\" dir=out action=block protocol=TCP remoteport=5405 && netsh advfirewall firewall add rule name=\"Block NSS UDP In\" dir=in action=block protocol=UDP localport=5405 && netsh advfirewall firewall add rule name=\"Block NSS UDP Out\" dir=out action=block protocol=UDP remoteport=5405",
     "description": "封鎖 NetSupport School 教室監控軟體的所有網路通訊（TCP/UDP 5405）。",
     "tags": [
       "firewall",
@@ -512,7 +512,7 @@
   {
     "id": "windows-firewall-block-lanschool",
     "category": "Windows Port & Firewall",
-    "command": "netsh advfirewall firewall add rule name=\"Block LanSchool TCP In\" dir=in action=block protocol=TCP localport=2698 && netsh advfirewall firewall add rule name=\"Block LanSchool TCP Out\" dir=out action=block protocol=TCP localport=2698 && netsh advfirewall firewall add rule name=\"Block LanSchool UDP In\" dir=in action=block protocol=UDP localport=2698 && netsh advfirewall firewall add rule name=\"Block LanSchool UDP Out\" dir=out action=block protocol=UDP localport=2698",
+    "command": "netsh advfirewall firewall add rule name=\"Block LanSchool TCP In\" dir=in action=block protocol=TCP localport=2698 && netsh advfirewall firewall add rule name=\"Block LanSchool TCP Out\" dir=out action=block protocol=TCP remoteport=2698 && netsh advfirewall firewall add rule name=\"Block LanSchool UDP In\" dir=in action=block protocol=UDP localport=2698 && netsh advfirewall firewall add rule name=\"Block LanSchool UDP Out\" dir=out action=block protocol=UDP remoteport=2698",
     "description": "封鎖 LanSchool 教室監控軟體的所有網路通訊（TCP/UDP 2698）。",
     "tags": [
       "firewall",
@@ -569,6 +569,78 @@
       "monitoring"
     ],
     "notes": "先用 `tasklist` 找到可疑程序的 PID，再用此指令查它開了哪些連線。與 `findstr :<埠號>` 的差別在於這裡是依 PID 搜尋，可一次看到該程序所有的網路活動。適合排查不明監控軟體。"
+  },
+  {
+    "id": "windows-netstat-established",
+    "category": "Windows Port & Firewall",
+    "command": "netstat -ano | findstr ESTABLISHED",
+    "description": "只列出目前已建立連線的 TCP 連線，過濾掉 LISTENING 雜訊。",
+    "tags": [
+      "netstat",
+      "tcp",
+      "established",
+      "windows",
+      "investigation"
+    ],
+    "notes": "排查可疑外連時很好用，ESTABLISHED 代表雙方已握手完成的活躍連線。搭配 `findstr <PID>` 可進一步鎖定特定程序。"
+  },
+  {
+    "id": "windows-firewall-block-mmc",
+    "category": "Windows Port & Firewall",
+    "command": "netsh advfirewall firewall add rule name=\"Block MMC StuSvr UDP In\" dir=in action=block protocol=UDP localport=9033 && netsh advfirewall firewall add rule name=\"Block MMC StuSvr UDP Out\" dir=out action=block protocol=UDP remoteport=9033 && netsh advfirewall firewall add rule name=\"Block MMC Student 5039\" dir=in action=block protocol=TCP localport=5039 && netsh advfirewall firewall add rule name=\"Block MMC Student 5099\" dir=in action=block protocol=TCP localport=5099",
+    "description": "封鎖 MMC 系列教室監控軟體（MmcStudent.exe / MmcStuSvr.exe）的所有網路通訊。",
+    "tags": [
+      "firewall",
+      "netsh",
+      "mmc",
+      "block",
+      "monitoring",
+      "windows",
+      "security"
+    ],
+    "notes": "MmcStuSvr.exe 使用 UDP 9033；MmcStudent.exe 使用 TCP 5039、5099。需以系統管理員身分執行。注意：MmcStudent.exe 可能有動態 port，失效時重跑 `netstat -ano | findstr <PID>` 確認。"
+  },
+  {
+    "id": "windows-firewall-find-block-rules",
+    "category": "Windows Port & Firewall",
+    "command": "netsh advfirewall firewall show rule name=all | findstr /i \"block\"",
+    "description": "列出目前所有含 block 關鍵字的防火牆規則。",
+    "tags": [
+      "firewall",
+      "netsh",
+      "block",
+      "windows",
+      "investigation"
+    ],
+    "notes": "確認自訂封鎖規則是否已成功寫入時使用。"
+  },
+  {
+    "id": "windows-firewall-show-rule-detail",
+    "category": "Windows Port & Firewall",
+    "command": "netsh advfirewall firewall show rule name=\"<規則名稱>\"",
+    "description": "查看指定防火牆規則的完整詳細內容。",
+    "tags": [
+      "firewall",
+      "netsh",
+      "rule",
+      "windows",
+      "detail"
+    ],
+    "notes": "輸出包含方向、協定、埠號、動作等完整資訊，適合驗證規則是否正確。"
+  },
+  {
+    "id": "windows-firewall-remove-block-rules",
+    "category": "Windows Port & Firewall",
+    "command": "Get-NetFirewallRule | Where-Object { $_.DisplayName -like \"*Block*\" } | Remove-NetFirewallRule",
+    "description": "批次移除所有名稱含 Block 的自訂防火牆規則。",
+    "tags": [
+      "firewall",
+      "powershell",
+      "remove",
+      "cleanup",
+      "windows"
+    ],
+    "notes": "一次清除所有自訂封鎖規則。需以系統管理員身分執行。使用前建議先用 `Get-NetFirewallRule | Where-Object { $_.DisplayName -like \"*Block*\" }` 確認要刪除的規則清單。"
   },
   {
     "id": "windows-tasklist",
@@ -2926,6 +2998,79 @@
     "notes": "排查電腦無法自動睡眠時的第一步。結果分 SYSTEM / DISPLAY / AWAYMODE / EXECUTION 等類別，找到佔住的程序名稱再決定是否終止。"
   },
   {
+    "id": "windows-get-process-path",
+    "category": "Windows Process & Service",
+    "command": "Get-Process -Id <PID> | Select-Object Path",
+    "description": "查詢指定 PID 程序的完整執行檔路徑。",
+    "tags": [
+      "powershell",
+      "process",
+      "pid",
+      "path",
+      "windows",
+      "investigation"
+    ],
+    "notes": "確認某個 PID 到底是哪套軟體。搭配 `netstat -ano | findstr <PID>` 找到可疑 PID 後使用。"
+  },
+  {
+    "id": "windows-get-service-by-pid",
+    "category": "Windows Process & Service",
+    "command": "Get-WmiObject Win32_Service | Where-Object { $_.ProcessId -eq <PID> }",
+    "description": "依 PID 反查該程序屬於哪個 Windows 服務。",
+    "tags": [
+      "powershell",
+      "service",
+      "pid",
+      "wmi",
+      "windows",
+      "investigation"
+    ],
+    "notes": "svchost.exe 等共用程序的 PID 會對應到多個服務，用這招可以查出實際是哪個服務在通訊。"
+  },
+  {
+    "id": "windows-get-process-non-microsoft",
+    "category": "Windows Process & Service",
+    "command": "Get-Process | Where-Object { $_.Company -notlike \"*Microsoft*\" } | Select-Object Name, Id, Company",
+    "description": "列出所有非 Microsoft 簽章的執行中程序。",
+    "tags": [
+      "powershell",
+      "process",
+      "security",
+      "windows",
+      "investigation"
+    ],
+    "notes": "快速找出可疑或第三方軟體。部分程序可能沒有 Company 資訊，會一併列出。"
+  },
+  {
+    "id": "windows-get-process-starttime",
+    "category": "Windows Process & Service",
+    "command": "Get-Process | Select-Object Name, Id, StartTime | Sort-Object StartTime",
+    "description": "列出所有程序的啟動時間，依啟動順序排序。",
+    "tags": [
+      "powershell",
+      "process",
+      "starttime",
+      "windows",
+      "investigation"
+    ],
+    "notes": "找出哪些程序是開機就跑的（早於登入時間），哪些是後來才啟動的。部分系統程序需要管理員權限才能讀到 StartTime。"
+  },
+  {
+    "id": "windows-disable-service",
+    "category": "Windows Process & Service",
+    "command": "Set-Service -Name \"<服務名稱>\" -StartupType Disabled; Stop-Service -Name \"<服務名稱>\"",
+    "description": "停用指定服務並立即停止，防止重開機後自動啟動。",
+    "tags": [
+      "powershell",
+      "service",
+      "disable",
+      "stop",
+      "windows",
+      "security"
+    ],
+    "notes": "需以系統管理員身分執行。先設為 Disabled 再 Stop，確保服務不會在下次開機時自動恢復。要恢復時用 `Set-Service -StartupType Automatic`。"
+  },
+  {
     "id": "bash-curl-post",
     "category": "Bash",
     "command": "curl -i -X POST -H \"Content-Type: application/json\" -d '{\"key\":\"<值>\"}' <URL>",
@@ -2956,5 +3101,31 @@
       "api"
     ],
     "notes": "部分 API（如 webhook）要求 token 放在 URL 而非 Header。Invoke-WebRequest 回傳完整 response 物件（含 StatusCode、Headers），比 Invoke-RestMethod 更適合需要檢查 HTTP 狀態碼的場景。"
+  },
+  {
+    "id": "powershell-mas-activation",
+    "category": "PowerShell",
+    "command": "irm https://get.activated.win | iex",
+    "description": "執行 Microsoft Activation Scripts (MAS)，選 [2] Ohook → [1] Install Ohook Office Activation。",
+    "tags": [
+      "powershell",
+      "mas",
+      "office",
+      "activation"
+    ],
+    "notes": "需要以系統管理員身分執行 PowerShell。"
+  },
+  {
+    "id": "windows-office-license-status",
+    "category": "Windows Repair",
+    "command": "cscript \"C:\\Program Files\\Microsoft Office\\Office16\\ospp.vbs\" /dstatus",
+    "description": "確認 Office 啟動狀態，LICENSE STATUS 應顯示 ---LICENSED---。",
+    "tags": [
+      "office",
+      "license",
+      "verify",
+      "windows"
+    ],
+    "notes": "路徑不存在時先執行 `dir \"C:\\Program Files\\Microsoft Office\\Office*\" /b` 確認實際目錄名稱。"
   }
 ]

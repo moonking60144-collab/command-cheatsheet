@@ -1273,6 +1273,58 @@ body.has-active-filter .category-badge-button:hover {
   word-break: break-word;
 }
 
+.command-line code {
+  display: block;
+  color: inherit;
+  background: transparent;
+  white-space: inherit;
+  font-weight: inherit;
+}
+
+.command-line .hljs-keyword,
+.command-line .hljs-operator,
+.command-line .hljs-meta,
+.command-line .hljs-meta-keyword {
+  color: #ffb86c;
+}
+
+.command-line .hljs-built_in,
+.command-line .hljs-title,
+.command-line .hljs-title.function_,
+.command-line .hljs-function .hljs-title {
+  color: #7dd3fc;
+}
+
+.command-line .hljs-attr,
+.command-line .hljs-attribute,
+.command-line .hljs-params,
+.command-line .hljs-template-variable {
+  color: #c4b5fd;
+}
+
+.command-line .hljs-string,
+.command-line .hljs-variable,
+.command-line .hljs-subst {
+  color: #98f5a7;
+}
+
+.command-line .hljs-number,
+.command-line .hljs-literal,
+.command-line .hljs-symbol,
+.command-line .hljs-bullet {
+  color: #f7d778;
+}
+
+.command-line .hljs-comment,
+.command-line .hljs-quote {
+  color: #70859b;
+  font-style: italic;
+}
+
+.command-line .hljs-punctuation {
+  color: #93aac3;
+}
+
 .placeholder-fields,
 .placeholder-fields * {
   cursor: auto;
@@ -1307,6 +1359,12 @@ mark {
   color: var(--accent-strong);
   border-radius: 4px;
   padding: 0 0.12rem;
+}
+
+.command-line mark {
+  background: rgba(255, 200, 87, 0.2);
+  color: #fff2bf;
+  box-shadow: 0 0 0 1px rgba(255, 200, 87, 0.2);
 }
 
 .description {
