@@ -339,9 +339,9 @@ function bindEvents() {
       return;
     }
 
-    if (!isTyping && (event.key === "[" || event.key === "]" || event.key === "ArrowLeft" || event.key === "ArrowRight")) {
+    if (!isTyping && (event.key === "[" || event.key === "]")) {
       event.preventDefault();
-      cycleCategory(event.key === "[" || event.key === "ArrowLeft" ? -1 : 1);
+      cycleCategory(event.key === "[" ? -1 : 1);
       return;
     }
 
@@ -379,7 +379,16 @@ function bindEvents() {
     shortcutsTooltip?.setAttribute("aria-hidden", "true");
   }
 
-  window.addEventListener("scroll", toggleUtilityChrome, { passive: true });
+  let scrollRafPending = false;
+  window.addEventListener("scroll", () => {
+    if (!scrollRafPending) {
+      scrollRafPending = true;
+      requestAnimationFrame(() => {
+        toggleUtilityChrome();
+        scrollRafPending = false;
+      });
+    }
+  }, { passive: true });
   window.addEventListener("resize", () => {
     toggleUtilityChrome();
     getCategoryPickerPairs()
@@ -523,6 +532,7 @@ function rebuildCommandState() {
 
   saveState();
   _pickerGridMinCol = 0; // invalidate column-width cache — categories may have changed
+  getCategoryPickerPairs().forEach(({ panel }) => panel.replaceChildren()); // force full rebuild on next open
   updateMetrics();
   renderFilters();
   updateViewModeUI();
@@ -881,6 +891,13 @@ function renderCategoryPicker(panel) {
   if (!panel) {
     return;
   }
+
+  // Fast path: if DOM already built, just update active states and counts in-place
+  if (panel.children.length > 0 && panel.querySelector(".picker-groups-grid")) {
+    updatePickerInPlace(panel);
+    return;
+  }
+
   const counts = state.commandCounts;
   const fragment = document.createDocumentFragment();
 
@@ -943,6 +960,41 @@ function renderCategoryPicker(panel) {
   fragment.appendChild(emptyEl);
 
   panel.replaceChildren(fragment);
+
+  const activeLabel = getActiveCategoryLabel();
+  getCategoryPickerButton(panel)?.setAttribute("aria-label", `分類選單，當前 ${activeLabel}`);
+  getCategoryPickerButton(panel)?.setAttribute("title", `分類選單：${activeLabel}`);
+}
+
+function updatePickerInPlace(panel) {
+  const counts = state.commandCounts;
+
+  panel.querySelectorAll(".picker-item[data-category]").forEach((item) => {
+    const key = item.dataset.category;
+    const isActive = key === state.activeCategory;
+    item.classList.toggle("is-active", isActive);
+
+    const countEl = item.querySelector(".picker-item-count");
+    if (countEl) {
+      if (key === "all") {
+        countEl.textContent = state.commands.length;
+      } else if (key === "pinned") {
+        countEl.textContent = state.pinned.size;
+      } else {
+        countEl.textContent = counts[key] || 0;
+      }
+    }
+  });
+
+  // Sync pinned button presence
+  const allWrap = panel.querySelector(".picker-group-all");
+  const pinnedBtn = allWrap?.querySelector('[data-category="pinned"]');
+
+  if (state.pinned.size > 0 && !pinnedBtn && allWrap) {
+    allWrap.appendChild(createPickerButton("pinned", "已釘選", state.pinned.size));
+  } else if (state.pinned.size === 0 && pinnedBtn) {
+    pinnedBtn.remove();
+  }
 
   const activeLabel = getActiveCategoryLabel();
   getCategoryPickerButton(panel)?.setAttribute("aria-label", `分類選單，當前 ${activeLabel}`);
@@ -1912,7 +1964,7 @@ function updateCommandPreview(card) {
 
   code.innerHTML = highlightText(
     buildResolvedCommand(card, copyButton.dataset.copyCommand),
-    tokenize(state.query)
+    compileHighlightPattern(tokenize(state.query))
   );
 }
 
@@ -2087,7 +2139,8 @@ function getCategoryAccent(category) {
     "Windows Event Log": { color: "#c792ea", soft: "rgba(199, 146, 234, 0.14)", border: "rgba(199, 146, 234, 0.34)" },
     "Windows Repair": { color: "#f28b82", soft: "rgba(242, 139, 130, 0.14)", border: "rgba(242, 139, 130, 0.34)" },
     "Windows Shortcut": { color: "#d1b36a", soft: "rgba(209, 179, 106, 0.14)", border: "rgba(209, 179, 106, 0.34)" },
-    "Windows File & Directory": { color: "#8fb0ff", soft: "rgba(143, 176, 255, 0.14)", border: "rgba(143, 176, 255, 0.34)" }
+    "Windows File & Directory": { color: "#8fb0ff", soft: "rgba(143, 176, 255, 0.14)", border: "rgba(143, 176, 255, 0.34)" },
+    npm: { color: "#cb3837", soft: "rgba(203, 56, 55, 0.14)", border: "rgba(203, 56, 55, 0.34)" }
   };
 
   if (palette[category]) {

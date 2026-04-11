@@ -1,11 +1,12 @@
 {
+  "id": "/",
   "name": "Command Atlas 指令查詢工作台",
   "short_name": "Command Atlas",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "background_color": "#07101a",
-  "theme_color": "#7ae0ff",
+  "theme_color": "#79b8ff",
   "description": "一個可搜尋、可分類、可離線使用的指令查詢工作台。",
   "icons": [
     {
