@@ -1351,6 +1351,19 @@ function tokenize(query) {
     .filter(Boolean);
 }
 
+function hasFuzzyMatch(item, tokens) {
+  for (const token of tokens) {
+    if (token.length < 3) continue;
+    if (item.searchBlob.includes(token)) continue;
+
+    if (fuzzyScore(token, item.commandLower) >= 0 || fuzzyScore(token, item.descriptionLower) >= 0) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 function renderResults(container, items) {
   if (!items.length) {
     container.innerHTML = `
@@ -1363,9 +1376,11 @@ function renderResults(container, items) {
   }
 
   const fragment = document.createDocumentFragment();
-  const highlightPattern = compileHighlightPattern(tokenize(state.query));
+  const tokens = tokenize(state.query);
+  const highlightPattern = compileHighlightPattern(tokens);
 
   items.forEach((item, index) => {
+    const isFuzzy = tokens.length > 0 && hasFuzzyMatch(item, tokens);
     const placeholders = extractPlaceholders(item.command);
     const placeholderValues = state.placeholderValues.get(item.id) ?? {};
     const previewCommand = resolveCommandTemplate(item.command, placeholderValues);
@@ -1383,6 +1398,7 @@ function renderResults(container, items) {
         <button class="category-badge category-badge-button" type="button" data-category="${escapeAttribute(item.category)}" aria-label="篩選分類 ${escapeAttribute(item.category)}" title="篩選分類 ${escapeAttribute(item.category)}">
           ${escapeHtml(item.category)}
         </button>
+        ${isFuzzy ? '<span class="fuzzy-hint">近似匹配</span>' : ''}
         <button class="pin-button" type="button" data-pin-id="${escapeAttribute(item.id)}" aria-label="${isPinned ? "取消釘選" : "釘選此指令"}" aria-pressed="${isPinned}" title="${isPinned ? "取消釘選" : "釘選"}">
           <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><polygon points="8,1.5 10.2,6 15,6.6 11.5,9.9 12.5,14.5 8,12.1 3.5,14.5 4.5,9.9 1,6.6 5.8,6"/></svg>
         </button>
