@@ -494,6 +494,83 @@
     "notes": "查 RDP、特定程式或某個 port 對應規則時很好用，例如搜尋 `3389`。"
   },
   {
+    "id": "windows-firewall-block-nss",
+    "category": "Windows Port & Firewall",
+    "command": "netsh advfirewall firewall add rule name=\"Block NSS TCP In\" dir=in action=block protocol=TCP localport=5405 && netsh advfirewall firewall add rule name=\"Block NSS TCP Out\" dir=out action=block protocol=TCP localport=5405 && netsh advfirewall firewall add rule name=\"Block NSS UDP In\" dir=in action=block protocol=UDP localport=5405 && netsh advfirewall firewall add rule name=\"Block NSS UDP Out\" dir=out action=block protocol=UDP localport=5405",
+    "description": "封鎖 NetSupport School 教室監控軟體的所有網路通訊（TCP/UDP 5405）。",
+    "tags": [
+      "firewall",
+      "netsh",
+      "netsupport",
+      "block",
+      "monitoring",
+      "windows",
+      "security"
+    ],
+    "notes": "建立 4 條規則，分別封鎖 TCP/UDP 5405 的 inbound 與 outbound。需以系統管理員身分執行。封鎖後 NetSupport School 無法遠端監看螢幕或控制鍵盤滑鼠。"
+  },
+  {
+    "id": "windows-firewall-block-lanschool",
+    "category": "Windows Port & Firewall",
+    "command": "netsh advfirewall firewall add rule name=\"Block LanSchool TCP In\" dir=in action=block protocol=TCP localport=2698 && netsh advfirewall firewall add rule name=\"Block LanSchool TCP Out\" dir=out action=block protocol=TCP localport=2698 && netsh advfirewall firewall add rule name=\"Block LanSchool UDP In\" dir=in action=block protocol=UDP localport=2698 && netsh advfirewall firewall add rule name=\"Block LanSchool UDP Out\" dir=out action=block protocol=UDP localport=2698",
+    "description": "封鎖 LanSchool 教室監控軟體的所有網路通訊（TCP/UDP 2698）。",
+    "tags": [
+      "firewall",
+      "netsh",
+      "lanschool",
+      "block",
+      "monitoring",
+      "windows",
+      "security"
+    ],
+    "notes": "建立 4 條規則，分別封鎖 TCP/UDP 2698 的 inbound 與 outbound。需以系統管理員身分執行。封鎖後 LanSchool 無法遠端監看螢幕或推送訊息。"
+  },
+  {
+    "id": "windows-firewall-unblock-nss",
+    "category": "Windows Port & Firewall",
+    "command": "netsh advfirewall firewall delete rule name=\"Block NSS TCP In\" && netsh advfirewall firewall delete rule name=\"Block NSS TCP Out\" && netsh advfirewall firewall delete rule name=\"Block NSS UDP In\" && netsh advfirewall firewall delete rule name=\"Block NSS UDP Out\"",
+    "description": "移除 NetSupport School 的防火牆封鎖規則，恢復正常通訊。",
+    "tags": [
+      "firewall",
+      "netsh",
+      "netsupport",
+      "unblock",
+      "restore",
+      "windows"
+    ],
+    "notes": "刪除先前以 `Block NSS *` 為名建立的 4 條規則。規則名稱必須與建立時完全一致，否則刪除會失敗。"
+  },
+  {
+    "id": "windows-firewall-unblock-lanschool",
+    "category": "Windows Port & Firewall",
+    "command": "netsh advfirewall firewall delete rule name=\"Block LanSchool TCP In\" && netsh advfirewall firewall delete rule name=\"Block LanSchool TCP Out\" && netsh advfirewall firewall delete rule name=\"Block LanSchool UDP In\" && netsh advfirewall firewall delete rule name=\"Block LanSchool UDP Out\"",
+    "description": "移除 LanSchool 的防火牆封鎖規則，恢復正常通訊。",
+    "tags": [
+      "firewall",
+      "netsh",
+      "lanschool",
+      "unblock",
+      "restore",
+      "windows"
+    ],
+    "notes": "刪除先前以 `Block LanSchool *` 為名建立的 4 條規則。規則名稱必須與建立時完全一致，否則刪除會失敗。"
+  },
+  {
+    "id": "windows-netstat-pid",
+    "category": "Windows Port & Firewall",
+    "command": "netstat -ano | findstr <PID>",
+    "description": "依 PID 反查該程序正在使用的所有連線與埠號。",
+    "tags": [
+      "netstat",
+      "pid",
+      "port",
+      "windows",
+      "investigation",
+      "monitoring"
+    ],
+    "notes": "先用 `tasklist` 找到可疑程序的 PID，再用此指令查它開了哪些連線。與 `findstr :<埠號>` 的差別在於這裡是依 PID 搜尋，可一次看到該程序所有的網路活動。適合排查不明監控軟體。"
+  },
+  {
     "id": "windows-tasklist",
     "category": "Windows Process & Service",
     "command": "tasklist",
