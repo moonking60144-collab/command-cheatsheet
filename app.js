@@ -1,6 +1,8 @@
 const STORAGE_KEY = "command-atlas-state-v1";
 const PINNED_KEY = "command-atlas-pinned-v1";
 const PLACEHOLDER_KEY = "command-atlas-placeholders-v1";
+const PLACEHOLDER_SESSION_KEY = "command-atlas-placeholders-session-v1";
+const SENSITIVE_TOKEN_PATTERN = /token|password|secret|key|密碼|金鑰|憑證/i;
 const DATA_URL = "./commands.json";
 const SECURE_DATA_URL = "./secure-categories.json";
 const SEARCH_DEBOUNCE_MS = 80;
@@ -691,6 +693,14 @@ function openCategoryPicker(panel) {
 
   closeAllCategoryPickers(panel);
   renderCategoryPicker(panel);
+
+  // Reset search state from previous open
+  const searchInput = panel.querySelector(".picker-search");
+  if (searchInput && searchInput.value) {
+    searchInput.value = "";
+    filterPickerCategories(panel, "");
+  }
+
   panel.hidden = false;
   const button = getCategoryPickerButton(panel);
   button?.setAttribute("aria-expanded", "true");
@@ -699,7 +709,7 @@ function openCategoryPicker(panel) {
   window.requestAnimationFrame(() => {
     calibratePickerGrid(panel);
     positionPicker(panel);
-    panel.querySelector(".picker-search")?.focus();
+    searchInput?.focus();
   });
 }
 
@@ -1689,39 +1699,62 @@ function savePinned() {
   localStorage.setItem(PINNED_KEY, JSON.stringify([...state.pinned]));
 }
 
+function isSensitiveToken(token) {
+  return SENSITIVE_TOKEN_PATTERN.test(token);
+}
+
 function savePlaceholders() {
-  const data = {};
+  const persistent = {};
+  const session = {};
 
   state.placeholderValues.forEach((values, id) => {
-    if (Object.values(values).some(Boolean)) {
-      data[id] = values;
-    }
+    const persistentValues = {};
+    const sessionValues = {};
+
+    Object.entries(values).forEach(([token, value]) => {
+      if (!value) return;
+
+      if (isSensitiveToken(token)) {
+        sessionValues[token] = value;
+      } else {
+        persistentValues[token] = value;
+      }
+    });
+
+    if (Object.keys(persistentValues).length) persistent[id] = persistentValues;
+    if (Object.keys(sessionValues).length) session[id] = sessionValues;
   });
 
-  localStorage.setItem(PLACEHOLDER_KEY, JSON.stringify(data));
+  localStorage.setItem(PLACEHOLDER_KEY, JSON.stringify(persistent));
+  sessionStorage.setItem(PLACEHOLDER_SESSION_KEY, JSON.stringify(session));
 }
 
 function restorePlaceholders() {
-  try {
-    const raw = localStorage.getItem(PLACEHOLDER_KEY);
+  const merged = new Map();
 
-    if (!raw) {
-      return;
+  [
+    { raw: localStorage.getItem(PLACEHOLDER_KEY), store: localStorage, key: PLACEHOLDER_KEY },
+    { raw: sessionStorage.getItem(PLACEHOLDER_SESSION_KEY), store: sessionStorage, key: PLACEHOLDER_SESSION_KEY }
+  ].forEach(({ raw, store, key }) => {
+    if (!raw) return;
+
+    try {
+      const data = JSON.parse(raw);
+
+      if (data && typeof data === "object" && !Array.isArray(data)) {
+        Object.entries(data).forEach(([id, values]) => {
+          if (values && typeof values === "object") {
+            merged.set(id, { ...(merged.get(id) || {}), ...values });
+          }
+        });
+      }
+    } catch (error) {
+      console.warn("restorePlaceholders failed", error);
+      store.removeItem(key);
     }
+  });
 
-    const data = JSON.parse(raw);
-
-    if (data && typeof data === "object" && !Array.isArray(data)) {
-      Object.entries(data).forEach(([id, values]) => {
-        if (values && typeof values === "object") {
-          state.placeholderValues.set(id, values);
-        }
-      });
-    }
-  } catch (error) {
-    console.warn("restorePlaceholders failed", error);
-    localStorage.removeItem(PLACEHOLDER_KEY);
-  }
+  merged.forEach((values, id) => state.placeholderValues.set(id, values));
 }
 
 function togglePin(commandId, buttonEl = null) {

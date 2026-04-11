@@ -29,7 +29,8 @@ jobs:
         run: |
           mkdir _site
           cp index.html styles.css app.js search-core.js search.worker.js sw.js _site/
-          cp commands.json secure-categories.json manifest.json _site/
+          cp commands.json manifest.json _site/
+          [ -f secure-categories.json ] && cp secure-categories.json _site/ || true
           cp -r assets _site/
 
       - name: Configure GitHub Pages

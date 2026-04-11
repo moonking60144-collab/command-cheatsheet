@@ -8,17 +8,36 @@ const ASSETS = [
   "./search-core.js",
   "./search.worker.js",
   "./commands.json",
-  "./secure-categories.json",
   "./manifest.json",
+  "./assets/crypto-js.min.js",
   "./assets/icons/icon-192.svg",
   "./assets/icons/icon-512.svg"
+];
+
+const OPTIONAL_ASSETS = [
+  "./secure-categories.json"
 ];
 
 self.addEventListener("install", (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE_NAME);
-    const requests = ASSETS.map((path) => new Request(new URL(path, self.registration.scope).toString(), { cache: "reload" }));
-    await cache.addAll(requests);
+    const toRequest = (path) => new Request(new URL(path, self.registration.scope).toString(), { cache: "reload" });
+
+    // Required assets — all must succeed
+    await cache.addAll(ASSETS.map(toRequest));
+
+    // Optional assets — skip silently on 404
+    await Promise.allSettled(
+      OPTIONAL_ASSETS.map(async (path) => {
+        try {
+          const response = await fetch(toRequest(path));
+          if (response.ok) {
+            await cache.put(toRequest(path), response);
+          }
+        } catch (_) { /* optional, ignore */ }
+      })
+    );
+
     await self.skipWaiting();
   })());
 });
