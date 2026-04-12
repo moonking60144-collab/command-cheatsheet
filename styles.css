@@ -1559,20 +1559,15 @@ body.is-list-view .command-card:focus-within .tag-list {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 2.2rem;
-  padding: 0.42rem 0.75rem;
-  border-radius: 4px;
-  border: 1px solid rgba(121, 184, 255, 0.28);
-  background: rgba(16, 23, 34, 0.58);
+  width: 2.85rem;
+  height: 2.85rem;
+  border-radius: 999px;
+  border: 1px solid rgba(121, 184, 255, 0.32);
+  background: rgba(16, 23, 34, 0.62);
   backdrop-filter: blur(12px);
   color: var(--accent-strong);
-  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.28);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.32);
   cursor: pointer;
-  font-family: var(--mono-font);
-  font-size: 0.82rem;
-  line-height: 1;
-  letter-spacing: 0.02em;
-  white-space: nowrap;
   opacity: 0;
   pointer-events: none;
   transform: translateY(8px);
@@ -1583,23 +1578,70 @@ body.is-list-view .command-card:focus-within .tag-list {
     background 0.18s ease;
 }
 
+.scroll-top-btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1px solid rgba(121, 184, 255, 0.55);
+  opacity: 0;
+  pointer-events: none;
+}
+
 .scroll-top-btn.is-visible {
   opacity: 1;
   pointer-events: auto;
   transform: translateY(0);
 }
 
+@media (prefers-reduced-motion: no-preference) {
+  .scroll-top-btn.is-visible::before {
+    animation: scroll-top-pulse 2.6s cubic-bezier(0.32, 0, 0.26, 1) infinite;
+  }
+}
+
+@keyframes scroll-top-pulse {
+  0%   { transform: scale(1);    opacity: 0.6; }
+  70%  { transform: scale(1.7);  opacity: 0; }
+  100% { transform: scale(1.7);  opacity: 0; }
+}
+
 .scroll-top-btn:hover {
-  border-color: rgba(121, 184, 255, 0.5);
-  background: rgba(16, 23, 34, 0.8);
-  transform: translateY(-1px);
+  border-color: rgba(121, 184, 255, 0.62);
+  background: rgba(16, 23, 34, 0.84);
+  transform: translateY(-2px);
 }
 
 .scroll-top-btn:focus-visible {
   outline: none;
   box-shadow:
-    0 0 0 3px rgba(121, 184, 255, 0.16),
-    0 14px 30px rgba(0, 0, 0, 0.28);
+    0 0 0 3px rgba(121, 184, 255, 0.2),
+    0 14px 30px rgba(0, 0, 0, 0.32);
+}
+
+.scroll-top-btn svg {
+  width: 1.2rem;
+  height: 1.2rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  position: relative;
+  z-index: 1;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .scroll-top-btn:hover svg {
+    animation: scroll-top-travel 1.05s cubic-bezier(0.6, 0, 0.4, 1) infinite;
+  }
+}
+
+@keyframes scroll-top-travel {
+  0%   { transform: translateY(0.32rem); opacity: 0; }
+  22%  { transform: translateY(0.16rem); opacity: 1; }
+  78%  { transform: translateY(-0.16rem); opacity: 1; }
+  100% { transform: translateY(-0.32rem); opacity: 0; }
 }
 
 .noscript-banner {
