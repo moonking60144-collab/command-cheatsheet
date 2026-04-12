@@ -372,17 +372,22 @@ function bindEvents() {
     }
 
     if (event.key === "Escape") {
+      if (handleScopedInputEscape(activeElement)) {
+        event.preventDefault();
+        return;
+      }
+
       if (hasOpenCategoryPicker()) {
         closeAllCategoryPickers();
+        scrollPageToTop();
+        focusMainSearch({ select: false });
         return;
       }
 
       closeShortcutsTooltip();
       clearFilters();
-      // Keep focus on whichever search input is active instead of blurring —
-      // that way the user can immediately keep typing, and pressing Enter
-      // isn't needed to re-focus. preventScroll avoids jumping to the top.
-      focusActiveSearch({ select: false });
+      scrollPageToTop();
+      focusMainSearch({ select: false });
     }
   });
 
@@ -2011,6 +2016,39 @@ function syncCardPlaceholderValues(card) {
   savePlaceholders();
 }
 
+function handleScopedInputEscape(activeElement) {
+  const placeholderInput = activeElement?.closest?.("[data-placeholder-token]");
+
+  if (placeholderInput) {
+    if (placeholderInput.value) {
+      placeholderInput.value = "";
+      const card = placeholderInput.closest(".command-card");
+      syncCardPlaceholderValues(card);
+      updateCommandPreview(card);
+      announce("已清除目前欄位。");
+    }
+
+    return true;
+  }
+
+  const secureInput = activeElement instanceof Element
+    && activeElement.matches(".secure-input")
+    && activeElement.closest("[data-secure-form]")
+    ? activeElement
+    : null;
+
+  if (secureInput) {
+    if (secureInput.value) {
+      secureInput.value = "";
+      announce("已清除目前欄位。");
+    }
+
+    return true;
+  }
+
+  return false;
+}
+
 function resolveCommandTemplate(template, values) {
   return String(template ?? "").replace(/<[^>]+>/g, (token) => {
     const nextValue = values[token];
@@ -2399,6 +2437,22 @@ function toggleStickySearchBar() {
 function getActiveSearchInput() {
   const stickyVisible = ui.stickySearchBar?.classList.contains("is-visible");
   return stickyVisible && ui.stickySearchInput ? ui.stickySearchInput : ui.searchInput;
+}
+
+function scrollPageToTop() {
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function focusMainSearch({ select = true } = {}) {
+  if (!ui.searchInput) {
+    return;
+  }
+
+  ui.searchInput.focus({ preventScroll: true });
+
+  if (select) {
+    ui.searchInput.select?.();
+  }
 }
 
 function focusActiveSearch({ select = true } = {}) {
