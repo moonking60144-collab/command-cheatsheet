@@ -379,7 +379,10 @@ function bindEvents() {
 
       closeShortcutsTooltip();
       clearFilters();
-      ui.searchInput.blur();
+      // Keep focus on whichever search input is active instead of blurring —
+      // that way the user can immediately keep typing, and pressing Enter
+      // isn't needed to re-focus. preventScroll avoids jumping to the top.
+      focusActiveSearch({ select: false });
     }
   });
 
