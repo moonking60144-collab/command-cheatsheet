@@ -120,7 +120,8 @@ function bindEvents() {
   [ui.clearButton, ui.stickyClearButton].forEach((button) => {
     button?.addEventListener("click", () => {
       clearFilters();
-      (button === ui.stickyClearButton ? ui.stickySearchInput : ui.searchInput)?.focus();
+      (button === ui.stickyClearButton ? ui.stickySearchInput : ui.searchInput)
+        ?.focus({ preventScroll: true });
     });
   });
 
@@ -330,14 +331,12 @@ function bindEvents() {
 
     if ((event.key === "/" || (event.key.toLowerCase() === "k" && (event.metaKey || event.ctrlKey))) && !isTyping) {
       event.preventDefault();
-      ui.searchInput.focus();
-      ui.searchInput.select();
+      focusActiveSearch();
     }
 
     if (event.key === "Enter" && shouldFocusMainSearchOnEnter(event.target)) {
       event.preventDefault();
-      ui.searchInput.focus();
-      ui.searchInput.select();
+      focusActiveSearch();
       return;
     }
 
@@ -2355,7 +2354,6 @@ function toggleScrollTopButton() {
 
   const shouldShow = window.scrollY > SCROLL_TOP_THRESHOLD;
   ui.scrollTopButton.classList.toggle("is-visible", shouldShow);
-  ui.scrollTopButton.toggleAttribute("inert", !shouldShow);
   ui.scrollTopButton.setAttribute("aria-hidden", String(!shouldShow));
 }
 
@@ -2367,6 +2365,24 @@ function toggleStickySearchBar() {
   const stickyThreshold = Math.max(160, ui.hero.offsetHeight - 72);
   const shouldShow = window.scrollY > stickyThreshold;
   ui.stickySearchBar.classList.toggle("is-visible", shouldShow);
-  ui.stickySearchBar.toggleAttribute("inert", !shouldShow);
   ui.stickySearchBar.setAttribute("aria-hidden", String(!shouldShow));
+}
+
+function getActiveSearchInput() {
+  const stickyVisible = ui.stickySearchBar?.classList.contains("is-visible");
+  return stickyVisible && ui.stickySearchInput ? ui.stickySearchInput : ui.searchInput;
+}
+
+function focusActiveSearch({ select = true } = {}) {
+  const target = getActiveSearchInput();
+
+  if (!target) {
+    return;
+  }
+
+  target.focus({ preventScroll: true });
+
+  if (select) {
+    target.select?.();
+  }
 }
