@@ -1521,8 +1521,8 @@ function renderError(error) {
 }
 
 function updateMetrics() {
-  ui.commandCount.textContent = `${state.commands.length} 筆指令`;
-  ui.categoryCount.textContent = `${state.categories.length} 個分類`;
+  ui.commandCount.innerHTML = `<span class="meta-num">${state.commands.length}</span> 筆指令`;
+  ui.categoryCount.innerHTML = `<span class="meta-num">${state.categories.length}</span> 個分類`;
 }
 
 function updateSummary(resultCount) {
@@ -2355,6 +2355,7 @@ function toggleScrollTopButton() {
 
   const shouldShow = window.scrollY > SCROLL_TOP_THRESHOLD;
   ui.scrollTopButton.classList.toggle("is-visible", shouldShow);
+  ui.scrollTopButton.toggleAttribute("inert", !shouldShow);
   ui.scrollTopButton.setAttribute("aria-hidden", String(!shouldShow));
 }
 
@@ -2366,5 +2367,6 @@ function toggleStickySearchBar() {
   const stickyThreshold = Math.max(160, ui.hero.offsetHeight - 72);
   const shouldShow = window.scrollY > stickyThreshold;
   ui.stickySearchBar.classList.toggle("is-visible", shouldShow);
+  ui.stickySearchBar.toggleAttribute("inert", !shouldShow);
   ui.stickySearchBar.setAttribute("aria-hidden", String(!shouldShow));
 }

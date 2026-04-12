@@ -203,7 +203,6 @@ kbd {
   font-size: 0.62rem;
   font-weight: 800;
   letter-spacing: 0.08em;
-  font-variant-numeric: tabular-nums;
   transition: box-shadow 0.22s ease, transform 0.18s ease, border-color 0.22s ease;
 }
 
@@ -272,12 +271,15 @@ kbd {
   display: inline-flex;
   align-items: center;
   color: var(--text-muted);
-  font-family: var(--mono-font);
-  font-size: 0.78rem;
+  font-size: 0.82rem;
   line-height: 1.4;
-  letter-spacing: 0.02em;
-  font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+.meta-num {
+  font-family: var(--mono-font);
+  font-variant-numeric: tabular-nums;
+  margin-right: 0.15em;
 }
 
 .meta-chip + .meta-chip::before {
@@ -1596,7 +1598,7 @@ body.is-list-view .command-card:focus-within .tag-list {
 
 @media (prefers-reduced-motion: no-preference) {
   .scroll-top-btn.is-visible::before {
-    animation: scroll-top-pulse 2.6s cubic-bezier(0.32, 0, 0.26, 1) infinite;
+    animation: scroll-top-pulse 2.6s cubic-bezier(0.32, 0, 0.26, 1) 0.25s 3;
   }
 }
 
