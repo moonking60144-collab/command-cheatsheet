@@ -112,7 +112,26 @@ async function init() {
 
 function bindEvents() {
   [ui.searchInput, ui.stickySearchInput].forEach((input) => {
-    input?.addEventListener("input", (event) => {
+    if (!input) {
+      return;
+    }
+
+    // IME composition guard: ignore input events while composing (Bopomofo,
+    // Pinyin, Kana, etc.) so partial composition strings don't reach the
+    // search filter and disturb the IME state mid-composition.
+    input.addEventListener("compositionstart", () => {
+      input.dataset.composing = "true";
+    });
+
+    input.addEventListener("compositionend", (event) => {
+      delete input.dataset.composing;
+      updateQuery(event.target.value, event.target);
+    });
+
+    input.addEventListener("input", (event) => {
+      if (event.isComposing || input.dataset.composing === "true") {
+        return;
+      }
       updateQuery(event.target.value, event.target);
     });
   });
@@ -325,6 +344,12 @@ function bindEvents() {
   });
 
   document.addEventListener("keydown", (event) => {
+    // Skip all custom shortcut handling while an IME composition is active
+    // (Bopomofo, Pinyin, Kana, etc.) so we don't disturb the IME state.
+    if (event.isComposing) {
+      return;
+    }
+
     const activeElement = document.activeElement;
     const activeTag = activeElement?.tagName;
     const isTyping = isTextEntryElement(activeElement);
