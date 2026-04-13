@@ -94,12 +94,19 @@ test.describe("Command Atlas smoke", () => {
 
     const stickyInput = page.locator("#sticky-search-input");
     await stickyInput.fill("git");
+    // Wait for the filter debounce + render so the document reaches its
+    // filtered height before we capture the baseline scrollY.
+    await page.waitForTimeout(300);
+    const startScrollY = await page.evaluate(() => window.scrollY);
 
     await page.keyboard.press("Escape");
-
     await expect(stickyInput).toHaveValue("");
     await expect(stickyInput).toBeFocused();
-    const scrollY = await page.evaluate(() => window.scrollY);
-    expect(scrollY).toBeGreaterThan(500);
+
+    // Allow any residual smooth-scroll animation to complete, then assert the
+    // page has not drifted more than a few pixels from where the user was.
+    await page.waitForTimeout(600);
+    const endScrollY = await page.evaluate(() => window.scrollY);
+    expect(Math.abs(endScrollY - startScrollY)).toBeLessThan(20);
   });
 });

@@ -623,7 +623,7 @@ function renderFilters() {
   });
 
   const activeButton = ui.filterBar.querySelector(`[data-category="${escapeCssSelector(state.activeCategory)}"]`);
-  activeButton?.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" });
+  centerFilterPillHorizontally(activeButton);
 
   renderCategoryPickers();
   updateStickySearchState();
@@ -639,7 +639,7 @@ function updateFilterPillActive() {
   });
 
   const activeButton = ui.filterBar.querySelector(".filter-pill.is-active");
-  activeButton?.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" });
+  centerFilterPillHorizontally(activeButton);
 
   const pickerLabel = getActiveCategoryLabel();
   getCategoryPickerPairs().forEach(({ button, panel }) => {
@@ -2429,6 +2429,21 @@ function hashToHue(str) {
   }
 
   return Math.abs(hash) % 360;
+}
+
+// scrollIntoView with block:"nearest" also scrolls the WINDOW to bring the
+// element into vertical view — which yanked the page back to the top every
+// time a filter pill was re-centered (e.g. on clearFilters via Esc). We only
+// want horizontal re-centering inside the filter bar, so compute the scroll
+// target ourselves and touch ui.filterBar.scrollLeft directly.
+function centerFilterPillHorizontally(pill) {
+  if (!pill || !ui.filterBar) return;
+  const bar = ui.filterBar;
+  const target = pill.offsetLeft + pill.offsetWidth / 2 - bar.clientWidth / 2;
+  bar.scrollTo({
+    left: Math.max(0, target),
+    behavior: "smooth"
+  });
 }
 
 function updateFilterBarOverflow() {
