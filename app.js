@@ -1492,7 +1492,7 @@ function renderResults(container, items) {
     card.innerHTML = `
       <div class="card-top">
         <button class="category-badge category-badge-button" type="button" data-category="${escapeAttribute(item.category)}" aria-label="篩選分類 ${escapeAttribute(item.category)}" title="篩選分類 ${escapeAttribute(item.category)}">
-          ${escapeHtml(item.category)}
+          ${highlightText(item.category, highlightPattern)}
         </button>
         ${isFuzzy ? '<span class="fuzzy-hint">近似匹配</span>' : ''}
         <button class="pin-button" type="button" data-pin-id="${escapeAttribute(item.id)}" aria-label="${isPinned ? "取消釘選" : "釘選此指令"}" aria-pressed="${isPinned}" title="${isPinned ? "取消釘選" : "釘選"}">

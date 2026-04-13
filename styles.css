@@ -1393,6 +1393,14 @@ mark {
   box-shadow: 0 0 0 1px rgba(255, 200, 87, 0.2);
 }
 
+.category-badge mark {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  border-radius: 0;
+  border-bottom: 1px solid currentColor;
+}
+
 .description {
   margin: 0;
   color: var(--text-secondary);
