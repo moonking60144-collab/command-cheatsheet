@@ -1,0 +1,16 @@
+{
+  "name": "command-atlas",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Local dev tooling for Command Atlas. The app itself is pure static HTML/CSS/JS and ships without a build step.",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui",
+    "serve": "http-server . -p 4173 -c-1 --silent"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.48.0",
+    "http-server": "^14.1.1"
+  }
+}
