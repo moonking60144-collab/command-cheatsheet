@@ -71,4 +71,20 @@ test.describe("Command Atlas smoke", () => {
     await expect(empty.locator(".empty-state-token")).toContainText("zzzzz_no_match_expected_zzzzz");
     await expect(empty.locator(".empty-state-zero")).toContainText("0");
   });
+
+  test("scroll-top button and sticky search bar toggle together past the hero", async ({ page }) => {
+    const stickyBar = page.locator("#sticky-search-bar");
+    const scrollTop = page.locator("#scroll-top-btn");
+
+    await expect(stickyBar).not.toHaveClass(/is-visible/);
+    await expect(scrollTop).not.toHaveClass(/is-visible/);
+
+    await page.evaluate(() => window.scrollTo(0, 2000));
+    await expect(stickyBar).toHaveClass(/is-visible/);
+    await expect(scrollTop).toHaveClass(/is-visible/);
+
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await expect(stickyBar).not.toHaveClass(/is-visible/);
+    await expect(scrollTop).not.toHaveClass(/is-visible/);
+  });
 });

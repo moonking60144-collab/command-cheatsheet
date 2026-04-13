@@ -6,7 +6,6 @@ const SENSITIVE_TOKEN_PATTERN = /token|password|secret|key|密碼|金鑰|憑證/
 const DATA_URL = "./commands.json";
 const SECURE_DATA_URL = "./secure-categories.json";
 const SEARCH_DEBOUNCE_MS = 80;
-const SCROLL_TOP_THRESHOLD = 280;
 const RESULTS_PER_PAGE = 100;
 const PBKDF2_ITERATIONS = 250000;
 const PBKDF2_KEY_SIZE = 256 / 32;
@@ -413,18 +412,7 @@ function bindEvents() {
     shortcutsTooltip?.setAttribute("aria-hidden", "true");
   }
 
-  let scrollRafPending = false;
-  window.addEventListener("scroll", () => {
-    if (!scrollRafPending) {
-      scrollRafPending = true;
-      requestAnimationFrame(() => {
-        toggleUtilityChrome();
-        scrollRafPending = false;
-      });
-    }
-  }, { passive: true });
   window.addEventListener("resize", () => {
-    toggleUtilityChrome();
     updateFilterBarOverflow();
     getCategoryPickerPairs()
       .filter(({ panel }) => !panel.hidden)
@@ -433,8 +421,36 @@ function bindEvents() {
 
   ui.filterBar?.addEventListener("scroll", updateFilterBarOverflow, { passive: true });
 
-  toggleScrollTopButton();
-  toggleStickySearchBar();
+  setupUtilityChromeObserver();
+}
+
+// Single IntersectionObserver drives both the scroll-to-top button and
+// the sticky search bar: the moment the hero is no longer intersecting
+// the top of the viewport (offset by 72px to trigger slightly before the
+// hero's bottom edge crosses), both chrome elements come in together,
+// and they leave together when the user scrolls back. No scroll listener,
+// no cached offsetHeight, no threshold to keep in sync with anything.
+function setupUtilityChromeObserver() {
+  if (!ui.hero || typeof IntersectionObserver === "undefined") {
+    return;
+  }
+
+  const observer = new IntersectionObserver(
+    ([entry]) => {
+      const showChrome = !entry.isIntersecting;
+      if (ui.scrollTopButton) {
+        ui.scrollTopButton.classList.toggle("is-visible", showChrome);
+        ui.scrollTopButton.setAttribute("aria-hidden", String(!showChrome));
+      }
+      if (ui.stickySearchBar) {
+        ui.stickySearchBar.classList.toggle("is-visible", showChrome);
+        ui.stickySearchBar.setAttribute("aria-hidden", String(!showChrome));
+      }
+    },
+    { rootMargin: "-72px 0px 0px 0px", threshold: 0 }
+  );
+
+  observer.observe(ui.hero);
 }
 
 async function fetchJson(url, label) {
@@ -1580,7 +1596,6 @@ function updateSummary(resultCount) {
     ui.stickyClearButton.hidden = !hasActiveFilters;
   }
   updateStickySearchState();
-  toggleUtilityChrome();
 }
 
 function updateQuery(value, sourceInput = null) {
@@ -2416,32 +2431,6 @@ function hashToHue(str) {
   }
 
   return Math.abs(hash) % 360;
-}
-
-function toggleUtilityChrome() {
-  toggleScrollTopButton();
-  toggleStickySearchBar();
-}
-
-function toggleScrollTopButton() {
-  if (!ui.scrollTopButton) {
-    return;
-  }
-
-  const shouldShow = window.scrollY > SCROLL_TOP_THRESHOLD;
-  ui.scrollTopButton.classList.toggle("is-visible", shouldShow);
-  ui.scrollTopButton.setAttribute("aria-hidden", String(!shouldShow));
-}
-
-function toggleStickySearchBar() {
-  if (!ui.stickySearchBar || !ui.hero) {
-    return;
-  }
-
-  const stickyThreshold = Math.max(160, ui.hero.offsetHeight - 72);
-  const shouldShow = window.scrollY > stickyThreshold;
-  ui.stickySearchBar.classList.toggle("is-visible", shouldShow);
-  ui.stickySearchBar.setAttribute("aria-hidden", String(!shouldShow));
 }
 
 function updateFilterBarOverflow() {
