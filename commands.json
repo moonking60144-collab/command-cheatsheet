@@ -494,6 +494,20 @@
     "notes": "排網站、RDP、SQL、SMB、API 時比 `ping` 更接近實際問題。"
   },
   {
+    "id": "windows-telnet-port",
+    "category": "Windows Port & Firewall",
+    "command": "telnet <主機> <埠>",
+    "description": "用 Telnet 測試目的地 TCP 埠是否可連。",
+    "tags": [
+      "telnet",
+      "tcp",
+      "port",
+      "network",
+      "windows"
+    ],
+    "notes": "例：`telnet 118.163.115.30 80`。畫面變空白 / 游標停住即代表連線成功，`Ctrl+]` 後輸入 `quit` 離開。Windows 預設未安裝 Telnet Client，需先以 `dism /online /enable-feature /featurename:TelnetClient` 或「Windows 功能」啟用；PowerShell 環境建議改用 `Test-NetConnection`。"
+  },
+  {
     "id": "windows-netstat-ano",
     "category": "Windows Port & Firewall",
     "command": "netstat -ano",
@@ -1223,6 +1237,34 @@
     "notes": "想進入傳統 Windows 命令列時可直接用這條。"
   },
   {
+    "id": "windows-cmd-keep",
+    "category": "Windows Shortcut",
+    "command": "cmd /k <指令>",
+    "description": "開新 cmd 視窗執行指令，完成後保留視窗不關閉。",
+    "tags": [
+      "windows",
+      "shortcut",
+      "cmd",
+      "shell",
+      "keep"
+    ],
+    "notes": "例：`cmd /k hostname` 開視窗顯示電腦名稱後停在提示字元等你操作。適合從捷徑或「執行」對話框啟動、又想看到輸出結果的情境。"
+  },
+  {
+    "id": "windows-cmd-close",
+    "category": "Windows Shortcut",
+    "command": "cmd /c <指令>",
+    "description": "開新 cmd 視窗執行指令，完成後立即關閉。",
+    "tags": [
+      "windows",
+      "shortcut",
+      "cmd",
+      "shell",
+      "close"
+    ],
+    "notes": "例：`cmd /c hostname` 視窗閃一下就關掉。常用於捷徑、排程工作或批次檔中，只需要指令跑完不必看輸出。"
+  },
+  {
     "id": "windows-powershell",
     "category": "Windows Shortcut",
     "command": "powershell",
@@ -1277,6 +1319,61 @@
       "risk"
     ],
     "notes": "高風險，會立刻重開；遠端或正式環境操作前請先確認。"
+  },
+  {
+    "id": "windows-shutdown-advanced-boot",
+    "category": "Windows Process & Service",
+    "command": "shutdown /r /o /t 0",
+    "description": "重新開機並進入 Windows 進階啟動選單 (WinRE)。",
+    "tags": [
+      "windows",
+      "shutdown",
+      "restart",
+      "recovery",
+      "winre",
+      "uefi",
+      "risk"
+    ],
+    "notes": "進入選單後可走「疑難排解 → 進階選項 → UEFI 韌體設定」進 BIOS，也能選安全模式、啟動修復、回復映像等。`/o` 必須搭配 `/r`，高風險會立刻重開。"
+  },
+  {
+    "id": "windows-shutdown-logoff",
+    "category": "Windows Process & Service",
+    "command": "shutdown /l",
+    "description": "登出目前使用者。",
+    "tags": [
+      "windows",
+      "shutdown",
+      "logoff",
+      "session"
+    ],
+    "notes": "只能單獨使用，不能與 `/m`（遠端）或 `/d`（原因碼）一起用，等同 `logoff` 指令。"
+  },
+  {
+    "id": "windows-shutdown-hibernate",
+    "category": "Windows Process & Service",
+    "command": "shutdown /h",
+    "description": "讓系統立即進入休眠狀態。",
+    "tags": [
+      "windows",
+      "shutdown",
+      "hibernate",
+      "power"
+    ],
+    "notes": "需先以 `powercfg /h on` 啟用休眠（部分 OEM 預設關閉，開啟後會產生 hiberfil.sys）。休眠會把記憶體內容寫入磁碟後斷電，下次開機還原工作階段。"
+  },
+  {
+    "id": "windows-shutdown-abort",
+    "category": "Windows Process & Service",
+    "command": "shutdown /a",
+    "description": "取消已排程中的關機或重新開機。",
+    "tags": [
+      "windows",
+      "shutdown",
+      "abort",
+      "cancel"
+    ],
+    "notes": "只在倒數期間有效（例如先下了 `shutdown /s /t 60` 後還沒執行到零）。已經開始關機就來不及救。"
   },
   {
     "id": "windows-dir",

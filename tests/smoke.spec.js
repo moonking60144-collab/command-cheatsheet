@@ -87,4 +87,19 @@ test.describe("Command Atlas smoke", () => {
     await expect(stickyBar).not.toHaveClass(/is-visible/);
     await expect(scrollTop).not.toHaveClass(/is-visible/);
   });
+
+  test("Esc while scrolled keeps the page in place and focuses the sticky search", async ({ page }) => {
+    await page.evaluate(() => window.scrollTo(0, 2000));
+    await expect(page.locator("#sticky-search-bar")).toHaveClass(/is-visible/);
+
+    const stickyInput = page.locator("#sticky-search-input");
+    await stickyInput.fill("git");
+
+    await page.keyboard.press("Escape");
+
+    await expect(stickyInput).toHaveValue("");
+    await expect(stickyInput).toBeFocused();
+    const scrollY = await page.evaluate(() => window.scrollY);
+    expect(scrollY).toBeGreaterThan(500);
+  });
 });

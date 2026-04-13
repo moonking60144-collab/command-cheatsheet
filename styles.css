@@ -78,7 +78,7 @@ kbd {
 .app-shell {
   width: min(calc(100% - 1.5rem), var(--content-width));
   margin: 0 auto;
-  padding: 1.25rem 0 1.75rem;
+  padding: 0.5rem 0 1.75rem;
 }
 
 .hero {

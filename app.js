@@ -378,15 +378,13 @@ function bindEvents() {
 
       if (hasOpenCategoryPicker()) {
         closeAllCategoryPickers();
-        scrollPageToTop();
-        focusMainSearch({ select: false });
+        focusActiveSearch({ select: false });
         return;
       }
 
       closeShortcutsTooltip();
       clearFilters();
-      scrollPageToTop();
-      focusMainSearch({ select: false });
+      focusActiveSearch({ select: false });
     }
   });
 
@@ -2447,22 +2445,6 @@ function updateFilterBarOverflow() {
 function getActiveSearchInput() {
   const stickyVisible = ui.stickySearchBar?.classList.contains("is-visible");
   return stickyVisible && ui.stickySearchInput ? ui.stickySearchInput : ui.searchInput;
-}
-
-function scrollPageToTop() {
-  window.scrollTo({ top: 0, behavior: "smooth" });
-}
-
-function focusMainSearch({ select = true } = {}) {
-  if (!ui.searchInput) {
-    return;
-  }
-
-  ui.searchInput.focus({ preventScroll: true });
-
-  if (select) {
-    ui.searchInput.select?.();
-  }
 }
 
 function focusActiveSearch({ select = true } = {}) {
