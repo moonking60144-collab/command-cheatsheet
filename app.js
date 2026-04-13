@@ -1460,10 +1460,15 @@ function hasFuzzyMatch(item, tokens) {
 
 function renderResults(container, items) {
   if (!items.length) {
+    const queryLabel = state.query.trim() || "*";
+    const scope = state.activeCategory && state.activeCategory !== "all"
+      ? `./${state.activeCategory}`
+      : "./commands";
     container.innerHTML = `
-      <article class="empty-state">
-        <h3>沒有找到符合的指令</h3>
-        <p>可以換個關鍵字，或先切回「全部」再看看。</p>
+      <article class="empty-state" role="status">
+        <p class="empty-state-prompt"><span class="empty-state-sigil">$</span>grep -r <span class="empty-state-token">"${escapeHtml(queryLabel)}"</span> ${escapeHtml(scope)}</p>
+        <p class="empty-state-result">→ <span class="empty-state-zero">0 matches</span></p>
+        <p class="empty-state-hint">試試更短的關鍵字，或先清除目前的分類篩選。</p>
       </article>
     `;
     return;

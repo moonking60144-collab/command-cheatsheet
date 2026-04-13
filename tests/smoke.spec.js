@@ -61,4 +61,14 @@ test.describe("Command Atlas smoke", () => {
     await search.fill("git");
     await expect(page.locator(".command-card mark").first()).toBeVisible();
   });
+
+  test("empty state renders terminal-style grep prompt when nothing matches", async ({ page }) => {
+    const search = page.locator("#search-input");
+    await search.fill("zzzzz_no_match_expected_zzzzz");
+    const empty = page.locator(".empty-state").first();
+    await expect(empty).toBeVisible();
+    await expect(empty.locator(".empty-state-sigil")).toHaveText("$");
+    await expect(empty.locator(".empty-state-token")).toContainText("zzzzz_no_match_expected_zzzzz");
+    await expect(empty.locator(".empty-state-zero")).toContainText("0");
+  });
 });

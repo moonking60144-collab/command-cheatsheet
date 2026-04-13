@@ -1079,11 +1079,13 @@ kbd {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  padding: 0.95rem;
+  padding: 0.95rem 0.95rem 0.95rem 1.05rem;
   border-radius: var(--radius-lg);
   border: 1px solid var(--border);
-  background: var(--surface);
-  box-shadow: inset 3px 0 0 0 var(--category-accent-border, rgba(121, 184, 255, 0.24));
+  background:
+    linear-gradient(90deg, var(--category-accent-soft, rgba(121, 184, 255, 0.05)) 0%, transparent 42%),
+    var(--surface);
+  box-shadow: inset 4px 0 0 0 var(--category-accent, rgba(121, 184, 255, 0.42));
   transition: border-color 0.18s ease, background 0.18s ease, transform 0.12s ease, box-shadow 0.18s ease;
   cursor: pointer;
   user-select: none;
@@ -1091,11 +1093,13 @@ kbd {
 
 .command-card:hover {
   border-color: var(--category-accent-border, var(--border-strong));
-  background: var(--surface-strong);
+  background:
+    linear-gradient(90deg, var(--category-accent-soft, rgba(121, 184, 255, 0.08)) 0%, transparent 48%),
+    var(--surface-strong);
   transform: translateY(-1px);
   box-shadow:
-    inset 3px 0 0 0 var(--category-accent, var(--accent)),
-    0 0 18px var(--category-accent-soft, rgba(121, 184, 255, 0.06));
+    inset 4px 0 0 0 var(--category-accent, var(--accent)),
+    0 0 22px var(--category-accent-soft, rgba(121, 184, 255, 0.08));
 }
 
 .command-card:active {
@@ -1107,7 +1111,7 @@ kbd {
   outline: none;
   border-color: var(--category-accent-border, rgba(121, 184, 255, 0.42));
   box-shadow:
-    inset 3px 0 0 0 var(--category-accent, var(--accent)),
+    inset 4px 0 0 0 var(--category-accent, var(--accent)),
     0 0 0 3px rgba(121, 184, 255, 0.16);
 }
 
@@ -1115,14 +1119,14 @@ kbd {
   border-color: rgba(158, 221, 170, 0.5);
   background: rgba(158, 221, 170, 0.04);
   box-shadow:
-    inset 3px 0 0 0 var(--success),
+    inset 4px 0 0 0 var(--success),
     0 0 0 1px rgba(158, 221, 170, 0.18);
 }
 
 .command-card.is-pinned {
   border-color: rgba(121, 184, 255, 0.32);
   box-shadow:
-    inset 3px 0 0 0 var(--category-accent, var(--accent)),
+    inset 4px 0 0 0 var(--category-accent, var(--accent)),
     inset 0 0 0 1px rgba(121, 184, 255, 0.08);
 }
 
@@ -1179,7 +1183,7 @@ kbd {
 .command-card:hover .command-line {
   border-color: var(--category-accent-border, rgba(121, 184, 255, 0.34));
   box-shadow:
-    inset 3px 0 0 0 var(--category-accent, var(--accent)),
+    inset 4px 0 0 0 var(--category-accent, var(--accent)),
     0 0 0 1px rgba(255, 255, 255, 0.02);
 }
 
@@ -1281,7 +1285,7 @@ body.has-active-filter .category-badge-button:hover {
   border-radius: var(--radius-md);
   background: #060d14;
   border: 1px solid rgba(121, 184, 255, 0.24);
-  box-shadow: inset 3px 0 0 0 var(--category-accent, var(--accent));
+  box-shadow: inset 4px 0 0 0 var(--category-accent, var(--accent));
   color: var(--accent-strong);
   font-size: 1.02rem;
   font-weight: 600;
@@ -1464,10 +1468,20 @@ mark {
 
 .empty-state,
 .error-state {
-  padding: 1.2rem;
+  padding: 1.4rem 1.2rem 1.2rem 1.3rem;
   border-radius: var(--radius-lg);
   border: 1px dashed var(--border-strong);
   background: var(--surface);
+  box-shadow: inset 4px 0 0 0 rgba(255, 200, 87, 0.28);
+}
+
+.empty-state {
+  display: grid;
+  gap: 0.6rem;
+  font-family: var(--mono-font);
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
 }
 
 .empty-state h3,
@@ -1476,11 +1490,42 @@ mark {
   font-size: 1rem;
 }
 
-.empty-state h3 {
-  font-size: 0.95rem;
+.empty-state-prompt {
+  margin: 0;
+  color: var(--text-primary);
+  letter-spacing: 0.01em;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
-.empty-state p,
+.empty-state-sigil {
+  color: var(--accent-warm, #ffc857);
+  font-weight: 700;
+  margin-right: 0.35em;
+  user-select: none;
+}
+
+.empty-state-token {
+  color: var(--accent-strong);
+}
+
+.empty-state-result {
+  margin: 0;
+  color: var(--text-dim);
+}
+
+.empty-state-zero {
+  color: var(--accent-warm, #ffc857);
+  font-weight: 600;
+}
+
+.empty-state-hint {
+  margin: 0.35rem 0 0;
+  font-family: var(--ui-font, inherit);
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
 .error-state p {
   margin: 0;
   color: var(--text-secondary);
@@ -1492,6 +1537,7 @@ mark {
   border-radius: var(--radius-lg);
   border: 1px solid var(--border);
   background: var(--surface);
+  box-shadow: inset 4px 0 0 0 rgba(121, 184, 255, 0.22);
   min-height: 180px;
   position: relative;
   overflow: hidden;
