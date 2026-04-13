@@ -425,14 +425,13 @@ function bindEvents() {
   }, { passive: true });
   window.addEventListener("resize", () => {
     toggleUtilityChrome();
+    updateFilterBarOverflow();
     getCategoryPickerPairs()
       .filter(({ panel }) => !panel.hidden)
       .forEach(({ panel }) => positionPicker(panel));
   }, { passive: true });
 
-  ui.filterBar?.addEventListener("scroll", () => {
-    ui.filterBar.parentElement?.classList.toggle("has-left-overflow", ui.filterBar.scrollLeft > 4);
-  }, { passive: true });
+  ui.filterBar?.addEventListener("scroll", updateFilterBarOverflow, { passive: true });
 
   toggleScrollTopButton();
   toggleStickySearchBar();
@@ -587,13 +586,19 @@ function renderFilters() {
   const counts = state.commandCounts;
   const pinnedPill = state.pinned.size > 0 ? [createPinnedFilterButton()] : [];
 
+  const divider = document.createElement("span");
+  divider.className = "filter-bar-divider";
+  divider.setAttribute("aria-hidden", "true");
+
   const buttons = [
     createFilterButton("all", "全部", state.commands.length),
+    divider,
     ...pinnedPill,
     ...state.categories.map((category) => createFilterButton(category, category, counts[category] || 0))
   ];
 
   ui.filterBar.replaceChildren(indicator, ...buttons);
+  updateFilterBarOverflow();
 
   // Position indicator instantly (no transition), then enable transition after paint
   syncFilterIndicator();
@@ -2437,6 +2442,17 @@ function toggleStickySearchBar() {
   const shouldShow = window.scrollY > stickyThreshold;
   ui.stickySearchBar.classList.toggle("is-visible", shouldShow);
   ui.stickySearchBar.setAttribute("aria-hidden", String(!shouldShow));
+}
+
+function updateFilterBarOverflow() {
+  const bar = ui.filterBar;
+  const wrap = bar?.parentElement;
+  if (!bar || !wrap) return;
+  const maxScroll = bar.scrollWidth - bar.clientWidth;
+  const hasLeft = bar.scrollLeft > 4;
+  const hasRight = maxScroll > 4 && bar.scrollLeft < maxScroll - 4;
+  wrap.classList.toggle("has-left-overflow", hasLeft);
+  wrap.classList.toggle("has-right-overflow", hasRight);
 }
 
 function getActiveSearchInput() {
