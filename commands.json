@@ -382,6 +382,104 @@
     "notes": "排區網設備、IP 衝突或第二層網路問題時很有參考價值。"
   },
   {
+    "id": "windows-net-use-list",
+    "category": "Windows Network & DNS",
+    "command": "net use",
+    "description": "列出目前所有 SMB 網路連線。",
+    "tags": [
+      "smb",
+      "net-use",
+      "share",
+      "network",
+      "windows"
+    ],
+    "notes": "排查共用資料夾連線狀態的起手式，可看到遠端路徑、狀態與本機磁碟機對應。"
+  },
+  {
+    "id": "windows-net-use-connect-creds",
+    "category": "Windows Network & DNS",
+    "command": "NET USE \\\\<主機>\\<共用名稱> /USER:<帳號> <密碼>",
+    "description": "用指定帳密連線到遠端共用資料夾。",
+    "tags": [
+      "smb",
+      "net-use",
+      "share",
+      "credentials",
+      "windows"
+    ],
+    "notes": "例：`NET USE \\\\DBSERVER\\SIMIS /USER:USER 1668`。密碼會出現在命令列歷史，敏感環境請改用互動輸入。"
+  },
+  {
+    "id": "windows-net-use-disconnect-host",
+    "category": "Windows Network & DNS",
+    "command": "net use /delete \\\\<主機>",
+    "description": "斷開對遠端主機的 SMB 連線。",
+    "tags": [
+      "smb",
+      "net-use",
+      "share",
+      "disconnect",
+      "windows"
+    ],
+    "notes": "例：`net use /delete \\\\DBSERVER`。連線卡住或要用不同帳號重連時常用。"
+  },
+  {
+    "id": "windows-net-use-disconnect-share",
+    "category": "Windows Network & DNS",
+    "command": "net use /delete \\\\<主機>\\<共用名稱>",
+    "description": "斷開對特定共用資料夾的 SMB 連線。",
+    "tags": [
+      "smb",
+      "net-use",
+      "share",
+      "disconnect",
+      "windows"
+    ],
+    "notes": "例：`net use /delete \\\\DBSERVER\\SIMIS`。只斷單一共用資料夾，不影響同主機其他共用。"
+  },
+  {
+    "id": "windows-ping-hostname",
+    "category": "Windows Network & DNS",
+    "command": "ping <主機名稱>",
+    "description": "解析主機名稱並測試連線（預設優先 IPv6）。",
+    "tags": [
+      "ping",
+      "dns",
+      "ipv6",
+      "network",
+      "windows"
+    ],
+    "notes": "例：`ping DBSERVER`。若顯示 IPv6 位址但需要 IPv4，改用 `ping -4`。"
+  },
+  {
+    "id": "windows-ping-ipv4",
+    "category": "Windows Network & DNS",
+    "command": "ping -4 <主機名稱>",
+    "description": "強制用 IPv4 解析，取得 192.168.x.x 格式的 IP。",
+    "tags": [
+      "ping",
+      "ipv4",
+      "dns",
+      "network",
+      "windows"
+    ],
+    "notes": "例：`ping -4 DBSERVER`。確認內網實際 IP、或要在防火牆規則比對時特別好用。"
+  },
+  {
+    "id": "windows-nslookup-hostname",
+    "category": "Windows Network & DNS",
+    "command": "nslookup <主機名稱>",
+    "description": "查詢 DNS 解析結果，會顯示回應的 DNS Server。",
+    "tags": [
+      "nslookup",
+      "dns",
+      "resolver",
+      "network",
+      "windows"
+    ],
+    "notes": "例：`nslookup DBSERVER`。輸出會同時顯示是哪一台 DNS 伺服器回應，方便確認解析來源。"
+  },
+  {
     "id": "windows-test-netconnection",
     "category": "Windows Port & Firewall",
     "command": "Test-NetConnection <主機> -Port <埠>",
@@ -422,6 +520,20 @@
       "listen"
     ],
     "notes": "排 Web、RDP、代理、反向代理時很好用，例如 `:443` 或 `:3389`。"
+  },
+  {
+    "id": "windows-netstat-smb-445",
+    "category": "Windows Port & Firewall",
+    "command": "netstat -an | findstr 445",
+    "description": "查看目前 TCP 445 (SMB) 的實際連線 IP。",
+    "tags": [
+      "netstat",
+      "smb",
+      "port",
+      "445",
+      "windows"
+    ],
+    "notes": "排共用資料夾、檔案伺服器連線問題時很好用。可確認實際連到哪台主機，或是否仍有殘留連線。"
   },
   {
     "id": "windows-get-nettcpconnection",
