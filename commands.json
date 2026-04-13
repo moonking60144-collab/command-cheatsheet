@@ -1337,6 +1337,22 @@
     "notes": "進入選單後可走「疑難排解 → 進階選項 → UEFI 韌體設定」進 BIOS，也能選安全模式、啟動修復、回復映像等。`/o` 必須搭配 `/r`，高風險會立刻重開。"
   },
   {
+    "id": "windows-shutdown-firmware",
+    "category": "Windows Process & Service",
+    "command": "shutdown /r /fw /t 0",
+    "description": "重新開機並直接進入 UEFI 韌體設定 (BIOS)。",
+    "tags": [
+      "windows",
+      "shutdown",
+      "restart",
+      "uefi",
+      "bios",
+      "firmware",
+      "risk"
+    ],
+    "notes": "比 `/r /o` 更直接 — 跳過 WinRE 選單，下次開機直接落在 UEFI 設定畫面。需要管理員權限，且僅限 UEFI 韌體機台（傳統 BIOS 不支援）；`/fw` 可與 `/r` 或 `/s` 搭配。高風險，會立刻重開。"
+  },
+  {
     "id": "windows-shutdown-logoff",
     "category": "Windows Process & Service",
     "command": "shutdown /l",
