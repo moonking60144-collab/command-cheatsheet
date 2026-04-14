@@ -1257,6 +1257,48 @@ body.has-active-filter .category-badge-button:hover {
   position: relative;
 }
 
+.variant-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0.1rem 0 0.55rem 0;
+}
+
+.variant-tab {
+  padding: 0.28rem 0.65rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(121, 184, 255, 0.22);
+  background: rgba(121, 184, 255, 0.06);
+  color: var(--text-dim);
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition:
+    color 0.16s ease,
+    border-color 0.16s ease,
+    background 0.16s ease,
+    transform 0.16s ease;
+}
+
+.variant-tab:hover {
+  color: var(--accent-strong);
+  border-color: rgba(121, 184, 255, 0.45);
+  background: rgba(121, 184, 255, 0.12);
+}
+
+.variant-tab:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(121, 184, 255, 0.28);
+}
+
+.variant-tab.is-active {
+  color: #0c1610;
+  background: var(--category-accent, var(--accent));
+  border-color: var(--category-accent, var(--accent));
+}
+
 .copy-button {
   position: absolute;
   top: 0.45rem;

@@ -3352,5 +3352,92 @@
       "windows"
     ],
     "notes": "路徑不存在時先執行 `dir \"C:\\Program Files\\Microsoft Office\\Office*\" /b` 確認實際目錄名稱。"
+  },
+  {
+    "id": "nmap-port-scan",
+    "category": "Nmap",
+    "description": "對目標主機做 port 掃描，可切換掃描範圍。",
+    "variants": [
+      { "label": "常見 1000 port", "command": "nmap <目標>" },
+      { "label": "全部 65535 port", "command": "nmap -p- <目標>" },
+      { "label": "指定 port", "command": "nmap -p <port 列表> <目標>" },
+      { "label": "port 範圍", "command": "nmap -p <起>-<迄> <目標>" }
+    ],
+    "tags": [
+      "nmap",
+      "scan",
+      "port",
+      "network",
+      "recon"
+    ],
+    "notes": "`-p-` 掃全 65535 port，時間會明顯拉長。port 列表例：`80,443,5000,5001,8080`。"
+  },
+  {
+    "id": "nmap-service-detect",
+    "category": "Nmap",
+    "description": "辨識服務版本，找後台或判斷暴露面最實用。",
+    "variants": [
+      { "label": "常見 port 版本", "command": "nmap -sV <目標>" },
+      { "label": "全 port 版本", "command": "nmap -sV -p- <目標>" }
+    ],
+    "tags": [
+      "nmap",
+      "service",
+      "version",
+      "scan",
+      "recon"
+    ],
+    "notes": "`-sV` 會真的去打 banner，速度比單純 port 掃描慢，但能拿到 Apache/Nginx/OpenSSH 等版本資訊。"
+  },
+  {
+    "id": "nmap-subnet-scan",
+    "category": "Nmap",
+    "description": "對整個網段掃描，列出存活主機或進一步偵測服務。",
+    "variants": [
+      { "label": "存活主機", "command": "nmap -sn <網段>" },
+      { "label": "網段 + 服務版本", "command": "nmap -sV <網段>" }
+    ],
+    "tags": [
+      "nmap",
+      "subnet",
+      "ping-sweep",
+      "network",
+      "discovery"
+    ],
+    "notes": "`-sn` 只做 host discovery、不掃 port，速度最快。網段寫法例：`192.168.1.0/24`。"
+  },
+  {
+    "id": "nmap-os-detect",
+    "category": "Nmap",
+    "description": "猜測目標主機的作業系統，可搭配服務偵測一次完成。",
+    "variants": [
+      { "label": "只猜 OS", "command": "nmap -O <目標>" },
+      { "label": "服務 + OS", "command": "nmap -sV -O <目標>" }
+    ],
+    "tags": [
+      "nmap",
+      "os",
+      "fingerprint",
+      "scan",
+      "recon"
+    ],
+    "notes": "`-O` 需要 root/admin 權限。OS 判斷是機率性結果，僅供參考。"
+  },
+  {
+    "id": "nmap-combo",
+    "category": "Nmap",
+    "description": "常用的組合技，一次拿到最多資訊或快速找後台。",
+    "variants": [
+      { "label": "全 port + 服務 + OS", "command": "nmap -sV -O -p- <目標>" },
+      { "label": "網段找 Web 後台", "command": "nmap -p 80,443,8080,8443,5000,5001,8006,8888 <網段>" }
+    ],
+    "tags": [
+      "nmap",
+      "combo",
+      "scan",
+      "recon",
+      "web"
+    ],
+    "notes": "完整掃描會花不少時間，實戰上會先用 `-sn` 縮範圍再挑目標深掃。"
   }
 ]

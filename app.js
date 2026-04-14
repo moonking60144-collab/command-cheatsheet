@@ -30,6 +30,7 @@ const state = {
   protectedCategories: [],
   unlockedCommands: new Map(),
   placeholderValues: new Map(),
+  activeVariants: new Map(),
   pinned: new Set(),
   commands: [],
   categories: [],
@@ -241,6 +242,18 @@ function bindEvents() {
 
       if (tagButton) {
         filterByTag(tagButton.dataset.tag);
+        return;
+      }
+
+      const variantTab = event.target.closest("[data-variant-index]");
+
+      if (variantTab) {
+        event.stopPropagation();
+        const variantCard = variantTab.closest(".command-card");
+        const nextIndex = Number.parseInt(variantTab.dataset.variantIndex ?? "", 10);
+        if (variantCard && Number.isFinite(nextIndex)) {
+          switchCardVariant(variantCard, nextIndex);
+        }
         return;
       }
 
@@ -492,10 +505,23 @@ function normalizeCommands(rawData, fallbackCategory = "") {
     .filter(Boolean)
     .map((item, index) => {
       const derivedCategory = String(item.category ?? fallbackCategory ?? "").trim() || "Uncategorized";
+      const rawVariants = Array.isArray(item.variants)
+        ? item.variants
+          .map((variant) => ({
+            label: String(variant?.label ?? "").trim(),
+            command: String(variant?.command ?? "").trim()
+          }))
+          .filter((variant) => variant.label && variant.command)
+        : [];
+      const primaryCommand = rawVariants.length > 0
+        ? rawVariants[0].command
+        : String(item.command ?? "").trim();
+
       const normalized = {
         id: item.id ?? `command-${index + 1}`,
         category: derivedCategory,
-        command: String(item.command ?? "").trim(),
+        command: primaryCommand,
+        variants: rawVariants,
         description: String(item.description ?? "").trim(),
         tags: Array.isArray(item.tags) ? item.tags.map((tag) => String(tag).trim()).filter(Boolean) : [],
         notes: String(item.notes ?? "").trim()
@@ -505,6 +531,9 @@ function normalizeCommands(rawData, fallbackCategory = "") {
       const categoryLower = normalized.category.toLowerCase();
       const descriptionLower = normalized.description.toLowerCase();
       const notesLower = normalized.notes.toLowerCase();
+      const variantBlob = normalized.variants
+        .map((variant) => `${variant.label} ${variant.command}`.toLowerCase())
+        .join(" ");
 
       return {
         ...normalized,
@@ -513,7 +542,7 @@ function normalizeCommands(rawData, fallbackCategory = "") {
         descriptionLower,
         notesLower,
         tagsLower: normalized.tags.map((t) => t.toLowerCase()),
-        searchBlob: [commandLower, descriptionLower, categoryLower, notesLower, normalized.tags.join(" ").toLowerCase()].join(" ")
+        searchBlob: [commandLower, descriptionLower, categoryLower, notesLower, normalized.tags.join(" ").toLowerCase(), variantBlob].join(" ")
       };
     })
     .filter((item) => {
@@ -1500,19 +1529,37 @@ function renderResults(container, items) {
 
   items.forEach((item, index) => {
     const isFuzzy = tokens.length > 0 && hasFuzzyMatch(item, tokens);
-    const placeholders = extractPlaceholders(item.command);
+    const hasVariants = item.variants.length > 1;
+    const activeVariantIndex = hasVariants ? getActiveVariantIndex(item) : 0;
+    const activeCommand = hasVariants ? item.variants[activeVariantIndex].command : item.command;
+    const placeholders = extractPlaceholders(activeCommand);
     const placeholderValues = state.placeholderValues.get(item.id) ?? {};
-    const previewCommand = resolveCommandTemplate(item.command, placeholderValues);
+    const previewCommand = resolveCommandTemplate(activeCommand, placeholderValues);
     const commandLanguage = getCommandHighlightLanguage(item);
     const accent = getCategoryAccent(item.category);
     const isPinned = state.pinned.has(item.id);
     const card = document.createElement("article");
-    card.className = `command-card${isPinned ? " is-pinned" : ""}`;
+    card.className = `command-card${isPinned ? " is-pinned" : ""}${hasVariants ? " has-variants" : ""}`;
     card.dataset.commandId = item.id;
     card.style.setProperty("--category-accent", accent.color);
     card.style.setProperty("--category-accent-soft", accent.soft);
     card.style.setProperty("--category-accent-border", accent.border);
     card.style.setProperty("--card-index", String(Math.min(index, 5)));
+    const variantStripHtml = hasVariants
+      ? `
+        <div class="variant-strip" role="tablist" aria-label="指令變體">
+          ${item.variants.map((variant, variantIndex) => `
+            <button
+              class="variant-tab${variantIndex === activeVariantIndex ? " is-active" : ""}"
+              type="button"
+              role="tab"
+              aria-selected="${variantIndex === activeVariantIndex}"
+              data-variant-index="${variantIndex}"
+            >${highlightText(variant.label, highlightPattern)}</button>
+          `).join("")}
+        </div>
+      `
+      : "";
     card.innerHTML = `
       <div class="card-top">
         <button class="category-badge category-badge-button" type="button" data-category="${escapeAttribute(item.category)}" aria-label="篩選分類 ${escapeAttribute(item.category)}" title="篩選分類 ${escapeAttribute(item.category)}">
@@ -1523,10 +1570,11 @@ function renderResults(container, items) {
           <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><polygon points="8,1.5 10.2,6 15,6.6 11.5,9.9 12.5,14.5 8,12.1 3.5,14.5 4.5,9.9 1,6.6 5.8,6"/></svg>
         </button>
       </div>
+      ${variantStripHtml}
       <div class="command-block">
         <pre class="command-line"><code class="command-code" data-command-language="${escapeAttribute(commandLanguage)}"></code></pre>
-        ${renderPlaceholderFields(placeholders, placeholderValues)}
-        <button class="copy-button" type="button" data-copy-command="${escapeAttribute(item.command)}">複製</button>
+        <div class="placeholder-slot">${renderPlaceholderFields(placeholders, placeholderValues)}</div>
+        <button class="copy-button" type="button" data-copy-command="${escapeAttribute(activeCommand)}">複製</button>
       </div>
       <p class="description">${highlightText(item.description, highlightPattern)}</p>
       ${item.notes ? `<p class="notes">${highlightText(item.notes, highlightPattern)}</p>` : ""}
@@ -1984,6 +2032,62 @@ async function copyToClipboard(text, button, card = null) {
     }, 1400);
     announce("複製失敗。");
   }
+}
+
+function getActiveVariantIndex(item) {
+  const stored = state.activeVariants.get(item.id);
+  const total = item.variants.length;
+
+  if (!total) {
+    return 0;
+  }
+
+  if (typeof stored === "number" && stored >= 0 && stored < total) {
+    return stored;
+  }
+
+  return 0;
+}
+
+function switchCardVariant(card, nextIndex) {
+  const commandId = card.dataset.commandId;
+  const item = commandId
+    ? state.commands.find((entry) => entry.id === commandId)
+    : null;
+
+  if (!item || !item.variants.length) {
+    return;
+  }
+
+  const clampedIndex = Math.max(0, Math.min(nextIndex, item.variants.length - 1));
+
+  if (clampedIndex === getActiveVariantIndex(item)) {
+    return;
+  }
+
+  state.activeVariants.set(item.id, clampedIndex);
+
+  const activeCommand = item.variants[clampedIndex].command;
+  const copyButton = card.querySelector("[data-copy-command]");
+  if (copyButton) {
+    copyButton.dataset.copyCommand = activeCommand;
+  }
+
+  card.querySelectorAll(".variant-tab").forEach((tab) => {
+    const tabIndex = Number.parseInt(tab.dataset.variantIndex ?? "", 10);
+    const isActive = tabIndex === clampedIndex;
+    tab.classList.toggle("is-active", isActive);
+    tab.setAttribute("aria-selected", String(isActive));
+  });
+
+  const placeholderSlot = card.querySelector(".placeholder-slot");
+  if (placeholderSlot) {
+    const placeholders = extractPlaceholders(activeCommand);
+    const placeholderValues = state.placeholderValues.get(item.id) ?? {};
+    placeholderSlot.innerHTML = renderPlaceholderFields(placeholders, placeholderValues);
+  }
+
+  updateCommandPreview(card);
 }
 
 function extractPlaceholders(command) {
