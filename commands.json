@@ -24,16 +24,26 @@
     "notes": "很適合排查這條分支是從哪裡分出去的。"
   },
   {
-    "id": "git-switch-create",
+    "id": "git-switch",
     "category": "Git",
-    "command": "git switch -c <分支名稱>",
-    "description": "建立並切換到新的功能分支。",
+    "description": "切換分支，或建立並切到新分支。",
+    "variants": [
+      {
+        "label": "建立並切",
+        "command": "git switch -c <分支名稱>"
+      },
+      {
+        "label": "切到 main",
+        "command": "git switch main"
+      }
+    ],
     "tags": [
       "git",
       "branch",
-      "switch"
+      "switch",
+      "main"
     ],
-    "notes": "把 `<分支名稱>` 換成你的實際分支名稱，例如 `feature/test`。"
+    "notes": "`-c` 建立新分支並切過去，例：`feature/test`。"
   },
   {
     "id": "docker-compose-up",
@@ -50,14 +60,26 @@
   {
     "id": "docker-ps",
     "category": "Docker",
-    "command": "docker ps --format \"table {{.Names}}\\t{{.Status}}\\t{{.Ports}}\"",
-    "description": "以表格格式查看目前正在執行的容器與對外 port。",
+    "description": "列出容器，可看執行中（表格格式）或全部含已停止。",
+    "variants": [
+      {
+        "label": "執行中 (表格)",
+        "command": "docker ps --format \"table {{.Names}}\\t{{.Status}}\\t{{.Ports}}\""
+      },
+      {
+        "label": "全部含已停止",
+        "command": "docker ps -a"
+      }
+    ],
     "tags": [
       "docker",
       "ps",
-      "ports"
+      "container",
+      "ports",
+      "status",
+      "list"
     ],
-    "notes": "排查哪個容器真的有起來時很好用。"
+    "notes": "排查容器有沒有起來用第一條；查容器是否啟動後立刻退出用 `-a`。"
   },
   {
     "id": "gh-pages-push",
@@ -84,28 +106,35 @@
     "notes": "把 `123` 換成實際 PR 編號。"
   },
   {
-    "id": "wsl-list",
+    "id": "wsl-control",
     "category": "WSL",
-    "command": "wsl -l -v",
-    "description": "查看所有 WSL 發行版與其版本、運行狀態。",
+    "description": "WSL 發行版的查詢、進入與重啟。",
+    "variants": [
+      {
+        "label": "列出發行版",
+        "command": "wsl -l -v"
+      },
+      {
+        "label": "進入預設",
+        "command": "wsl"
+      },
+      {
+        "label": "進入指定",
+        "command": "wsl -d <發行版名稱>"
+      },
+      {
+        "label": "重啟所有",
+        "command": "wsl --shutdown"
+      }
+    ],
     "tags": [
       "wsl",
       "windows",
-      "linux"
+      "linux",
+      "distribution",
+      "restart"
     ],
-    "notes": "確認目前哪個 Linux 發行版在跑，以及是不是 WSL 2。"
-  },
-  {
-    "id": "wsl-shutdown",
-    "category": "WSL",
-    "command": "wsl --shutdown",
-    "description": "關閉所有 WSL 執行個體，讓環境重新啟動。",
-    "tags": [
-      "wsl",
-      "restart",
-      "windows"
-    ],
-    "notes": "WSL 網路或掛載怪怪的時候，這招很常救得回來。"
+    "notes": "`wsl -l -v` 看版本與運行狀態。網路或掛載卡住時 `--shutdown` 通常救得回來。發行版名稱例如 `Ubuntu`。"
   },
   {
     "id": "bash-rg",
@@ -132,17 +161,27 @@
     "notes": "想知道檔案實際在哪裡，比盲目 `find` 更快。"
   },
   {
-    "id": "wslpath-convert",
+    "id": "wslpath",
     "category": "WSL",
-    "command": "wslpath '<Windows 路徑>'",
-    "description": "把 Windows 路徑轉成 WSL 可用的路徑。",
+    "description": "Windows ↔ WSL 路徑互轉。",
+    "variants": [
+      {
+        "label": "Win → WSL",
+        "command": "wslpath '<Windows 路徑>'"
+      },
+      {
+        "label": "WSL → Win",
+        "command": "wslpath -w <WSL 路徑>"
+      }
+    ],
     "tags": [
       "wsl",
       "path",
       "convert",
-      "windows"
+      "windows",
+      "linux"
     ],
-    "notes": "把 `<Windows 路徑>` 換成實際 Windows 路徑，例如 `C:\\Users\\moonk\\Downloads\\file.txt`。跨 Windows / WSL 工作時先轉路徑可以少踩很多坑。"
+    "notes": "跨 Windows / WSL 工作時先轉路徑可少踩很多坑。例：`wslpath 'C:\\Users\\me\\Downloads\\file.txt'`。"
   },
   {
     "id": "explorer-open",
@@ -231,102 +270,87 @@
     "notes": "把 `<目標路徑>` 換成實際路徑。若只是處理下載資料夾，可用 `gci \"$env:USERPROFILE\\Downloads\" -Recurse -File | Unblock-File -Verbose`。"
   },
   {
-    "id": "windows-ipconfig-all",
+    "id": "windows-ipconfig",
     "category": "Windows Network & DNS",
-    "command": "ipconfig /all",
-    "description": "看完整網卡與 TCP/IP 設定，包括 IP、Gateway、DNS、DHCP、MAC。",
+    "description": "查看與重設 TCP/IP 設定，包含 DHCP 與 DNS 快取。",
+    "variants": [
+      {
+        "label": "完整設定",
+        "command": "ipconfig /all"
+      },
+      {
+        "label": "清 DNS 快取",
+        "command": "ipconfig /flushdns"
+      },
+      {
+        "label": "重新取得 DHCP",
+        "command": "ipconfig /renew"
+      },
+      {
+        "label": "釋放 DHCP",
+        "command": "ipconfig /release"
+      }
+    ],
     "tags": [
       "network",
       "ip",
       "dns",
       "dhcp",
-      "windows",
-      "ipconfig"
-    ],
-    "notes": "網路有問題通常先看這條，最容易先判斷是本機設定、DNS 還是 DHCP 問題。"
-  },
-  {
-    "id": "windows-ipconfig-flushdns",
-    "category": "Windows Network & DNS",
-    "command": "ipconfig /flushdns",
-    "description": "清除本機 DNS 快取。",
-    "tags": [
-      "network",
-      "dns",
       "cache",
+      "ipconfig",
       "windows",
-      "ipconfig"
+      "risk"
     ],
-    "notes": "改 DNS、切 VPN、網站剛改解析但本機還沒更新時很好用。"
-  },
-  {
-    "id": "windows-ipconfig-renew",
-    "category": "Windows Network & DNS",
-    "command": "ipconfig /renew",
-    "description": "重新向 DHCP 伺服器取得 IP 位址。",
-    "tags": [
-      "network",
-      "dhcp",
-      "ip",
-      "renew",
-      "windows"
-    ],
-    "notes": "DHCP 網段常用，適合排除租約異常或切換網路後沒拿到新位址。"
-  },
-  {
-    "id": "windows-ipconfig-release",
-    "category": "Windows Network & DNS",
-    "command": "ipconfig /release",
-    "description": "釋放目前 DHCP 取得的 IP 位址。",
-    "tags": [
-      "network",
-      "dhcp",
-      "ip",
-      "risk",
-      "windows"
-    ],
-    "notes": "執行後當下可能斷網，通常會接著搭配 `ipconfig /renew` 使用。"
+    "notes": "排網路問題通常從 `/all` 開始判斷是本機、DNS 還是 DHCP 問題。`/release` 後當下會斷網，通常接著跑 `/renew`。"
   },
   {
     "id": "windows-nslookup",
     "category": "Windows Network & DNS",
-    "command": "nslookup <網域>",
-    "description": "查指定網域是否有正常解析。",
-    "tags": [
-      "dns",
-      "lookup",
-      "network",
-      "windows",
-      "resolver"
+    "description": "查 DNS 解析，可指定 DNS server 比對不同 resolver。",
+    "variants": [
+      {
+        "label": "預設",
+        "command": "nslookup <網域或主機名稱>"
+      },
+      {
+        "label": "指定 DNS server",
+        "command": "nslookup <網域> <DNS 伺服器>"
+      }
     ],
-    "notes": "最常用的 DNS 排查指令之一，像 `nslookup google.com`。"
-  },
-  {
-    "id": "windows-nslookup-dns-server",
-    "category": "Windows Network & DNS",
-    "command": "nslookup <網域> <DNS 伺服器>",
-    "description": "指定 DNS Server 查詢，確認不同 resolver 回答是否一致。",
     "tags": [
       "dns",
       "lookup",
       "resolver",
       "network",
+      "nslookup",
       "windows"
     ],
-    "notes": "適合比對公司 DNS、家用 DNS、公共 DNS 的差異，例如 `nslookup google.com 8.8.8.8`。"
+    "notes": "輸出會顯示是哪一台 DNS 伺服器回應。`nslookup google.com 8.8.8.8` 可比對不同 resolver 的差異。"
   },
   {
     "id": "windows-ping",
     "category": "Windows Network & DNS",
-    "command": "ping <主機或 IP>",
-    "description": "做基本 ICMP 可達性測試。",
+    "description": "ICMP 可達性測試，可強制 IPv4 解析。",
+    "variants": [
+      {
+        "label": "預設",
+        "command": "ping <主機或 IP>"
+      },
+      {
+        "label": "強制 IPv4",
+        "command": "ping -4 <主機或 IP>"
+      }
+    ],
     "tags": [
       "network",
       "icmp",
       "ping",
+      "ipv4",
+      "ipv6",
+      "dns",
       "windows"
     ],
-    "notes": "只能代表基本 reachability，不代表 Web、RDP、資料庫等服務一定可用。"
+    "notes": "預設優先 IPv6；若顯示 IPv6 但你需要 192.168.x.x，改用 `-4`。只代表基本 reachability，不代表 Web/RDP/DB 服務一定可用。例：`ping -4 DBSERVER`。"
   },
   {
     "id": "windows-test-connection",
@@ -382,102 +406,37 @@
     "notes": "排區網設備、IP 衝突或第二層網路問題時很有參考價值。"
   },
   {
-    "id": "windows-net-use-list",
+    "id": "windows-net-use",
     "category": "Windows Network & DNS",
-    "command": "net use",
-    "description": "列出目前所有 SMB 網路連線。",
-    "tags": [
-      "smb",
-      "net-use",
-      "share",
-      "network",
-      "windows"
+    "description": "管理 SMB 共用資料夾連線：列表 / 帳密連線 / 斷線。",
+    "variants": [
+      {
+        "label": "列出連線",
+        "command": "net use"
+      },
+      {
+        "label": "帳密連線",
+        "command": "NET USE \\\\<主機>\\<共用名稱> /USER:<帳號> <密碼>"
+      },
+      {
+        "label": "斷主機",
+        "command": "net use /delete \\\\<主機>"
+      },
+      {
+        "label": "斷單一共用",
+        "command": "net use /delete \\\\<主機>\\<共用名稱>"
+      }
     ],
-    "notes": "排查共用資料夾連線狀態的起手式，可看到遠端路徑、狀態與本機磁碟機對應。"
-  },
-  {
-    "id": "windows-net-use-connect-creds",
-    "category": "Windows Network & DNS",
-    "command": "NET USE \\\\<主機>\\<共用名稱> /USER:<帳號> <密碼>",
-    "description": "用指定帳密連線到遠端共用資料夾。",
     "tags": [
       "smb",
       "net-use",
       "share",
       "credentials",
-      "windows"
-    ],
-    "notes": "例：`NET USE \\\\DBSERVER\\SIMIS /USER:USER 1668`。密碼會出現在命令列歷史，敏感環境請改用互動輸入。"
-  },
-  {
-    "id": "windows-net-use-disconnect-host",
-    "category": "Windows Network & DNS",
-    "command": "net use /delete \\\\<主機>",
-    "description": "斷開對遠端主機的 SMB 連線。",
-    "tags": [
-      "smb",
-      "net-use",
-      "share",
       "disconnect",
-      "windows"
+      "windows",
+      "network"
     ],
-    "notes": "例：`net use /delete \\\\DBSERVER`。連線卡住或要用不同帳號重連時常用。"
-  },
-  {
-    "id": "windows-net-use-disconnect-share",
-    "category": "Windows Network & DNS",
-    "command": "net use /delete \\\\<主機>\\<共用名稱>",
-    "description": "斷開對特定共用資料夾的 SMB 連線。",
-    "tags": [
-      "smb",
-      "net-use",
-      "share",
-      "disconnect",
-      "windows"
-    ],
-    "notes": "例：`net use /delete \\\\DBSERVER\\SIMIS`。只斷單一共用資料夾，不影響同主機其他共用。"
-  },
-  {
-    "id": "windows-ping-hostname",
-    "category": "Windows Network & DNS",
-    "command": "ping <主機名稱>",
-    "description": "解析主機名稱並測試連線（預設優先 IPv6）。",
-    "tags": [
-      "ping",
-      "dns",
-      "ipv6",
-      "network",
-      "windows"
-    ],
-    "notes": "例：`ping DBSERVER`。若顯示 IPv6 位址但需要 IPv4，改用 `ping -4`。"
-  },
-  {
-    "id": "windows-ping-ipv4",
-    "category": "Windows Network & DNS",
-    "command": "ping -4 <主機名稱>",
-    "description": "強制用 IPv4 解析，取得 192.168.x.x 格式的 IP。",
-    "tags": [
-      "ping",
-      "ipv4",
-      "dns",
-      "network",
-      "windows"
-    ],
-    "notes": "例：`ping -4 DBSERVER`。確認內網實際 IP、或要在防火牆規則比對時特別好用。"
-  },
-  {
-    "id": "windows-nslookup-hostname",
-    "category": "Windows Network & DNS",
-    "command": "nslookup <主機名稱>",
-    "description": "查詢 DNS 解析結果，會顯示回應的 DNS Server。",
-    "tags": [
-      "nslookup",
-      "dns",
-      "resolver",
-      "network",
-      "windows"
-    ],
-    "notes": "例：`nslookup DBSERVER`。輸出會同時顯示是哪一台 DNS 伺服器回應，方便確認解析來源。"
+    "notes": "例：`NET USE \\\\DBSERVER\\SIMIS /USER:USER 1668`。密碼會出現在命令列歷史，敏感環境改用互動輸入。連線卡住或要換帳號時先 `/delete` 再重連。"
   },
   {
     "id": "windows-test-netconnection",
@@ -508,88 +467,72 @@
     "notes": "例：`telnet 118.163.115.30 80`。畫面變空白 / 游標停住即代表連線成功，`Ctrl+]` 後輸入 `quit` 離開。Windows 預設未安裝 Telnet Client，需先以 `dism /online /enable-feature /featurename:TelnetClient` 或「Windows 功能」啟用；PowerShell 環境建議改用 `Test-NetConnection`。"
   },
   {
-    "id": "windows-netstat-ano",
+    "id": "windows-netstat",
     "category": "Windows Port & Firewall",
-    "command": "netstat -ano",
-    "description": "查看所有 TCP/UDP 連線、接聽埠與對應 PID。",
+    "description": "查看 TCP/UDP 連線狀態，可依埠號 / PID / 狀態 / SMB 過濾。",
+    "variants": [
+      {
+        "label": "全部連線",
+        "command": "netstat -ano"
+      },
+      {
+        "label": "依埠號",
+        "command": "netstat -ano | findstr :<埠號>"
+      },
+      {
+        "label": "依 PID",
+        "command": "netstat -ano | findstr <PID>"
+      },
+      {
+        "label": "已建立連線",
+        "command": "netstat -ano | findstr ESTABLISHED"
+      },
+      {
+        "label": "SMB 445",
+        "command": "netstat -an | findstr 445"
+      }
+    ],
     "tags": [
       "netstat",
       "tcp",
-      "port",
-      "windows",
-      "pid"
-    ],
-    "notes": "看 active connection、LISTENING 與 PID 時很好用。"
-  },
-  {
-    "id": "windows-netstat-port",
-    "category": "Windows Port & Firewall",
-    "command": "netstat -ano | findstr :<埠號>",
-    "description": "快速查某個 port 是否被占用。",
-    "tags": [
-      "netstat",
+      "udp",
       "port",
       "pid",
-      "windows",
-      "listen"
-    ],
-    "notes": "排 Web、RDP、代理、反向代理時很好用，例如 `:443` 或 `:3389`。"
-  },
-  {
-    "id": "windows-netstat-smb-445",
-    "category": "Windows Port & Firewall",
-    "command": "netstat -an | findstr 445",
-    "description": "查看目前 TCP 445 (SMB) 的實際連線 IP。",
-    "tags": [
-      "netstat",
       "smb",
-      "port",
-      "445",
-      "windows"
+      "established",
+      "windows",
+      "investigation"
     ],
-    "notes": "排共用資料夾、檔案伺服器連線問題時很好用。可確認實際連到哪台主機，或是否仍有殘留連線。"
+    "notes": "`-a` 列全部、`-n` 數字格式、`-o` 顯示 PID。先 `netstat -ano` 看全貌，再用 `findstr` 縮範圍。排可疑外連時 ESTABLISHED 可過濾 LISTENING 雜訊。"
   },
   {
     "id": "windows-get-nettcpconnection",
     "category": "Windows Port & Firewall",
-    "command": "Get-NetTCPConnection",
-    "description": "PowerShell 版 netstat，可查看目前 TCP 連線。",
+    "description": "PowerShell 版 netstat，可篩選狀態或本機埠號。",
+    "variants": [
+      {
+        "label": "全部",
+        "command": "Get-NetTCPConnection"
+      },
+      {
+        "label": "監聽中",
+        "command": "Get-NetTCPConnection -State Listen"
+      },
+      {
+        "label": "指定埠",
+        "command": "Get-NetTCPConnection -LocalPort <埠號>"
+      }
+    ],
     "tags": [
       "tcp",
       "port",
-      "powershell",
-      "windows",
-      "network"
-    ],
-    "notes": "結果較好篩選，也更適合接管線做分析。"
-  },
-  {
-    "id": "windows-get-nettcpconnection-listen",
-    "category": "Windows Port & Firewall",
-    "command": "Get-NetTCPConnection -State Listen",
-    "description": "只看目前正在 Listen 的 socket。",
-    "tags": [
-      "tcp",
       "listen",
       "powershell",
       "windows",
-      "port"
-    ],
-    "notes": "當你只想確認哪些服務正在接聽時，這條比看整份連線清單更乾淨。"
-  },
-  {
-    "id": "windows-get-nettcpconnection-localport",
-    "category": "Windows Port & Firewall",
-    "command": "Get-NetTCPConnection -LocalPort <埠號>",
-    "description": "查看指定 local port 的 TCP 連線或接聽狀態。",
-    "tags": [
-      "tcp",
-      "port",
-      "powershell",
-      "windows",
+      "network",
       "rdp"
     ],
-    "notes": "確認某服務是否真的在 listen 時很常用，例如 3389、443、1433。"
+    "notes": "結果是物件化的，比傳統 netstat 更適合接管線分析。常用埠例如 3389 (RDP)、443 (HTTPS)、1433 (SQL)。"
   },
   {
     "id": "windows-firewall-show-all",
@@ -682,35 +625,6 @@
     "notes": "刪除先前以 `Block LanSchool *` 為名建立的 4 條規則。規則名稱必須與建立時完全一致，否則刪除會失敗。"
   },
   {
-    "id": "windows-netstat-pid",
-    "category": "Windows Port & Firewall",
-    "command": "netstat -ano | findstr <PID>",
-    "description": "依 PID 反查該程序正在使用的所有連線與埠號。",
-    "tags": [
-      "netstat",
-      "pid",
-      "port",
-      "windows",
-      "investigation",
-      "monitoring"
-    ],
-    "notes": "先用 `tasklist` 找到可疑程序的 PID，再用此指令查它開了哪些連線。與 `findstr :<埠號>` 的差別在於這裡是依 PID 搜尋，可一次看到該程序所有的網路活動。適合排查不明監控軟體。"
-  },
-  {
-    "id": "windows-netstat-established",
-    "category": "Windows Port & Firewall",
-    "command": "netstat -ano | findstr ESTABLISHED",
-    "description": "只列出目前已建立連線的 TCP 連線，過濾掉 LISTENING 雜訊。",
-    "tags": [
-      "netstat",
-      "tcp",
-      "established",
-      "windows",
-      "investigation"
-    ],
-    "notes": "排查可疑外連時很好用，ESTABLISHED 代表雙方已握手完成的活躍連線。搭配 `findstr <PID>` 可進一步鎖定特定程序。"
-  },
-  {
     "id": "windows-firewall-block-mmc",
     "category": "Windows Port & Firewall",
     "command": "netsh advfirewall firewall add rule name=\"Block MMC StuSvr UDP In\" dir=in action=block protocol=UDP localport=9033 && netsh advfirewall firewall add rule name=\"Block MMC StuSvr UDP Out\" dir=out action=block protocol=UDP remoteport=9033 && netsh advfirewall firewall add rule name=\"Block MMC Student 5039\" dir=in action=block protocol=TCP localport=5039 && netsh advfirewall firewall add rule name=\"Block MMC Student 5099\" dir=in action=block protocol=TCP localport=5099",
@@ -771,108 +685,95 @@
   {
     "id": "windows-tasklist",
     "category": "Windows Process & Service",
-    "command": "tasklist",
-    "description": "快速列出目前所有程序。",
+    "description": "列出 Windows 程序，可用 findstr 過濾特定名稱。",
+    "variants": [
+      {
+        "label": "全部",
+        "command": "tasklist"
+      },
+      {
+        "label": "過濾",
+        "command": "tasklist | findstr <程序名>"
+      }
+    ],
     "tags": [
       "process",
       "tasklist",
+      "filter",
       "windows",
       "pid"
     ],
-    "notes": "遠端桌面或純命令列環境排查時很好用。"
+    "notes": "遠端桌面或純命令列環境常用。例：`tasklist | findstr chrome`。"
   },
   {
-    "id": "windows-tasklist-find",
+    "id": "windows-taskkill",
     "category": "Windows Process & Service",
-    "command": "tasklist | findstr <程序名>",
-    "description": "查特定程序是否還活著。",
+    "description": "強制結束程序，可用 PID 或映像名。",
+    "variants": [
+      {
+        "label": "by PID",
+        "command": "taskkill /PID <PID> /F"
+      },
+      {
+        "label": "by 程序名",
+        "command": "taskkill /IM <程序名.exe> /F"
+      }
+    ],
     "tags": [
       "process",
-      "filter",
-      "tasklist",
+      "kill",
+      "taskkill",
+      "pid",
+      "image",
+      "risk",
       "windows"
     ],
-    "notes": "可換成任何程序名，例如 `chrome`、`code` 或你的 agent / service 程序。"
-  },
-  {
-    "id": "windows-taskkill-pid",
-    "category": "Windows Process & Service",
-    "command": "taskkill /PID <pid> /F",
-    "description": "強制結束指定 PID 的程序。",
-    "tags": [
-      "process",
-      "kill",
-      "risk",
-      "windows",
-      "pid"
-    ],
-    "notes": "高風險，未儲存資料會直接丟失。適合處理卡死程序或占 port 程序。"
-  },
-  {
-    "id": "windows-taskkill-image",
-    "category": "Windows Process & Service",
-    "command": "taskkill /IM <程序名.exe> /F",
-    "description": "直接用程序名稱強制結束程序，不必先查 PID。",
-    "tags": [
-      "process",
-      "kill",
-      "image",
-      "windows",
-      "risk"
-    ],
-    "notes": "高風險，像 `notepad.exe`、`chrome.exe` 這種程序名都可以直接代入。"
+    "notes": "高風險，未儲存資料會直接丟失。例：`taskkill /IM notepad.exe /F`。"
   },
   {
     "id": "windows-sc-query",
     "category": "Windows Process & Service",
-    "command": "sc query",
-    "description": "列出目前服務狀態。",
-    "tags": [
-      "service",
-      "sc",
-      "windows",
-      "status"
+    "description": "查 Windows 服務狀態，可看全部或單一服務。",
+    "variants": [
+      {
+        "label": "全部",
+        "command": "sc query"
+      },
+      {
+        "label": "指定服務",
+        "command": "sc query <服務名>"
+      }
     ],
-    "notes": "Windows 原生命令，排查服務沒起來時很常用。"
-  },
-  {
-    "id": "windows-sc-query-service",
-    "category": "Windows Process & Service",
-    "command": "sc query <服務名>",
-    "description": "查單一服務是否為 Running / Stopped。",
     "tags": [
       "service",
       "sc",
       "status",
       "windows"
     ],
-    "notes": "印表機、更新、SQL、Agent 類服務都很常這樣查，例如 `spooler`。"
+    "notes": "印表機、更新、SQL、Agent 類常用，例如 `sc query spooler`。"
   },
   {
     "id": "windows-get-service",
     "category": "Windows Process & Service",
-    "command": "Get-Service",
-    "description": "PowerShell 版服務清單。",
-    "tags": [
-      "service",
-      "powershell",
-      "windows",
-      "status"
+    "description": "PowerShell 版服務查詢，可只看 Running 中的服務。",
+    "variants": [
+      {
+        "label": "全部",
+        "command": "Get-Service"
+      },
+      {
+        "label": "Running",
+        "command": "Get-Service | Where-Object {$_.Status -eq \"Running\"}"
+      }
     ],
-    "notes": "可再接 `Where-Object` 或 `Sort-Object` 做篩選，比 `sc query` 更適合自動化。"
-  },
-  {
-    "id": "windows-get-service-running",
-    "category": "Windows Process & Service",
-    "command": "Get-Service | Where-Object {$_.Status -eq \"Running\"}",
-    "description": "只看目前正在執行的服務。",
     "tags": [
       "service",
       "running",
+      "status",
       "powershell",
       "windows"
     ],
-    "notes": "用 PowerShell 管線先聚焦正在跑的服務，再往下做分析或輸出報表。"
+    "notes": "比 `sc query` 更適合接管線做篩選與輸出報表。"
   },
   {
     "id": "windows-wevtutil-system",
@@ -1225,8 +1126,21 @@
   {
     "id": "windows-cmd",
     "category": "Windows Shortcut",
-    "command": "cmd",
-    "description": "開啟命令提示字元。",
+    "description": "開啟命令提示字元，可選擇執行後保留或關閉視窗。",
+    "variants": [
+      {
+        "label": "開啟",
+        "command": "cmd"
+      },
+      {
+        "label": "/k 執行後保留",
+        "command": "cmd /k <指令>"
+      },
+      {
+        "label": "/c 執行後關閉",
+        "command": "cmd /c <指令>"
+      }
+    ],
     "tags": [
       "windows",
       "shortcut",
@@ -1234,35 +1148,7 @@
       "shell",
       "terminal"
     ],
-    "notes": "想進入傳統 Windows 命令列時可直接用這條。"
-  },
-  {
-    "id": "windows-cmd-keep",
-    "category": "Windows Shortcut",
-    "command": "cmd /k <指令>",
-    "description": "開新 cmd 視窗執行指令，完成後保留視窗不關閉。",
-    "tags": [
-      "windows",
-      "shortcut",
-      "cmd",
-      "shell",
-      "keep"
-    ],
-    "notes": "例：`cmd /k hostname` 開視窗顯示電腦名稱後停在提示字元等你操作。適合從捷徑或「執行」對話框啟動、又想看到輸出結果的情境。"
-  },
-  {
-    "id": "windows-cmd-close",
-    "category": "Windows Shortcut",
-    "command": "cmd /c <指令>",
-    "description": "開新 cmd 視窗執行指令，完成後立即關閉。",
-    "tags": [
-      "windows",
-      "shortcut",
-      "cmd",
-      "shell",
-      "close"
-    ],
-    "notes": "例：`cmd /c hostname` 視窗閃一下就關掉。常用於捷徑、排程工作或批次檔中，只需要指令跑完不必看輸出。"
+    "notes": "`/k` 適合從捷徑或「執行」啟動且要看輸出；`/c` 適合排程工作或批次檔，跑完即關。例：`cmd /k hostname`。"
   },
   {
     "id": "windows-powershell",
@@ -1293,103 +1179,50 @@
     "notes": "前提是你已安裝 PowerShell 7。"
   },
   {
-    "id": "windows-shutdown-poweroff",
+    "id": "windows-shutdown",
     "category": "Windows Process & Service",
-    "command": "shutdown /s /t 0",
-    "description": "立即關機。",
+    "description": "控制電源狀態：關機、重開機、進階啟動、UEFI、登出、休眠、取消排程。",
+    "variants": [
+      {
+        "label": "關機",
+        "command": "shutdown /s /t 0"
+      },
+      {
+        "label": "重開機",
+        "command": "shutdown /r /t 0"
+      },
+      {
+        "label": "進階啟動 (WinRE)",
+        "command": "shutdown /r /o /t 0"
+      },
+      {
+        "label": "直入 UEFI",
+        "command": "shutdown /r /fw /t 0"
+      },
+      {
+        "label": "登出",
+        "command": "shutdown /l"
+      },
+      {
+        "label": "休眠",
+        "command": "shutdown /h"
+      },
+      {
+        "label": "取消排程",
+        "command": "shutdown /a"
+      }
+    ],
     "tags": [
       "windows",
       "shutdown",
+      "restart",
       "power",
-      "system",
-      "risk"
-    ],
-    "notes": "高風險，會立刻關機；正式環境與遠端主機請先確認影響。"
-  },
-  {
-    "id": "windows-shutdown-restart",
-    "category": "Windows Process & Service",
-    "command": "shutdown /r /t 0",
-    "description": "立即重新開機。",
-    "tags": [
-      "windows",
-      "shutdown",
-      "restart",
-      "system",
-      "risk"
-    ],
-    "notes": "高風險，會立刻重開；遠端或正式環境操作前請先確認。"
-  },
-  {
-    "id": "windows-shutdown-advanced-boot",
-    "category": "Windows Process & Service",
-    "command": "shutdown /r /o /t 0",
-    "description": "重新開機並進入 Windows 進階啟動選單 (WinRE)。",
-    "tags": [
-      "windows",
-      "shutdown",
-      "restart",
-      "recovery",
+      "uefi",
       "winre",
-      "uefi",
-      "risk"
-    ],
-    "notes": "進入選單後可走「疑難排解 → 進階選項 → UEFI 韌體設定」進 BIOS，也能選安全模式、啟動修復、回復映像等。`/o` 必須搭配 `/r`，高風險會立刻重開。"
-  },
-  {
-    "id": "windows-shutdown-firmware",
-    "category": "Windows Process & Service",
-    "command": "shutdown /r /fw /t 0",
-    "description": "重新開機並直接進入 UEFI 韌體設定 (BIOS)。",
-    "tags": [
-      "windows",
-      "shutdown",
-      "restart",
-      "uefi",
-      "bios",
-      "firmware",
-      "risk"
-    ],
-    "notes": "比 `/r /o` 更直接 — 跳過 WinRE 選單，下次開機直接落在 UEFI 設定畫面。需要管理員權限，且僅限 UEFI 韌體機台（傳統 BIOS 不支援）；`/fw` 可與 `/r` 或 `/s` 搭配。高風險，會立刻重開。"
-  },
-  {
-    "id": "windows-shutdown-logoff",
-    "category": "Windows Process & Service",
-    "command": "shutdown /l",
-    "description": "登出目前使用者。",
-    "tags": [
-      "windows",
-      "shutdown",
-      "logoff",
-      "session"
-    ],
-    "notes": "只能單獨使用，不能與 `/m`（遠端）或 `/d`（原因碼）一起用，等同 `logoff` 指令。"
-  },
-  {
-    "id": "windows-shutdown-hibernate",
-    "category": "Windows Process & Service",
-    "command": "shutdown /h",
-    "description": "讓系統立即進入休眠狀態。",
-    "tags": [
-      "windows",
-      "shutdown",
       "hibernate",
-      "power"
+      "risk"
     ],
-    "notes": "需先以 `powercfg /h on` 啟用休眠（部分 OEM 預設關閉，開啟後會產生 hiberfil.sys）。休眠會把記憶體內容寫入磁碟後斷電，下次開機還原工作階段。"
-  },
-  {
-    "id": "windows-shutdown-abort",
-    "category": "Windows Process & Service",
-    "command": "shutdown /a",
-    "description": "取消已排程中的關機或重新開機。",
-    "tags": [
-      "windows",
-      "shutdown",
-      "abort",
-      "cancel"
-    ],
-    "notes": "只在倒數期間有效（例如先下了 `shutdown /s /t 60` 後還沒執行到零）。已經開始關機就來不及救。"
+    "notes": "`/r /o` 進入進階啟動選單，可走「疑難排解 → 進階選項」進 UEFI、安全模式、啟動修復；`/r /fw` 直接跳 UEFI 韌體（僅 UEFI 機台、需 admin）；`/h` 需先 `powercfg /h on`；`/a` 只在倒數期間有效。除登出 / 休眠 / 取消外其餘為高風險，遠端操作前先確認影響。"
   },
   {
     "id": "windows-dir",
@@ -1544,30 +1377,28 @@
     "notes": "把 `C:\\Temp` 換成你的實際目標路徑；也可直接用別名 `cd`。"
   },
   {
-    "id": "powershell-new-directory",
+    "id": "powershell-new-item",
     "category": "PowerShell",
-    "command": "New-Item -ItemType Directory -Path <目標路徑>",
-    "description": "建立資料夾。",
-    "tags": [
-      "powershell",
-      "directory",
-      "mkdir",
-      "new-item"
+    "description": "建立新檔案或資料夾。",
+    "variants": [
+      {
+        "label": "資料夾",
+        "command": "New-Item -ItemType Directory -Path <目標路徑>"
+      },
+      {
+        "label": "檔案",
+        "command": "New-Item -ItemType File -Path <檔案路徑>"
+      }
     ],
-    "notes": "想在腳本裡建立目錄時很常用。"
-  },
-  {
-    "id": "powershell-new-file",
-    "category": "PowerShell",
-    "command": "New-Item -ItemType File -Path <檔案路徑>",
-    "description": "建立空白檔案。",
     "tags": [
       "powershell",
       "file",
-      "new-item",
-      "create"
+      "directory",
+      "mkdir",
+      "create",
+      "new-item"
     ],
-    "notes": "若檔案已存在，會視情況回報衝突或保留原檔。"
+    "notes": "適合在腳本內建立目錄結構或佔位檔案。"
   },
   {
     "id": "powershell-copy-item",
@@ -1598,26 +1429,23 @@
   {
     "id": "powershell-remove-item",
     "category": "PowerShell",
-    "command": "Remove-Item <目標路徑>",
-    "description": "刪除檔案或項目。",
+    "description": "刪除檔案或資料夾，遞迴版本可砍整個目錄。",
+    "variants": [
+      {
+        "label": "單一",
+        "command": "Remove-Item <目標路徑>"
+      },
+      {
+        "label": "遞迴 -Recurse -Force",
+        "command": "Remove-Item <目標路徑> -Recurse -Force"
+      }
+    ],
     "tags": [
       "powershell",
       "file",
-      "remove",
-      "delete",
-      "risk"
-    ],
-    "notes": "刪除前先確認路徑，避免誤刪。"
-  },
-  {
-    "id": "powershell-remove-item-recurse",
-    "category": "PowerShell",
-    "command": "Remove-Item <目標路徑> -Recurse -Force",
-    "description": "遞迴刪除資料夾與內容。",
-    "tags": [
-      "powershell",
       "directory",
       "remove",
+      "delete",
       "recurse",
       "risk"
     ],
@@ -1650,32 +1478,28 @@
     "notes": "可搭配 `Where-Object`、`Sort-Object` 進一步篩選。"
   },
   {
-    "id": "powershell-stop-process-name",
+    "id": "powershell-stop-process",
     "category": "PowerShell",
-    "command": "Stop-Process -Name <程序名稱> -Force",
-    "description": "用程序名稱強制結束程序。",
+    "description": "強制結束程序，可用程序名或 PID。",
+    "variants": [
+      {
+        "label": "by Name",
+        "command": "Stop-Process -Name <程序名稱> -Force"
+      },
+      {
+        "label": "by Id",
+        "command": "Stop-Process -Id <PID> -Force"
+      }
+    ],
     "tags": [
       "powershell",
       "process",
       "stop",
-      "risk",
-      "name"
+      "name",
+      "pid",
+      "risk"
     ],
     "notes": "高風險，未儲存資料會直接丟失。"
-  },
-  {
-    "id": "powershell-stop-process-id",
-    "category": "PowerShell",
-    "command": "Stop-Process -Id <PID> -Force",
-    "description": "用 PID 強制結束程序。",
-    "tags": [
-      "powershell",
-      "process",
-      "stop",
-      "risk",
-      "pid"
-    ],
-    "notes": "把 `<PID>` 換成實際程序 ID。"
   },
   {
     "id": "powershell-start-service",
@@ -1744,32 +1568,6 @@
     "notes": "排查 PATH、代理或環境變數設定時很常用。"
   },
   {
-    "id": "wsl-open-default",
-    "category": "WSL",
-    "command": "wsl",
-    "description": "進入預設的 WSL 發行版。",
-    "tags": [
-      "wsl",
-      "windows",
-      "linux",
-      "shell"
-    ],
-    "notes": "從 Windows PowerShell 或 CMD 進入 WSL 時最常用。"
-  },
-  {
-    "id": "wsl-open-distro",
-    "category": "WSL",
-    "command": "wsl -d <發行版名稱>",
-    "description": "指定發行版進入 WSL。",
-    "tags": [
-      "wsl",
-      "windows",
-      "linux",
-      "distribution"
-    ],
-    "notes": "把 `<發行版名稱>` 換成實際名稱，例如 `Ubuntu`。"
-  },
-  {
     "id": "wsl-run-linux-command",
     "category": "WSL",
     "command": "wsl ls -la",
@@ -1781,19 +1579,6 @@
       "command"
     ],
     "notes": "適合從 PowerShell 或 CMD 直接呼叫單次 Linux 指令。"
-  },
-  {
-    "id": "wslpath-to-windows",
-    "category": "WSL",
-    "command": "wslpath -w <WSL 路徑>",
-    "description": "把 WSL 路徑轉成 Windows 路徑。",
-    "tags": [
-      "wsl",
-      "path",
-      "convert",
-      "windows"
-    ],
-    "notes": "把 `<WSL 路徑>` 換成實際 WSL 路徑，例如 `/home/moonk/file.txt`。"
   },
   {
     "id": "wsl-open-file-default",
@@ -1838,28 +1623,25 @@
   {
     "id": "bash-ls",
     "category": "Bash",
-    "command": "ls",
-    "description": "列出目前目錄內容。",
-    "tags": [
-      "bash",
-      "linux",
-      "files",
-      "list"
+    "description": "列出目錄內容，可看詳細權限與隱藏檔。",
+    "variants": [
+      {
+        "label": "簡潔",
+        "command": "ls"
+      },
+      {
+        "label": "詳細 / 隱藏",
+        "command": "ls -la"
+      }
     ],
-    "notes": "快速看目前資料夾有哪些檔案。"
-  },
-  {
-    "id": "bash-ls-la",
-    "category": "Bash",
-    "command": "ls -la",
-    "description": "列出包含隱藏檔與權限資訊的詳細清單。",
     "tags": [
       "bash",
       "linux",
       "files",
+      "list",
       "permissions"
     ],
-    "notes": "排查隱藏檔與權限時最常用。"
+    "notes": "`-la` 包含隱藏檔與權限欄位，排查權限問題最常用。"
   },
   {
     "id": "bash-cd-var-log",
@@ -1944,26 +1726,22 @@
   {
     "id": "bash-rm",
     "category": "Bash",
-    "command": "rm <檔案路徑>",
-    "description": "刪除檔案。",
+    "description": "刪除檔案或資料夾，遞迴版本可砍整個目錄。",
+    "variants": [
+      {
+        "label": "檔案",
+        "command": "rm <檔案路徑>"
+      },
+      {
+        "label": "遞迴 -rf",
+        "command": "rm -rf <目標路徑>"
+      }
+    ],
     "tags": [
       "bash",
       "linux",
       "delete",
       "file",
-      "risk"
-    ],
-    "notes": "刪除前先確認路徑與檔名。"
-  },
-  {
-    "id": "bash-rm-rf",
-    "category": "Bash",
-    "command": "rm -rf <目標路徑>",
-    "description": "遞迴強制刪除資料夾。",
-    "tags": [
-      "bash",
-      "linux",
-      "delete",
       "directory",
       "risk"
     ],
@@ -2014,30 +1792,26 @@
   {
     "id": "bash-tail",
     "category": "Bash",
-    "command": "tail -n 20 <檔案路徑>",
-    "description": "只看檔案最後 20 行。",
+    "description": "查看檔案尾端內容或持續追蹤新增。",
+    "variants": [
+      {
+        "label": "最後 N 行",
+        "command": "tail -n 20 <檔案路徑>"
+      },
+      {
+        "label": "持續追蹤",
+        "command": "tail -f <log 路徑>"
+      }
+    ],
     "tags": [
       "bash",
       "linux",
       "file",
       "tail",
-      "logs"
-    ],
-    "notes": "查 log 尾端錯誤時很好用。"
-  },
-  {
-    "id": "bash-tail-follow",
-    "category": "Bash",
-    "command": "tail -f <log 路徑>",
-    "description": "持續追蹤檔案新增內容。",
-    "tags": [
-      "bash",
-      "linux",
       "logs",
-      "tail",
       "follow"
     ],
-    "notes": "即時看應用程式 log 最常用的起手式。"
+    "notes": "`-f` 即時看 application log 最常用。"
   },
   {
     "id": "bash-find-name",
@@ -2068,32 +1842,32 @@
     "notes": "專案不大時很好用；大型專案通常 `rg` 更快。"
   },
   {
-    "id": "bash-du-current",
+    "id": "bash-du",
     "category": "Bash",
-    "command": "du -sh .",
-    "description": "查看目前目錄總大小。",
+    "description": "查看磁碟使用量：當前目錄、各子項或排序找最大。",
+    "variants": [
+      {
+        "label": "當前目錄總和",
+        "command": "du -sh ."
+      },
+      {
+        "label": "各子項",
+        "command": "du -sh *"
+      },
+      {
+        "label": "排序最大",
+        "command": "du -ah . | sort -h | tail -n 20"
+      }
+    ],
     "tags": [
       "bash",
       "linux",
       "disk",
       "size",
-      "du"
+      "du",
+      "sort"
     ],
-    "notes": "想快速看整個資料夾占多少空間時很好用。"
-  },
-  {
-    "id": "bash-du-each",
-    "category": "Bash",
-    "command": "du -sh *",
-    "description": "查看目前目錄下各項目的大小。",
-    "tags": [
-      "bash",
-      "linux",
-      "disk",
-      "size",
-      "du"
-    ],
-    "notes": "很適合先找出哪個資料夾特別大。"
+    "notes": "清空間時先用「各子項」定位大資料夾，再用「排序最大」抓最大檔案。"
   },
   {
     "id": "bash-df-h",
@@ -2110,32 +1884,28 @@
     "notes": "用 `-h` 直接看人類可讀單位。"
   },
   {
-    "id": "bash-du-largest",
+    "id": "bash-ps",
     "category": "Bash",
-    "command": "du -ah . | sort -h | tail -n 20",
-    "description": "排序找出目前目錄中最大的檔案或資料夾。",
-    "tags": [
-      "bash",
-      "linux",
-      "disk",
-      "du",
-      "sort"
+    "description": "查看 Linux 程序，可用 grep 過濾。",
+    "variants": [
+      {
+        "label": "全部",
+        "command": "ps aux"
+      },
+      {
+        "label": "過濾",
+        "command": "ps aux | grep <程序名>"
+      }
     ],
-    "notes": "清磁碟空間時很實用。"
-  },
-  {
-    "id": "bash-ps-aux",
-    "category": "Bash",
-    "command": "ps aux",
-    "description": "查看目前程序清單。",
     "tags": [
       "bash",
       "linux",
       "process",
       "ps",
+      "grep",
       "system"
     ],
-    "notes": "排程序或資源使用時很常用。"
+    "notes": "排程序或資源使用時起手式。例：`ps aux | grep nginx`。"
   },
   {
     "id": "bash-top",
@@ -2150,20 +1920,6 @@
       "monitor"
     ],
     "notes": "想看系統即時負載時最直覺。"
-  },
-  {
-    "id": "bash-ps-grep",
-    "category": "Bash",
-    "command": "ps aux | grep <程序名>",
-    "description": "用程序清單查特定程序。",
-    "tags": [
-      "bash",
-      "linux",
-      "process",
-      "ps",
-      "grep"
-    ],
-    "notes": "把 `nginx` 換成你要找的程序名稱。"
   },
   {
     "id": "bash-pgrep",
@@ -2182,30 +1938,26 @@
   {
     "id": "bash-kill",
     "category": "Bash",
-    "command": "kill <PID>",
-    "description": "送出預設訊號結束程序。",
-    "tags": [
-      "bash",
-      "linux",
-      "process",
-      "kill",
-      "pid"
+    "description": "結束程序，預設訊號或強制終止。",
+    "variants": [
+      {
+        "label": "預設訊號 (SIGTERM)",
+        "command": "kill <PID>"
+      },
+      {
+        "label": "強制 (-9, SIGKILL)",
+        "command": "kill -9 <PID>"
+      }
     ],
-    "notes": "把 `<PID>` 換成實際程序 ID。"
-  },
-  {
-    "id": "bash-kill-9",
-    "category": "Bash",
-    "command": "kill -9 <PID>",
-    "description": "強制終止指定程序。",
     "tags": [
       "bash",
       "linux",
       "process",
       "kill",
+      "pid",
       "risk"
     ],
-    "notes": "高風險，只有一般 `kill` 無效時再考慮使用。"
+    "notes": "預設送 SIGTERM，給程序機會清理；`-9` 是 SIGKILL，無法被攔截，只有預設無效時再用。"
   },
   {
     "id": "bash-pkill",
@@ -2222,32 +1974,28 @@
     "notes": "把 `nginx` 換成你要終止的程序名稱。"
   },
   {
-    "id": "bash-ss-lntp",
+    "id": "bash-ss",
     "category": "Bash",
-    "command": "ss -lntp",
-    "description": "查看目前監聽中的 TCP 埠與程序。",
+    "description": "Linux 版 netstat，查 socket 監聽狀態。",
+    "variants": [
+      {
+        "label": "全部監聽",
+        "command": "ss -lntp"
+      },
+      {
+        "label": "依埠號",
+        "command": "ss -lntp | grep <埠號>"
+      }
+    ],
     "tags": [
       "bash",
       "linux",
       "socket",
       "port",
-      "ss"
+      "ss",
+      "listen"
     ],
-    "notes": "查哪個服務正在 listen 時非常好用。"
-  },
-  {
-    "id": "bash-ss-port",
-    "category": "Bash",
-    "command": "ss -lntp | grep <埠號>",
-    "description": "查看某個埠是否正在被監聽。",
-    "tags": [
-      "bash",
-      "linux",
-      "socket",
-      "port",
-      "grep"
-    ],
-    "notes": "把 `8080` 換成你要檢查的埠號。"
+    "notes": "`-l` listen、`-n` 數字、`-t` TCP、`-p` 顯示程序。"
   },
   {
     "id": "bash-ip-addr",
@@ -2445,58 +2193,51 @@
     "notes": "前提是有安裝 `jq`；比 `cat a.json | jq` 更直接。"
   },
   {
-    "id": "bash-base64-encode",
+    "id": "bash-base64",
     "category": "Bash",
-    "command": "echo -n \"<輸入文字>\" | base64",
-    "description": "把文字做 Base64 編碼。",
+    "description": "Base64 編碼與解碼。",
+    "variants": [
+      {
+        "label": "編碼",
+        "command": "echo -n \"<輸入文字>\" | base64"
+      },
+      {
+        "label": "解碼",
+        "command": "echo \"<Base64 字串>\" | base64 -d"
+      }
+    ],
     "tags": [
       "bash",
       "linux",
       "base64",
       "encode",
-      "text"
-    ],
-    "notes": "常用在測試 token、basic auth 或資料轉換。"
-  },
-  {
-    "id": "bash-base64-decode",
-    "category": "Bash",
-    "command": "echo \"<Base64 字串>\" | base64 -d",
-    "description": "把 Base64 字串解碼。",
-    "tags": [
-      "bash",
-      "linux",
-      "base64",
       "decode",
       "text"
     ],
-    "notes": "若系統不是 GNU coreutils，參數可能略有差異。"
+    "notes": "常用在 token、basic auth、資料轉換。系統若不是 GNU coreutils，參數可能略有差異。"
   },
   {
     "id": "git-diff",
     "category": "Git",
-    "command": "git diff",
-    "description": "查看工作區尚未暫存的變更。",
+    "description": "查看變更：工作區未暫存或暫存區即將 commit 的內容。",
+    "variants": [
+      {
+        "label": "未暫存",
+        "command": "git diff"
+      },
+      {
+        "label": "已暫存",
+        "command": "git diff --staged"
+      }
+    ],
     "tags": [
       "git",
       "diff",
       "changes",
+      "staged",
       "working-tree"
     ],
-    "notes": "commit 前先看一次差異很重要。"
-  },
-  {
-    "id": "git-diff-staged",
-    "category": "Git",
-    "command": "git diff --staged",
-    "description": "查看已加入暫存區、準備 commit 的變更。",
-    "tags": [
-      "git",
-      "diff",
-      "staged",
-      "changes"
-    ],
-    "notes": "很適合 commit 前做最後確認。"
+    "notes": "commit 前先看一次差異是好習慣。"
   },
   {
     "id": "git-add-file",
@@ -2527,40 +2268,24 @@
   {
     "id": "git-branch",
     "category": "Git",
-    "command": "git branch",
-    "description": "查看本機分支清單。",
+    "description": "列出分支，可只看本機或包含遠端。",
+    "variants": [
+      {
+        "label": "本機",
+        "command": "git branch"
+      },
+      {
+        "label": "本機 + 遠端",
+        "command": "git branch -a"
+      }
+    ],
     "tags": [
       "git",
       "branch",
-      "list"
+      "list",
+      "remote"
     ],
-    "notes": "快速確認目前有哪些本機分支。"
-  },
-  {
-    "id": "git-branch-all",
-    "category": "Git",
-    "command": "git branch -a",
-    "description": "查看本機與遠端分支清單。",
-    "tags": [
-      "git",
-      "branch",
-      "remote",
-      "list"
-    ],
-    "notes": "想看 origin 上有哪些分支時很常用。"
-  },
-  {
-    "id": "git-switch-main",
-    "category": "Git",
-    "command": "git switch main",
-    "description": "切換到 `main` 分支。",
-    "tags": [
-      "git",
-      "branch",
-      "switch",
-      "main"
-    ],
-    "notes": "常用在回主線更新或發版前整理狀態。"
+    "notes": "`-a` 才看得到 origin 上的分支。"
   },
   {
     "id": "git-pull",
@@ -2602,19 +2327,6 @@
     "notes": "追問題來源或確認某段修改是誰做的時很好用。"
   },
   {
-    "id": "docker-ps-all",
-    "category": "Docker",
-    "command": "docker ps -a",
-    "description": "查看所有容器，包含已停止的。",
-    "tags": [
-      "docker",
-      "container",
-      "list",
-      "status"
-    ],
-    "notes": "排查容器是不是其實啟動後就退出時很好用。"
-  },
-  {
     "id": "docker-images",
     "category": "Docker",
     "command": "docker images",
@@ -2641,30 +2353,28 @@
     "notes": "即時看後端、代理或 worker 啟動錯誤時很好用。"
   },
   {
-    "id": "docker-exec-sh",
+    "id": "docker-exec",
     "category": "Docker",
-    "command": "docker exec -it <容器名稱或 ID> sh",
-    "description": "進入容器內的 `sh` shell。",
+    "description": "進入容器內的 shell。",
+    "variants": [
+      {
+        "label": "sh",
+        "command": "docker exec -it <容器名稱或 ID> sh"
+      },
+      {
+        "label": "bash",
+        "command": "docker exec -it <容器名稱或 ID> bash"
+      }
+    ],
     "tags": [
       "docker",
       "exec",
       "shell",
-      "container"
-    ],
-    "notes": "很多輕量映像只有 `sh` 沒有 `bash`。"
-  },
-  {
-    "id": "docker-exec-bash",
-    "category": "Docker",
-    "command": "docker exec -it <容器名稱或 ID> bash",
-    "description": "進入容器內的 `bash` shell。",
-    "tags": [
-      "docker",
-      "exec",
+      "sh",
       "bash",
       "container"
     ],
-    "notes": "前提是容器映像內真的有安裝 `bash`。"
+    "notes": "輕量映像（alpine 等）通常只有 `sh`，標準映像才會內建 `bash`。"
   },
   {
     "id": "docker-start",
@@ -2773,39 +2483,29 @@
   {
     "id": "npm-install",
     "category": "npm",
-    "command": "npm install",
-    "description": "安裝 package.json 所有依賴。",
-    "tags": [
-      "npm",
-      "install",
-      "dependencies"
+    "description": "安裝套件依賴，可裝全部、單一套件或 dev 依賴。",
+    "variants": [
+      {
+        "label": "全部依賴",
+        "command": "npm install"
+      },
+      {
+        "label": "指定套件",
+        "command": "npm install <套件名稱>"
+      },
+      {
+        "label": "開發依賴",
+        "command": "npm install <套件名稱> --save-dev"
+      }
     ],
-    "notes": "等同 `npm i`，會同時安裝 dependencies 和 devDependencies。"
-  },
-  {
-    "id": "npm-install-pkg",
-    "category": "npm",
-    "command": "npm install <套件名稱>",
-    "description": "安裝指定套件並寫入 dependencies。",
     "tags": [
       "npm",
       "install",
+      "dependencies",
+      "devdependencies",
       "package"
     ],
-    "notes": "例如 `npm install axios`。想裝到 devDependencies 請用 --save-dev。"
-  },
-  {
-    "id": "npm-install-dev",
-    "category": "npm",
-    "command": "npm install <套件名稱> --save-dev",
-    "description": "安裝指定套件並寫入 devDependencies。",
-    "tags": [
-      "npm",
-      "install",
-      "dev",
-      "devdependencies"
-    ],
-    "notes": "適合工具類套件，如 eslint、typescript、vite 等。"
+    "notes": "等同 `npm i`。`--save-dev` 適合工具類套件，例如 eslint、typescript、vite。"
   },
   {
     "id": "npm-uninstall",
@@ -2833,82 +2533,46 @@
     "notes": "比 `npm install` 更嚴格：lockfile 不存在或不符會直接報錯，不會自動更新。"
   },
   {
-    "id": "npm-run-dev",
+    "id": "npm-run",
     "category": "npm",
-    "command": "npm run dev",
-    "description": "啟動開發伺服器（Vite / Webpack / Next.js 等）。",
-    "tags": [
-      "npm",
-      "dev",
-      "server",
-      "run"
+    "description": "執行 package.json 的 scripts，常見有 dev / build / preview / test / lint 或自訂腳本。",
+    "variants": [
+      {
+        "label": "dev",
+        "command": "npm run dev"
+      },
+      {
+        "label": "build",
+        "command": "npm run build"
+      },
+      {
+        "label": "preview",
+        "command": "npm run preview"
+      },
+      {
+        "label": "test",
+        "command": "npm run test"
+      },
+      {
+        "label": "lint",
+        "command": "npm run lint"
+      },
+      {
+        "label": "自訂",
+        "command": "npm run <腳本名稱>"
+      }
     ],
-    "notes": "對應 package.json 的 scripts.dev，熱更新模式。"
-  },
-  {
-    "id": "npm-run-build",
-    "category": "npm",
-    "command": "npm run build",
-    "description": "建置正式版輸出（輸出到 dist 或 build 資料夾）。",
-    "tags": [
-      "npm",
-      "build",
-      "production",
-      "run"
-    ],
-    "notes": "對應 scripts.build。Vite 預設輸出 dist/，CRA 輸出 build/。"
-  },
-  {
-    "id": "npm-run-preview",
-    "category": "npm",
-    "command": "npm run preview",
-    "description": "在本機預覽 build 後的正式版產物。",
-    "tags": [
-      "npm",
-      "preview",
-      "vite",
-      "run"
-    ],
-    "notes": "Vite 專案常用，等同啟動一個靜態伺服器指向 dist/ 資料夾。"
-  },
-  {
-    "id": "npm-run-test",
-    "category": "npm",
-    "command": "npm run test",
-    "description": "執行測試套件（Jest / Vitest 等）。",
-    "tags": [
-      "npm",
-      "test",
-      "jest",
-      "vitest",
-      "run"
-    ],
-    "notes": "對應 scripts.test。加 -- --watch 可以進入監聽模式。"
-  },
-  {
-    "id": "npm-run-lint",
-    "category": "npm",
-    "command": "npm run lint",
-    "description": "執行 ESLint 或其他 linter 檢查。",
-    "tags": [
-      "npm",
-      "lint",
-      "eslint",
-      "run"
-    ],
-    "notes": "對應 scripts.lint。加 -- --fix 可以自動修復部分問題。"
-  },
-  {
-    "id": "npm-run-script",
-    "category": "npm",
-    "command": "npm run <腳本名稱>",
-    "description": "執行 package.json 中任意自訂腳本。",
     "tags": [
       "npm",
       "run",
+      "dev",
+      "build",
+      "preview",
+      "test",
+      "lint",
       "script"
     ],
-    "notes": "先用 `npm run`（不帶名稱）列出所有可用腳本，再挑要執行的。"
+    "notes": "對應 package.json 的 scripts 區塊。test/lint 後加 `-- --watch` 或 `-- --fix` 可傳額外參數。直接打 `npm run`（不帶名稱）會列出所有可用腳本。"
   },
   {
     "id": "npm-outdated",
@@ -2938,28 +2602,25 @@
   {
     "id": "npm-audit",
     "category": "npm",
-    "command": "npm audit",
-    "description": "掃描已安裝套件的已知安全漏洞。",
+    "description": "掃描已安裝套件的安全漏洞，可自動修復。",
+    "variants": [
+      {
+        "label": "掃描",
+        "command": "npm audit"
+      },
+      {
+        "label": "自動修復",
+        "command": "npm audit fix"
+      }
+    ],
     "tags": [
       "npm",
       "audit",
       "security",
-      "vulnerability"
+      "vulnerability",
+      "fix"
     ],
-    "notes": "顯示嚴重程度（critical / high / moderate / low）與建議修復方式。"
-  },
-  {
-    "id": "npm-audit-fix",
-    "category": "npm",
-    "command": "npm audit fix",
-    "description": "自動修復可安全更新的安全漏洞。",
-    "tags": [
-      "npm",
-      "audit",
-      "fix",
-      "security"
-    ],
-    "notes": "若仍有問題可加 --force，但有可能引入 breaking change，請謹慎。"
+    "notes": "`npm audit fix --force` 可強制升級但有可能引入 breaking change，謹慎使用。"
   },
   {
     "id": "npm-list",
@@ -3038,91 +2699,52 @@
     "notes": "公司私有 registry 時常用。還原官方源：https://registry.npmjs.org/"
   },
   {
-    "id": "ps-irm-get",
+    "id": "ps-invoke-restmethod",
     "category": "PowerShell",
-    "command": "Invoke-RestMethod -Method Get -Uri <URL>",
-    "description": "對指定 URL 發送 HTTP GET 請求，自動解析 JSON 回應。",
+    "description": "PowerShell HTTP 客戶端，支援 GET/POST/PUT/PATCH/DELETE 與 Bearer 授權。",
+    "variants": [
+      {
+        "label": "GET",
+        "command": "Invoke-RestMethod -Method Get -Uri <URL>"
+      },
+      {
+        "label": "GET (Bearer)",
+        "command": "Invoke-RestMethod -Method Get -Uri <URL> -Headers @{ Authorization = \"Bearer <Token>\"; Accept = \"application/json\" }"
+      },
+      {
+        "label": "POST JSON",
+        "command": "Invoke-RestMethod -Method Post -Uri <URL> -Body (ConvertTo-Json @{ key = \"<值>\" }) -ContentType \"application/json\""
+      },
+      {
+        "label": "POST (Bearer)",
+        "command": "Invoke-RestMethod -Method Post -Uri <URL> -Headers @{ Authorization = \"Bearer <Token>\" } -Body (ConvertTo-Json @{ key = \"<值>\" }) -ContentType \"application/json\""
+      },
+      {
+        "label": "PUT",
+        "command": "Invoke-RestMethod -Method Put -Uri <URL> -Body (ConvertTo-Json @{ key = \"<值>\" }) -ContentType \"application/json\""
+      },
+      {
+        "label": "PATCH",
+        "command": "Invoke-RestMethod -Method Patch -Uri <URL> -Body (ConvertTo-Json @{ key = \"<值>\" }) -ContentType \"application/json\""
+      },
+      {
+        "label": "DELETE",
+        "command": "Invoke-RestMethod -Method Delete -Uri <URL>"
+      }
+    ],
     "tags": [
       "powershell",
       "http",
       "get",
-      "api",
-      "invoke-restmethod"
-    ],
-    "notes": "回應若是 JSON，PS 會自動轉成物件。想存結果用 $resp = Invoke-RestMethod ..."
-  },
-  {
-    "id": "ps-irm-post-json",
-    "category": "PowerShell",
-    "command": "Invoke-RestMethod -Method Post -Uri <URL> -Body (ConvertTo-Json @{ key = \"<值>\" }) -ContentType \"application/json\"",
-    "description": "發送 POST 請求，附帶 JSON body。",
-    "tags": [
-      "powershell",
-      "http",
       "post",
-      "api",
-      "json",
-      "invoke-restmethod"
-    ],
-    "notes": "@{ key = \"value\" } 換成你實際的欄位名稱與值，可以有多個 key-value pair。"
-  },
-  {
-    "id": "ps-irm-post-auth",
-    "category": "PowerShell",
-    "command": "Invoke-RestMethod -Method Post -Uri <URL> -Headers @{ Authorization = \"Bearer <Token>\" } -Body (ConvertTo-Json @{ key = \"<值>\" }) -ContentType \"application/json\"",
-    "description": "帶 Bearer Token 的授權 POST 請求。",
-    "tags": [
-      "powershell",
-      "http",
-      "post",
-      "auth",
-      "bearer",
-      "token",
-      "invoke-restmethod"
-    ],
-    "notes": "Token 填入取得的 JWT 或 API key。Headers 可以加其他欄位如 X-Api-Key 等。"
-  },
-  {
-    "id": "ps-irm-put",
-    "category": "PowerShell",
-    "command": "Invoke-RestMethod -Method Put -Uri <URL> -Body (ConvertTo-Json @{ key = \"<值>\" }) -ContentType \"application/json\"",
-    "description": "發送 HTTP PUT 請求，用於全量更新資源。",
-    "tags": [
-      "powershell",
-      "http",
       "put",
-      "api",
-      "invoke-restmethod"
-    ],
-    "notes": "PUT 通常是全量替換，PATCH 是部分更新。視 API 設計選用。"
-  },
-  {
-    "id": "ps-irm-patch",
-    "category": "PowerShell",
-    "command": "Invoke-RestMethod -Method Patch -Uri <URL> -Body (ConvertTo-Json @{ key = \"<值>\" }) -ContentType \"application/json\"",
-    "description": "發送 HTTP PATCH 請求，用於部分更新資源。",
-    "tags": [
-      "powershell",
-      "http",
       "patch",
-      "api",
-      "invoke-restmethod"
-    ],
-    "notes": "只傳需要修改的欄位，其餘保持不變。比 PUT 更省流量。"
-  },
-  {
-    "id": "ps-irm-delete",
-    "category": "PowerShell",
-    "command": "Invoke-RestMethod -Method Delete -Uri <URL>",
-    "description": "發送 HTTP DELETE 請求，刪除指定資源。",
-    "tags": [
-      "powershell",
-      "http",
       "delete",
+      "bearer",
       "api",
       "invoke-restmethod"
     ],
-    "notes": "部分 API 的 DELETE 也需要帶 body 或 headers，依文件補充。"
+    "notes": "回應若為 JSON 會自動解析成物件，可用 `$resp = Invoke-RestMethod ...` 接收。`@{ key = \"<值>\" }` 可填多組 key-value。PUT 通常是全量替換、PATCH 只送要改的欄位，依 API 規範選用。"
   },
   {
     "id": "ps-irm-save-var",
@@ -3137,22 +2759,6 @@
       "invoke-restmethod"
     ],
     "notes": "-Depth 控制輸出層數，預設 2 層容易被截斷，建議設 5 以上。"
-  },
-  {
-    "id": "ps-irm-get-auth",
-    "category": "PowerShell",
-    "command": "Invoke-RestMethod -Method Get -Uri <URL> -Headers @{ Authorization = \"Bearer <Token>\"; Accept = \"application/json\" }",
-    "description": "帶授權 Header 的 GET 請求，明確要求 JSON 回應。",
-    "tags": [
-      "powershell",
-      "http",
-      "get",
-      "auth",
-      "bearer",
-      "headers",
-      "invoke-restmethod"
-    ],
-    "notes": "Accept: application/json 確保部分 API 回傳 JSON 而非 HTML。"
   },
   {
     "id": "ps-iwr-download",
@@ -3358,10 +2964,22 @@
     "category": "Nmap",
     "description": "對目標主機做 port 掃描，可切換掃描範圍。",
     "variants": [
-      { "label": "常見 1000 port", "command": "nmap <目標>" },
-      { "label": "全部 65535 port", "command": "nmap -p- <目標>" },
-      { "label": "指定 port", "command": "nmap -p <port 列表> <目標>" },
-      { "label": "port 範圍", "command": "nmap -p <起>-<迄> <目標>" }
+      {
+        "label": "常見 1000 port",
+        "command": "nmap <目標>"
+      },
+      {
+        "label": "全部 65535 port",
+        "command": "nmap -p- <目標>"
+      },
+      {
+        "label": "指定 port",
+        "command": "nmap -p <port 列表> <目標>"
+      },
+      {
+        "label": "port 範圍",
+        "command": "nmap -p <起>-<迄> <目標>"
+      }
     ],
     "tags": [
       "nmap",
@@ -3377,8 +2995,14 @@
     "category": "Nmap",
     "description": "辨識服務版本，找後台或判斷暴露面最實用。",
     "variants": [
-      { "label": "常見 port 版本", "command": "nmap -sV <目標>" },
-      { "label": "全 port 版本", "command": "nmap -sV -p- <目標>" }
+      {
+        "label": "常見 port 版本",
+        "command": "nmap -sV <目標>"
+      },
+      {
+        "label": "全 port 版本",
+        "command": "nmap -sV -p- <目標>"
+      }
     ],
     "tags": [
       "nmap",
@@ -3394,8 +3018,14 @@
     "category": "Nmap",
     "description": "對整個網段掃描，列出存活主機或進一步偵測服務。",
     "variants": [
-      { "label": "存活主機", "command": "nmap -sn <網段>" },
-      { "label": "網段 + 服務版本", "command": "nmap -sV <網段>" }
+      {
+        "label": "存活主機",
+        "command": "nmap -sn <網段>"
+      },
+      {
+        "label": "網段 + 服務版本",
+        "command": "nmap -sV <網段>"
+      }
     ],
     "tags": [
       "nmap",
@@ -3411,8 +3041,14 @@
     "category": "Nmap",
     "description": "猜測目標主機的作業系統，可搭配服務偵測一次完成。",
     "variants": [
-      { "label": "只猜 OS", "command": "nmap -O <目標>" },
-      { "label": "服務 + OS", "command": "nmap -sV -O <目標>" }
+      {
+        "label": "只猜 OS",
+        "command": "nmap -O <目標>"
+      },
+      {
+        "label": "服務 + OS",
+        "command": "nmap -sV -O <目標>"
+      }
     ],
     "tags": [
       "nmap",
@@ -3428,8 +3064,14 @@
     "category": "Nmap",
     "description": "常用的組合技，一次拿到最多資訊或快速找後台。",
     "variants": [
-      { "label": "全 port + 服務 + OS", "command": "nmap -sV -O -p- <目標>" },
-      { "label": "網段找 Web 後台", "command": "nmap -p 80,443,8080,8443,5000,5001,8006,8888 <網段>" }
+      {
+        "label": "全 port + 服務 + OS",
+        "command": "nmap -sV -O -p- <目標>"
+      },
+      {
+        "label": "網段找 Web 後台",
+        "command": "nmap -p 80,443,8080,8443,5000,5001,8006,8888 <網段>"
+      }
     ],
     "tags": [
       "nmap",
