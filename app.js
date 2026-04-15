@@ -2128,9 +2128,20 @@ function switchCardVariant(card, nextIndex) {
   updateCommandPreview(card);
 }
 
+// Cache placeholder extraction results. The command template text never
+// changes once normalized, so the regex + Set + map + filter work only
+// needs to happen once per unique template.
+const placeholderCache = new Map();
+
 function extractPlaceholders(command) {
-  const matches = String(command ?? "").match(/<[^>]+>/g) ?? [];
-  return [...new Set(matches.map((token) => token.trim()).filter(Boolean))];
+  const key = String(command ?? "");
+  const cached = placeholderCache.get(key);
+  if (cached) return cached;
+
+  const matches = key.match(/<[^>]+>/g) ?? [];
+  const tokens = [...new Set(matches.map((token) => token.trim()).filter(Boolean))];
+  placeholderCache.set(key, tokens);
+  return tokens;
 }
 
 function renderPlaceholderFields(placeholders, currentValues = {}) {
@@ -2347,15 +2358,28 @@ function warnOnDuplicateCommandIds(commands) {
   });
 }
 
+// Single-slot caches for the two highlight pattern compilers. Every
+// render of the result section calls both with the same tokens, and
+// the tokens only change when the user types — so a one-entry cache
+// avoids rebuilding the regex on every render / pagination click.
+let _htmlHighlightPatternCache = { key: null, pattern: null };
+let _textHighlightPatternCache = { key: null, pattern: null };
+
 function compileHighlightPattern(tokens) {
   if (!tokens.length) {
     return null;
+  }
+
+  const key = tokens.join("\x00");
+  if (_htmlHighlightPatternCache.key === key) {
+    return _htmlHighlightPatternCache.pattern;
   }
 
   const uniqueTokens = [...new Set(tokens.map((token) => token.trim()).filter(Boolean))]
     .sort((left, right) => right.length - left.length);
 
   if (!uniqueTokens.length) {
+    _htmlHighlightPatternCache = { key, pattern: null };
     return null;
   }
 
@@ -2363,7 +2387,9 @@ function compileHighlightPattern(tokens) {
     .map((token) => escapeRegex(escapeHtml(token)))
     .join("|");
 
-  return pattern ? new RegExp(`(${pattern})`, "gi") : null;
+  const regex = pattern ? new RegExp(`(${pattern})`, "gi") : null;
+  _htmlHighlightPatternCache = { key, pattern: regex };
+  return regex;
 }
 
 function compileTextHighlightPattern(tokens) {
@@ -2371,10 +2397,16 @@ function compileTextHighlightPattern(tokens) {
     return null;
   }
 
+  const key = tokens.join("\x00");
+  if (_textHighlightPatternCache.key === key) {
+    return _textHighlightPatternCache.pattern;
+  }
+
   const uniqueTokens = [...new Set(tokens.map((token) => token.trim()).filter(Boolean))]
     .sort((left, right) => right.length - left.length);
 
   if (!uniqueTokens.length) {
+    _textHighlightPatternCache = { key, pattern: null };
     return null;
   }
 
@@ -2382,7 +2414,9 @@ function compileTextHighlightPattern(tokens) {
     .map((token) => escapeRegex(token))
     .join("|");
 
-  return pattern ? new RegExp(`(${pattern})`, "gi") : null;
+  const regex = pattern ? new RegExp(`(${pattern})`, "gi") : null;
+  _textHighlightPatternCache = { key, pattern: regex };
+  return regex;
 }
 
 function highlightText(text, tokensOrPattern) {
@@ -2558,6 +2592,14 @@ function renderCommandCode(codeElement, commandText, language, highlightPattern 
   }
 }
 
+// Cache hljs output by (language, text). hljs.highlight is the single
+// most expensive step in the render loop — the same command text
+// obviously produces the same HTML every call, so each unique
+// (language, text) pair only needs to be computed once. Only cache
+// when hljs is actually loaded; the fallback branch is cheap enough
+// to skip caching and avoid stale entries before the real hljs lands.
+const hljsHtmlCache = new Map();
+
 function getCommandCodeHtml(commandText, language) {
   const text = String(commandText ?? "");
   const hljs = window.hljs;
@@ -2566,19 +2608,28 @@ function getCommandCodeHtml(commandText, language) {
     return escapeHtml(text);
   }
 
+  const cacheKey = `${language}|${text}`;
+  const cached = hljsHtmlCache.get(cacheKey);
+  if (cached !== undefined) {
+    return cached;
+  }
+
+  let html;
   try {
     if (language && hljs.getLanguage?.(language)) {
-      return hljs.highlight(text, { language, ignoreIllegals: true }).value;
-    }
-
-    if (hljs.highlightAuto) {
-      return hljs.highlightAuto(text, ["bash", "dos", "powershell"]).value;
+      html = hljs.highlight(text, { language, ignoreIllegals: true }).value;
+    } else if (hljs.highlightAuto) {
+      html = hljs.highlightAuto(text, ["bash", "dos", "powershell"]).value;
+    } else {
+      html = escapeHtml(text);
     }
   } catch (error) {
     console.warn("command syntax highlight failed", error);
+    html = escapeHtml(text);
   }
 
-  return escapeHtml(text);
+  hljsHtmlCache.set(cacheKey, html);
+  return html;
 }
 
 function applySearchMarksToCode(container, highlightPattern) {
@@ -2648,35 +2699,44 @@ function announce(message) {
   }, 20);
 }
 
-function getCategoryAccent(category) {
-  const palette = {
-    Git: { color: "#7ee787", soft: "rgba(126, 231, 135, 0.14)", border: "rgba(126, 231, 135, 0.34)" },
-    Docker: { color: "#79b8ff", soft: "rgba(121, 184, 255, 0.14)", border: "rgba(121, 184, 255, 0.34)" },
-    GitHub: { color: "#a78bfa", soft: "rgba(167, 139, 250, 0.14)", border: "rgba(167, 139, 250, 0.34)" },
-    Python: { color: "#f2cc60", soft: "rgba(242, 204, 96, 0.14)", border: "rgba(242, 204, 96, 0.34)" },
-    PowerShell: { color: "#9a8cff", soft: "rgba(154, 140, 255, 0.14)", border: "rgba(154, 140, 255, 0.34)" },
-    WSL: { color: "#66d1c1", soft: "rgba(102, 209, 193, 0.14)", border: "rgba(102, 209, 193, 0.34)" },
-    Bash: { color: "#93d977", soft: "rgba(147, 217, 119, 0.14)", border: "rgba(147, 217, 119, 0.34)" },
-    "Windows Network & DNS": { color: "#5bb0ff", soft: "rgba(91, 176, 255, 0.14)", border: "rgba(91, 176, 255, 0.34)" },
-    "Windows Port & Firewall": { color: "#ff9d5c", soft: "rgba(255, 157, 92, 0.14)", border: "rgba(255, 157, 92, 0.34)" },
-    "Windows Process & Service": { color: "#7cc8a5", soft: "rgba(124, 200, 165, 0.14)", border: "rgba(124, 200, 165, 0.34)" },
-    "Windows Event Log": { color: "#c792ea", soft: "rgba(199, 146, 234, 0.14)", border: "rgba(199, 146, 234, 0.34)" },
-    "Windows Repair": { color: "#f28b82", soft: "rgba(242, 139, 130, 0.14)", border: "rgba(242, 139, 130, 0.34)" },
-    "Windows Shortcut": { color: "#d1b36a", soft: "rgba(209, 179, 106, 0.14)", border: "rgba(209, 179, 106, 0.34)" },
-    "Windows File & Directory": { color: "#8fb0ff", soft: "rgba(143, 176, 255, 0.14)", border: "rgba(143, 176, 255, 0.34)" },
-    npm: { color: "#cb3837", soft: "rgba(203, 56, 55, 0.14)", border: "rgba(203, 56, 55, 0.34)" }
-  };
+// Palette is frozen at module scope so we don't re-build the 15-entry
+// object literal on every card render. Dynamic accents (categories not
+// in the palette) go through a cache since categories don't change at
+// runtime.
+const CATEGORY_ACCENT_PALETTE = {
+  Git: { color: "#7ee787", soft: "rgba(126, 231, 135, 0.14)", border: "rgba(126, 231, 135, 0.34)" },
+  Docker: { color: "#79b8ff", soft: "rgba(121, 184, 255, 0.14)", border: "rgba(121, 184, 255, 0.34)" },
+  GitHub: { color: "#a78bfa", soft: "rgba(167, 139, 250, 0.14)", border: "rgba(167, 139, 250, 0.34)" },
+  Python: { color: "#f2cc60", soft: "rgba(242, 204, 96, 0.14)", border: "rgba(242, 204, 96, 0.34)" },
+  PowerShell: { color: "#9a8cff", soft: "rgba(154, 140, 255, 0.14)", border: "rgba(154, 140, 255, 0.34)" },
+  WSL: { color: "#66d1c1", soft: "rgba(102, 209, 193, 0.14)", border: "rgba(102, 209, 193, 0.34)" },
+  Bash: { color: "#93d977", soft: "rgba(147, 217, 119, 0.14)", border: "rgba(147, 217, 119, 0.34)" },
+  "Windows Network & DNS": { color: "#5bb0ff", soft: "rgba(91, 176, 255, 0.14)", border: "rgba(91, 176, 255, 0.34)" },
+  "Windows Port & Firewall": { color: "#ff9d5c", soft: "rgba(255, 157, 92, 0.14)", border: "rgba(255, 157, 92, 0.34)" },
+  "Windows Process & Service": { color: "#7cc8a5", soft: "rgba(124, 200, 165, 0.14)", border: "rgba(124, 200, 165, 0.34)" },
+  "Windows Event Log": { color: "#c792ea", soft: "rgba(199, 146, 234, 0.14)", border: "rgba(199, 146, 234, 0.34)" },
+  "Windows Repair": { color: "#f28b82", soft: "rgba(242, 139, 130, 0.14)", border: "rgba(242, 139, 130, 0.34)" },
+  "Windows Shortcut": { color: "#d1b36a", soft: "rgba(209, 179, 106, 0.14)", border: "rgba(209, 179, 106, 0.34)" },
+  "Windows File & Directory": { color: "#8fb0ff", soft: "rgba(143, 176, 255, 0.14)", border: "rgba(143, 176, 255, 0.34)" },
+  npm: { color: "#cb3837", soft: "rgba(203, 56, 55, 0.14)", border: "rgba(203, 56, 55, 0.34)" }
+};
+const categoryAccentCache = new Map();
 
-  if (palette[category]) {
-    return palette[category];
-  }
+function getCategoryAccent(category) {
+  const known = CATEGORY_ACCENT_PALETTE[category];
+  if (known) return known;
+
+  const cached = categoryAccentCache.get(category);
+  if (cached) return cached;
 
   const hue = hashToHue(category);
-  return {
+  const accent = {
     color: `hsl(${hue}, 65%, 72%)`,
     soft: `hsla(${hue}, 65%, 60%, 0.14)`,
     border: `hsla(${hue}, 65%, 60%, 0.34)`
   };
+  categoryAccentCache.set(category, accent);
+  return accent;
 }
 
 function hashToHue(str) {
