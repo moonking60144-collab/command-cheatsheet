@@ -6,7 +6,12 @@ const SENSITIVE_TOKEN_PATTERN = /token|password|secret|key|密碼|金鑰|憑證/
 const DATA_URL = "./commands.json";
 const SECURE_DATA_URL = "./secure-categories.json";
 const SEARCH_DEBOUNCE_MS = 80;
-const RESULTS_PER_PAGE = 100;
+const RESULTS_PER_PAGE = 50;
+// Above-the-fold batch — render this many cards synchronously on each
+// filter render, then defer the rest to subsequent animation frames so
+// the initial paint of a page lands without waiting on the whole list.
+const FIRST_RENDER_BATCH = 20;
+const DEFERRED_RENDER_CHUNK = 15;
 const PBKDF2_ITERATIONS = 250000;
 const PBKDF2_KEY_SIZE = 256 / 32;
 
@@ -1544,6 +1549,12 @@ function hasFuzzyMatch(item, tokens) {
   return false;
 }
 
+// Per-container render generation. Each renderResults call bumps the
+// counter for its container; any pending rAF chunk from a previous
+// render checks against the current gen and bails if a newer render
+// has already replaced the DOM.
+const renderGenerations = new WeakMap();
+
 function renderResults(container, items) {
   if (!items.length) {
     const queryLabel = state.query.trim() || "*";
@@ -1557,34 +1568,79 @@ function renderResults(container, items) {
         <p class="empty-state-hint">試試更短的關鍵字，或先清除目前的分類篩選。</p>
       </article>
     `;
+    // Invalidate any pending deferred render for this container so a
+    // stale rAF callback doesn't append orphan cards into the empty state.
+    renderGenerations.set(container, (renderGenerations.get(container) ?? 0) + 1);
     return;
   }
 
-  const fragment = document.createDocumentFragment();
+  const myGen = (renderGenerations.get(container) ?? 0) + 1;
+  renderGenerations.set(container, myGen);
+
   const tokens = tokenize(state.query);
   const highlightPattern = compileHighlightPattern(tokens);
   const commandHighlightPattern = compileTextHighlightPattern(tokens);
+  const ctx = { tokens, highlightPattern, commandHighlightPattern };
 
-  items.forEach((item, index) => {
-    const isFuzzy = tokens.length > 0 && hasFuzzyMatch(item, tokens);
-    const hasVariants = item.variants.length > 1;
-    const activeVariantIndex = hasVariants ? getActiveVariantIndex(item) : 0;
-    const activeCommand = hasVariants ? item.variants[activeVariantIndex].command : item.command;
-    const placeholders = extractPlaceholders(activeCommand);
-    const placeholderValues = state.placeholderValues.get(item.id) ?? {};
-    const previewCommand = resolveCommandTemplate(activeCommand, placeholderValues);
-    const commandLanguage = getCommandHighlightLanguage(item);
-    const accent = getCategoryAccent(item.category);
-    const isPinned = state.pinned.has(item.id);
-    const card = document.createElement("article");
-    card.className = `command-card${isPinned ? " is-pinned" : ""}${hasVariants ? " has-variants" : ""}`;
-    card.dataset.commandId = item.id;
-    card.style.setProperty("--category-accent", accent.color);
-    card.style.setProperty("--category-accent-soft", accent.soft);
-    card.style.setProperty("--category-accent-border", accent.border);
-    card.style.setProperty("--card-index", String(Math.min(index, 5)));
-    const variantStripHtml = hasVariants
-      ? `
+  // First batch: render above-the-fold cards synchronously so the user
+  // sees content the moment the filter result lands.
+  const firstBatchEnd = Math.min(FIRST_RENDER_BATCH, items.length);
+  const firstFragment = document.createDocumentFragment();
+  for (let i = 0; i < firstBatchEnd; i++) {
+    firstFragment.appendChild(buildCommandCard(items[i], i, ctx));
+  }
+  container.replaceChildren(firstFragment);
+
+  if (firstBatchEnd >= items.length) {
+    return;
+  }
+
+  // Remaining cards: append in DEFERRED_RENDER_CHUNK-sized groups on
+  // subsequent animation frames. Each chunk checks the render gen so
+  // that a newer filter / pagination click supersedes any in-flight work.
+  scheduleRemainingCards(container, items, firstBatchEnd, myGen, ctx);
+}
+
+function scheduleRemainingCards(container, items, startIdx, gen, ctx) {
+  requestAnimationFrame(() => {
+    if (renderGenerations.get(container) !== gen) {
+      return;
+    }
+
+    const endIdx = Math.min(startIdx + DEFERRED_RENDER_CHUNK, items.length);
+    const fragment = document.createDocumentFragment();
+    for (let i = startIdx; i < endIdx; i++) {
+      fragment.appendChild(buildCommandCard(items[i], i, ctx));
+    }
+    container.appendChild(fragment);
+
+    if (endIdx < items.length) {
+      scheduleRemainingCards(container, items, endIdx, gen, ctx);
+    }
+  });
+}
+
+function buildCommandCard(item, index, ctx) {
+  const { tokens, highlightPattern, commandHighlightPattern } = ctx;
+  const isFuzzy = tokens.length > 0 && hasFuzzyMatch(item, tokens);
+  const hasVariants = item.variants.length > 1;
+  const activeVariantIndex = hasVariants ? getActiveVariantIndex(item) : 0;
+  const activeCommand = hasVariants ? item.variants[activeVariantIndex].command : item.command;
+  const placeholders = extractPlaceholders(activeCommand);
+  const placeholderValues = state.placeholderValues.get(item.id) ?? {};
+  const previewCommand = resolveCommandTemplate(activeCommand, placeholderValues);
+  const commandLanguage = getCommandHighlightLanguage(item);
+  const accent = getCategoryAccent(item.category);
+  const isPinned = state.pinned.has(item.id);
+  const card = document.createElement("article");
+  card.className = `command-card${isPinned ? " is-pinned" : ""}${hasVariants ? " has-variants" : ""}`;
+  card.dataset.commandId = item.id;
+  card.style.setProperty("--category-accent", accent.color);
+  card.style.setProperty("--category-accent-soft", accent.soft);
+  card.style.setProperty("--category-accent-border", accent.border);
+  card.style.setProperty("--card-index", String(Math.min(index, 5)));
+  const variantStripHtml = hasVariants
+    ? `
         <div class="variant-strip" role="tablist" aria-label="指令變體">
           ${item.variants.map((variant, variantIndex) => `
             <button
@@ -1597,8 +1653,8 @@ function renderResults(container, items) {
           `).join("")}
         </div>
       `
-      : "";
-    card.innerHTML = `
+    : "";
+  card.innerHTML = `
       <div class="card-top">
         <button class="category-badge category-badge-button" type="button" data-category="${escapeAttribute(item.category)}" aria-label="篩選分類 ${escapeAttribute(item.category)}" title="篩選分類 ${escapeAttribute(item.category)}">
           ${highlightText(item.category, highlightPattern)}
@@ -1622,17 +1678,14 @@ function renderResults(container, items) {
         </div>
       </div>
     `;
-    renderCommandCode(
-      card.querySelector(".command-code"),
-      previewCommand,
-      commandLanguage,
-      commandHighlightPattern
-    );
-    card.setAttribute("tabindex", "0");
-    fragment.appendChild(card);
-  });
-
-  container.replaceChildren(fragment);
+  renderCommandCode(
+    card.querySelector(".command-code"),
+    previewCommand,
+    commandLanguage,
+    commandHighlightPattern
+  );
+  card.setAttribute("tabindex", "0");
+  return card;
 }
 
 function renderError(error) {
