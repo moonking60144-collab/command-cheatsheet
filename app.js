@@ -1209,7 +1209,14 @@ async function unlockProtectedCategory(form) {
   }
 
   try {
-    await ensureCryptoJs();
+    try {
+      await ensureCryptoJs();
+    } catch (loadError) {
+      console.warn("crypto-js load failed", loadError);
+      setProtectedStatus(protectedId, "載入解密模組失敗，請檢查網路後重試。", true);
+      return;
+    }
+
     const decrypted = decryptProtectedCommands(target, password);
     state.unlockedCommands.set(target.id, decrypted);
     resetPagination();
@@ -2422,7 +2429,11 @@ function loadScript(src) {
 }
 
 function ensureHighlightLibraries() {
-  if (window.hljs?.getLanguage?.("bash")) {
+  // Check the LAST-loaded language pack rather than bash (which ships with
+  // the core). If the chain partially failed last time we reset
+  // highlightLoadPromise, but window.hljs.getLanguage("bash") would still
+  // return truthy — leading callers to believe the full chain succeeded.
+  if (window.hljs?.getLanguage?.("powershell") && window.hljs?.getLanguage?.("dos")) {
     return Promise.resolve();
   }
 
@@ -2430,20 +2441,25 @@ function ensureHighlightLibraries() {
     return highlightLoadPromise;
   }
 
-  highlightLoadPromise = loadScript("./assets/highlight.min.js")
+  // Keep the pre-catch chain so awaiters still see rejection; the separate
+  // side-effect catch only resets module state and logs, it does not
+  // swallow the rejection for the returned promise.
+  const chain = loadScript("./assets/highlight.min.js")
     .then(() => Promise.all([
       loadScript("./assets/highlight-powershell.min.js"),
       loadScript("./assets/highlight-dos.min.js")
     ]))
     .then(() => {
       upgradeAllCodeBlocks();
-    })
-    .catch((error) => {
-      console.warn("Failed to load highlight libraries", error);
-      highlightLoadPromise = null;
     });
 
-  return highlightLoadPromise;
+  chain.catch((error) => {
+    console.warn("Failed to load highlight libraries", error);
+    highlightLoadPromise = null;
+  });
+
+  highlightLoadPromise = chain;
+  return chain;
 }
 
 function scheduleHighlightLoad() {
@@ -2465,18 +2481,19 @@ function ensureCryptoJs() {
     return cryptoLoadPromise;
   }
 
-  cryptoLoadPromise = loadScript("./assets/crypto-js.min.js")
+  const chain = loadScript("./assets/crypto-js.min.js")
     .then(() => {
       if (!window.CryptoJS?.AES) {
         throw new Error("CryptoJS not available after load");
       }
-    })
-    .catch((error) => {
-      cryptoLoadPromise = null;
-      throw error;
     });
 
-  return cryptoLoadPromise;
+  chain.catch(() => {
+    cryptoLoadPromise = null;
+  });
+
+  cryptoLoadPromise = chain;
+  return chain;
 }
 
 function upgradeAllCodeBlocks() {

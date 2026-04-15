@@ -68,7 +68,45 @@ self.addEventListener("fetch", (event) => {
 
 async function handleRequest(request) {
   const cache = await caches.open(CACHE_NAME);
+  const url = new URL(request.url);
 
+  // Vendor assets under /assets/ are effectively immutable within a
+  // deploy (CACHE_VERSION bumps per deploy and the activate hook wipes
+  // the old cache), so serve cache-first with stale-while-revalidate:
+  // instant response from cache, background fetch to freshen for next
+  // visit. This is what gives repeat visits a truly zero-wait lazy-load
+  // of highlight.js / crypto-js.
+  if (url.pathname.includes("/assets/")) {
+    const cached = await cache.match(request, { ignoreSearch: true });
+
+    if (cached) {
+      fetch(request)
+        .then((fresh) => {
+          if (fresh.ok) {
+            cache.put(request, fresh.clone()).catch(() => {});
+          }
+        })
+        .catch(() => { /* offline refresh is fine, we already returned cached */ });
+      return cached;
+    }
+
+    try {
+      const fresh = await fetch(request);
+      if (fresh.ok) {
+        cache.put(request, fresh.clone()).catch(() => {});
+      }
+      return fresh;
+    } catch (error) {
+      return new Response("Offline", {
+        status: 503,
+        headers: { "Content-Type": "text/plain; charset=utf-8" }
+      });
+    }
+  }
+
+  // Everything else (navigation, app shell, commands.json) stays
+  // network-first so fresh content reaches users without waiting for
+  // a new SW version.
   try {
     const fresh = await fetch(request);
 
