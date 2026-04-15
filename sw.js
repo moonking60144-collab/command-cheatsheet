@@ -9,14 +9,13 @@ const ASSETS = [
   "./search.worker.js",
   "./commands.json",
   "./manifest.json",
-  "./assets/crypto-js.min.js",
-  "./assets/highlight.min.js",
-  "./assets/highlight-powershell.min.js",
-  "./assets/highlight-dos.min.js",
   "./assets/icons/icon-192.svg",
   "./assets/icons/icon-512.svg"
 ];
 
+// crypto-js and highlight.* are intentionally NOT precached — app.js
+// lazy-loads them after first paint / on secure panel open, and the
+// runtime fetch handler below caches them on first request.
 const OPTIONAL_ASSETS = [
   "./secure-categories.json"
 ];

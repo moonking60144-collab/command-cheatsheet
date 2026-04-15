@@ -79,6 +79,8 @@ let searchWorker = null;
 let searchWorkerDisabled = false;
 let workerSeq = 0;
 let lastFilterAnimated = false;
+let highlightLoadPromise = null;
+let cryptoLoadPromise = null;
 
 // Reusable canvas for text measurement; cached column width avoids re-measuring on every picker open
 const _pickerMeasureCanvas = document.createElement("canvas");
@@ -104,6 +106,7 @@ async function init() {
     renderProtectedCategories();
     rebuildCommandState();
     registerServiceWorker();
+    scheduleHighlightLoad();
   } catch (error) {
     console.error(error);
     renderError(error);
@@ -353,6 +356,12 @@ function bindEvents() {
 
     event.preventDefault();
     await unlockProtectedCategory(form);
+  });
+
+  ui.securePanel?.addEventListener("toggle", () => {
+    if (ui.securePanel.open) {
+      ensureCryptoJs().catch(() => { /* retried on submit */ });
+    }
   });
 
   document.addEventListener("keydown", (event) => {
@@ -1200,6 +1209,7 @@ async function unlockProtectedCategory(form) {
   }
 
   try {
+    await ensureCryptoJs();
     const decrypted = decryptProtectedCommands(target, password);
     state.unlockedCommands.set(target.id, decrypted);
     resetPagination();
@@ -2383,12 +2393,118 @@ function getCommandHighlightLanguage(item) {
   return "bash";
 }
 
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const existing = document.querySelector(`script[data-lazy-src="${src}"]`);
+
+    if (existing) {
+      if (existing.dataset.loaded === "1") {
+        resolve();
+        return;
+      }
+
+      existing.addEventListener("load", () => resolve(), { once: true });
+      existing.addEventListener("error", () => reject(new Error(`Failed to load ${src}`)), { once: true });
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = src;
+    script.async = true;
+    script.dataset.lazySrc = src;
+    script.addEventListener("load", () => {
+      script.dataset.loaded = "1";
+      resolve();
+    }, { once: true });
+    script.addEventListener("error", () => reject(new Error(`Failed to load ${src}`)), { once: true });
+    document.head.appendChild(script);
+  });
+}
+
+function ensureHighlightLibraries() {
+  if (window.hljs?.getLanguage?.("bash")) {
+    return Promise.resolve();
+  }
+
+  if (highlightLoadPromise) {
+    return highlightLoadPromise;
+  }
+
+  highlightLoadPromise = loadScript("./assets/highlight.min.js")
+    .then(() => Promise.all([
+      loadScript("./assets/highlight-powershell.min.js"),
+      loadScript("./assets/highlight-dos.min.js")
+    ]))
+    .then(() => {
+      upgradeAllCodeBlocks();
+    })
+    .catch((error) => {
+      console.warn("Failed to load highlight libraries", error);
+      highlightLoadPromise = null;
+    });
+
+  return highlightLoadPromise;
+}
+
+function scheduleHighlightLoad() {
+  const run = () => { ensureHighlightLibraries(); };
+
+  if (typeof window.requestIdleCallback === "function") {
+    window.requestIdleCallback(run, { timeout: 1500 });
+  } else {
+    window.setTimeout(run, 400);
+  }
+}
+
+function ensureCryptoJs() {
+  if (window.CryptoJS?.AES) {
+    return Promise.resolve();
+  }
+
+  if (cryptoLoadPromise) {
+    return cryptoLoadPromise;
+  }
+
+  cryptoLoadPromise = loadScript("./assets/crypto-js.min.js")
+    .then(() => {
+      if (!window.CryptoJS?.AES) {
+        throw new Error("CryptoJS not available after load");
+      }
+    })
+    .catch((error) => {
+      cryptoLoadPromise = null;
+      throw error;
+    });
+
+  return cryptoLoadPromise;
+}
+
+function upgradeAllCodeBlocks() {
+  if (!window.hljs) {
+    return;
+  }
+
+  const pattern = compileTextHighlightPattern(tokenize(state.query));
+
+  document.querySelectorAll(".command-code").forEach((code) => {
+    const text = code.dataset.commandText;
+
+    if (text === undefined) {
+      return;
+    }
+
+    const language = code.dataset.commandLanguage || "bash";
+    renderCommandCode(code, text, language, pattern);
+  });
+}
+
 function renderCommandCode(codeElement, commandText, language, highlightPattern = null) {
   if (!codeElement) {
     return;
   }
 
   codeElement.dataset.commandLanguage = language;
+  codeElement.dataset.commandText = String(commandText ?? "");
   codeElement.className = "command-code";
   codeElement.innerHTML = getCommandCodeHtml(commandText, language);
 
