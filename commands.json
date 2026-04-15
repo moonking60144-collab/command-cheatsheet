@@ -998,6 +998,48 @@
     "notes": "想快速看 CPU、記憶體、程序或啟動項時很常用。"
   },
   {
+    "id": "windows-desk-icons",
+    "category": "Windows Shortcut",
+    "command": "desk.cpl ,5",
+    "description": "開啟桌面圖示設定（電腦 / 資源回收桶 / 使用者檔案 / 網路 / 控制台）。",
+    "tags": [
+      "windows",
+      "shortcut",
+      "desktop",
+      "icon",
+      "control-panel"
+    ],
+    "notes": "勾選要不要把電腦、資源回收桶等顯示在桌面。若在新版 Windows 開不出來，改用 `rundll32.exe shell32.dll,Control_RunDLL desk.cpl,,0`。"
+  },
+  {
+    "id": "windows-recycle-bin",
+    "category": "Windows Shortcut",
+    "command": "explorer.exe shell:RecycleBinFolder",
+    "description": "從命令列或捷徑開啟資源回收桶。",
+    "tags": [
+      "windows",
+      "shortcut",
+      "recycle-bin",
+      "explorer",
+      "shell"
+    ],
+    "notes": "單獨的 `shell:RecycleBinFolder` 只能在 Win+R 或檔案總管網址列用，從 cmd/腳本/捷徑都要加前綴 `explorer.exe`。常見用法：桌面右鍵 →「新增 → 捷徑」→ 目標填 `explorer.exe shell:RecycleBinFolder` → 完成後把捷徑釘到工作列。想換捷徑圖示：右鍵內容 → 變更圖示，路徑填 `%SystemRoot%\\system32\\imageres.dll` 挑一個內建圖示。"
+  },
+  {
+    "id": "windows-mmsys-cpl",
+    "category": "Windows Shortcut",
+    "command": "mmsys.cpl",
+    "description": "開啟傳統「音效」控制台（播放 / 錄製 / 音效 / 通訊分頁）。",
+    "tags": [
+      "windows",
+      "shortcut",
+      "sound",
+      "audio",
+      "control-panel"
+    ],
+    "notes": "比 Settings app 的音效頁更完整，可設定預設裝置、錄音裝置、空間音效、通訊時自動降低其他音量等。"
+  },
+  {
     "id": "windows-lusrmgr-msc",
     "category": "Windows Shortcut",
     "command": "lusrmgr.msc",
