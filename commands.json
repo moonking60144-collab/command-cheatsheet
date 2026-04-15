@@ -2857,6 +2857,31 @@
     "notes": "取得的物件可以直接用 .屬性名 存取，例如 $obj.name。"
   },
   {
+    "id": "ps-get-adcomputer",
+    "category": "PowerShell",
+    "description": "查 AD 網域內的電腦清單與完整名稱（需 RSAT Active Directory 模組）。",
+    "variants": [
+      {
+        "label": "安裝 RSAT 模組",
+        "command": "Get-WindowsCapability -Online -Name \"Rsat.ActiveDirectory*\" | Add-WindowsCapability -Online"
+      },
+      {
+        "label": "查網域電腦",
+        "command": "Get-ADComputer -Filter * | Select-Object Name | Sort-Object Name"
+      }
+    ],
+    "tags": [
+      "powershell",
+      "active-directory",
+      "ad",
+      "rsat",
+      "domain",
+      "computer",
+      "admin"
+    ],
+    "notes": "兩條都要**以系統管理員身分**跑。裝完 RSAT 模組後必須**重新開一個**管理員 PowerShell，原視窗不會自動載入 `Get-ADComputer`。電腦數量多時可改用 `Select-Object Name, DNSHostName, OperatingSystem` 拿到更完整資訊，或加 `-SearchBase \"OU=...,DC=...\"` 限縮範圍。"
+  },
+  {
     "id": "windows-powercfg-requests",
     "category": "Windows Process & Service",
     "command": "powercfg /requests",
