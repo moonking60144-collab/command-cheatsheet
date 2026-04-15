@@ -79,6 +79,7 @@ let searchWorker = null;
 let searchWorkerDisabled = false;
 let workerSeq = 0;
 let lastFilterAnimated = false;
+let firstFilterDone = false;
 let highlightLoadPromise = null;
 let cryptoLoadPromise = null;
 
@@ -93,6 +94,12 @@ async function init() {
   restoreState();
   restorePinned();
   restorePlaceholders();
+
+  // Start fetching search.worker.js in parallel with commands.json so the
+  // worker script is usually already loaded by the time we need it for
+  // subsequent filters. The first filter still runs on the main thread
+  // (see _runFilters) so first paint does not depend on this.
+  getSearchWorker();
 
   try {
     const [publicPayload, protectedPayload] = await Promise.all([
@@ -1322,6 +1329,20 @@ function _runFilters(animated) {
   const tokens = tokenize(state.query);
   const seq = ++workerSeq;
   lastFilterAnimated = animated;
+
+  // First call: run filter on the main thread instead of waiting on the
+  // worker. 189 commands filter in a few ms and we skip the worker-script
+  // fetch + init-message roundtrip on the critical path. The worker is
+  // still being warmed by syncWorkerData / eager getSearchWorker() so
+  // subsequent filters use it.
+  if (!firstFilterDone) {
+    firstFilterDone = true;
+    const filteredPublic = filterCommands(state.publicCommands, tokens, state.activeCategory, state.pinned);
+    const filteredProtected = filterCommands(getUnlockedCommands(), tokens, state.activeCategory, state.pinned);
+    _renderFilterResults(filteredPublic, filteredProtected, animated);
+    return;
+  }
+
   const worker = getSearchWorker();
 
   if (worker) {

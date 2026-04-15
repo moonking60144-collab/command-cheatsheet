@@ -3,7 +3,6 @@ const CACHE_NAME = `command-atlas-shell-${CACHE_VERSION}`;
 const ASSETS = [
   "./",
   "./index.html",
-  "./styles.css",
   "./app.js",
   "./search-core.js",
   "./search.worker.js",
