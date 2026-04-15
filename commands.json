@@ -270,6 +270,20 @@
     "notes": "把 `<目標路徑>` 換成實際路徑。若只是處理下載資料夾，可用 `gci \"$env:USERPROFILE\\Downloads\" -Recurse -File | Unblock-File -Verbose`。"
   },
   {
+    "id": "windows-hostname",
+    "category": "Windows Network & DNS",
+    "command": "hostname",
+    "description": "查本機電腦名稱（NetBIOS / DNS hostname）。",
+    "tags": [
+      "windows",
+      "hostname",
+      "computer-name",
+      "network",
+      "identity"
+    ],
+    "notes": "cmd 與 PowerShell 都可直接執行。想拿到 FQDN 用 `[System.Net.Dns]::GetHostByName($env:COMPUTERNAME).HostName`；想拿到完整網域名稱可用 `(Get-WmiObject Win32_ComputerSystem).Domain`。"
+  },
+  {
     "id": "windows-ipconfig",
     "category": "Windows Network & DNS",
     "description": "查看與重設 TCP/IP 設定，包含 DHCP 與 DNS 快取。",
@@ -2880,6 +2894,41 @@
       "admin"
     ],
     "notes": "兩條都要**以系統管理員身分**跑。裝完 RSAT 模組後必須**重新開一個**管理員 PowerShell，原視窗不會自動載入 `Get-ADComputer`。電腦數量多時可改用 `Select-Object Name, DNSHostName, OperatingSystem` 拿到更完整資訊，或加 `-SearchBase \"OU=...,DC=...\"` 限縮範圍。"
+  },
+  {
+    "id": "ps-adsisearcher",
+    "category": "PowerShell",
+    "description": "用 `[adsisearcher]` 查 AD / LDAP 目錄，免裝 RSAT、零依賴，只要電腦有加入網域就能用。",
+    "variants": [
+      {
+        "label": "列出所有電腦",
+        "command": "([adsisearcher]\"(objectCategory=computer)\").FindAll() | ForEach-Object { $_.Properties[\"cn\"][0] } | Sort-Object"
+      },
+      {
+        "label": "列出所有使用者",
+        "command": "([adsisearcher]\"(objectCategory=user)\").FindAll() | ForEach-Object { $_.Properties[\"cn\"][0] } | Sort-Object"
+      },
+      {
+        "label": "列出所有 OU",
+        "command": "([adsisearcher]\"(objectCategory=organizationalUnit)\").FindAll() | ForEach-Object { $_.Properties[\"name\"][0] }"
+      },
+      {
+        "label": "查特定電腦",
+        "command": "([adsisearcher]\"(&(objectCategory=computer)(cn=<電腦名>))\").FindOne()"
+      }
+    ],
+    "tags": [
+      "powershell",
+      "active-directory",
+      "ad",
+      "ldap",
+      "adsi",
+      "adsisearcher",
+      "domain",
+      "computer",
+      "user"
+    ],
+    "notes": "`[adsisearcher]` 是 Windows 內建的 ADSI 介面，**不用裝 RSAT**。適用 Windows AD、Synology Directory Server、Samba AD 等所有 LDAP 相容的目錄服務。跟 `Get-ADComputer` 對比：語法原始一點、查詢條件要自己組 LDAP filter，但完全零依賴。`FindAll()` 回所有結果，`FindOne()` 只回第一筆。"
   },
   {
     "id": "windows-powercfg-requests",
