@@ -28,7 +28,7 @@ jobs:
       - name: Prepare deployment
         run: |
           mkdir _site
-          cp index.html app.js utils.js search-core.js search.worker.js decrypt.worker.js sw.js _site/
+          cp index.html app.js utils.js highlight.js search-core.js search.worker.js decrypt.worker.js sw.js _site/
           cp commands.json manifest.json _site/
           [ -f secure-categories.json ] && cp secure-categories.json _site/ || true
           cp -r assets _site/
