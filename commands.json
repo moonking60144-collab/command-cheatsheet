@@ -2755,6 +2755,20 @@
     "notes": "公司私有 registry 時常用。還原官方源：https://registry.npmjs.org/"
   },
   {
+    "id": "winget-upgrade-all",
+    "category": "winget",
+    "command": "winget upgrade --all --include-unknown",
+    "description": "一次升級所有已安裝的 winget 套件，包含版本偵測不到的那些。",
+    "tags": [
+      "winget",
+      "upgrade",
+      "package",
+      "windows",
+      "software"
+    ],
+    "notes": "`--all` 把所有可升級的都升；`--include-unknown` 把 winget 讀不到版本號而被預設跳過的套件也納入（常見於某些 MSIX 或非標準安裝）。先跑一次不加參數的 `winget upgrade` 看清單再決定。部分套件可能跳出 UAC 請求管理員權限。"
+  },
+  {
     "id": "ps-invoke-restmethod",
     "category": "PowerShell",
     "description": "PowerShell HTTP 客戶端，支援 GET/POST/PUT/PATCH/DELETE 與 Bearer 授權。",
