@@ -12,8 +12,6 @@ const RESULTS_PER_PAGE = 50;
 // the initial paint of a page lands without waiting on the whole list.
 const FIRST_RENDER_BATCH = 20;
 const DEFERRED_RENDER_CHUNK = 15;
-const PBKDF2_ITERATIONS = 250000;
-const PBKDF2_KEY_SIZE = 256 / 32;
 
 const CATEGORY_GROUPS = [
   {
@@ -86,7 +84,9 @@ let workerSeq = 0;
 let lastFilterAnimated = false;
 let firstFilterDone = false;
 let highlightLoadPromise = null;
-let cryptoLoadPromise = null;
+let decryptWorker = null;
+let decryptWorkerSeq = 0;
+const decryptPending = new Map();
 
 // Reusable canvas for text measurement; cached column width avoids re-measuring on every picker open
 const _pickerMeasureCanvas = document.createElement("canvas");
@@ -372,7 +372,7 @@ function bindEvents() {
 
   ui.securePanel?.addEventListener("toggle", () => {
     if (ui.securePanel.open) {
-      ensureCryptoJs().catch(() => { /* retried on submit */ });
+      preloadDecryptWorker();
     }
   });
 
@@ -1220,93 +1220,44 @@ async function unlockProtectedCategory(form) {
     return;
   }
 
+  let plaintext;
   try {
-    try {
-      await ensureCryptoJs();
-    } catch (loadError) {
-      console.warn("crypto-js load failed", loadError);
-      setProtectedStatus(protectedId, "載入解密模組失敗，請檢查網路後重試。", true);
-      return;
-    }
-
-    const decrypted = decryptProtectedCommands(target, password);
-    state.unlockedCommands.set(target.id, decrypted);
-    resetPagination();
-    form.reset();
-    renderProtectedCategories();
-    rebuildCommandState();
-    if (ui.securePanel) {
-      ui.securePanel.open = false;
-    }
-    window.setTimeout(() => {
-      if (!ui.protectedResultsSection?.hidden) {
-        ui.protectedResultsSection.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
-    }, 50);
+    plaintext = await decryptInWorker(target, password);
   } catch (error) {
-    console.warn("unlock failed", error);
+    console.warn("decrypt failed", error);
     form.reset();
-    setProtectedStatus(protectedId, "無法解鎖，請確認輸入內容。", true);
-  }
-}
-
-function decryptProtectedCommands(target, password) {
-  if (!window.CryptoJS?.AES) {
-    throw new Error("CryptoJS unavailable");
-  }
-
-  const plaintext = isModernEncryptedPayload(target)
-    ? decryptWithPbkdf2(target, password)
-    : decryptLegacyCiphertext(target.ciphertext, password);
-
-  if (!plaintext) {
-    throw new Error("Decryption failed");
+    if (error?.phase === "init") {
+      setProtectedStatus(protectedId, "載入解密模組失敗，請檢查網路後重試。", true);
+    } else {
+      setProtectedStatus(protectedId, "無法解鎖，請確認輸入內容。", true);
+    }
+    return;
   }
 
   let parsed;
-
   try {
     parsed = JSON.parse(plaintext);
-  } catch (error) {
-    throw new Error("Invalid decrypted JSON");
+  } catch (parseError) {
+    console.warn("decrypted payload was not valid JSON", parseError);
+    form.reset();
+    setProtectedStatus(protectedId, "無法解鎖，請確認輸入內容。", true);
+    return;
   }
 
-  return normalizeCommands(parsed, target.label);
-}
-
-function isModernEncryptedPayload(target) {
-  return target.kdf === "PBKDF2-SHA256"
-    && typeof target.iterations === "number"
-    && typeof target.salt === "string"
-    && typeof target.iv === "string";
-}
-
-function decryptWithPbkdf2(target, password) {
-  const salt = window.CryptoJS.enc.Hex.parse(target.salt);
-  const iv = window.CryptoJS.enc.Hex.parse(target.iv);
-  const ciphertext = window.CryptoJS.enc.Base64.parse(target.ciphertext);
-  const key = window.CryptoJS.PBKDF2(password, salt, {
-    keySize: PBKDF2_KEY_SIZE,
-    iterations: target.iterations,
-    hasher: window.CryptoJS.algo.SHA256
-  });
-
-  const decryptedBytes = window.CryptoJS.AES.decrypt(
-    { ciphertext },
-    key,
-    {
-      iv,
-      mode: window.CryptoJS.mode.CBC,
-      padding: window.CryptoJS.pad.Pkcs7
+  const decrypted = normalizeCommands(parsed, target.label);
+  state.unlockedCommands.set(target.id, decrypted);
+  resetPagination();
+  form.reset();
+  renderProtectedCategories();
+  rebuildCommandState();
+  if (ui.securePanel) {
+    ui.securePanel.open = false;
+  }
+  window.setTimeout(() => {
+    if (!ui.protectedResultsSection?.hidden) {
+      ui.protectedResultsSection.scrollIntoView({ behavior: "smooth", block: "start" });
     }
-  );
-
-  return decryptedBytes.toString(window.CryptoJS.enc.Utf8);
-}
-
-function decryptLegacyCiphertext(ciphertext, password) {
-  const decryptedBytes = window.CryptoJS.AES.decrypt(ciphertext, password);
-  return decryptedBytes.toString(window.CryptoJS.enc.Utf8);
+  }, 50);
 }
 
 function setProtectedStatus(protectedId, message, isError) {
@@ -2580,28 +2531,80 @@ function scheduleHighlightLoad() {
   }
 }
 
-function ensureCryptoJs() {
-  if (window.CryptoJS?.AES) {
-    return Promise.resolve();
+// Decrypt worker wrapper. Lazily creates the worker on first use, then
+// reuses it for the rest of the session. preloadDecryptWorker is a
+// fire-and-forget warm-up triggered when the secure panel toggles open
+// so importScripts(crypto-js) happens before the user submits.
+function getDecryptWorker() {
+  if (decryptWorker) {
+    return decryptWorker;
   }
 
-  if (cryptoLoadPromise) {
-    return cryptoLoadPromise;
+  if (typeof Worker === "undefined") {
+    return null;
   }
 
-  const chain = loadScript("./assets/crypto-js.min.js")
-    .then(() => {
-      if (!window.CryptoJS?.AES) {
-        throw new Error("CryptoJS not available after load");
+  try {
+    const worker = new Worker("./decrypt.worker.js");
+    worker.onmessage = handleDecryptWorkerMessage;
+    worker.onerror = (event) => {
+      console.warn("Decrypt worker error", event);
+      try { worker.terminate(); } catch (_) { /* ignore */ }
+      decryptWorker = null;
+      const error = new Error("Decrypt worker crashed");
+      for (const pending of decryptPending.values()) {
+        pending.reject(error);
       }
-    });
+      decryptPending.clear();
+    };
+    decryptWorker = worker;
+  } catch (error) {
+    console.warn("Decrypt worker unavailable", error);
+    return null;
+  }
 
-  chain.catch(() => {
-    cryptoLoadPromise = null;
+  return decryptWorker;
+}
+
+function handleDecryptWorkerMessage(event) {
+  const data = event.data;
+  if (!data || data.type !== "decrypt-result") {
+    return;
+  }
+
+  const pending = decryptPending.get(data.id);
+  if (!pending) {
+    return;
+  }
+  decryptPending.delete(data.id);
+
+  if (data.success) {
+    pending.resolve(data.plaintext);
+  } else {
+    const error = new Error(data.error || "Decrypt failed");
+    error.phase = data.phase;
+    pending.reject(error);
+  }
+}
+
+function preloadDecryptWorker() {
+  const worker = getDecryptWorker();
+  if (!worker) {
+    return;
+  }
+  worker.postMessage({ type: "preload" });
+}
+
+function decryptInWorker(target, password) {
+  const worker = getDecryptWorker();
+  if (!worker) {
+    return Promise.reject(new Error("Decrypt worker unavailable"));
+  }
+  const id = ++decryptWorkerSeq;
+  return new Promise((resolve, reject) => {
+    decryptPending.set(id, { resolve, reject });
+    worker.postMessage({ type: "decrypt", id, target, password });
   });
-
-  cryptoLoadPromise = chain;
-  return chain;
 }
 
 function upgradeAllCodeBlocks() {
