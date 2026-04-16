@@ -103,9 +103,47 @@ async function handleRequest(request) {
     }
   }
 
-  // Everything else (navigation, app shell, commands.json) stays
-  // network-first so fresh content reaches users without waiting for
-  // a new SW version.
+  // commands.json is the data file the user actually queries against.
+  // Pure network-first means every visit pays the network round-trip;
+  // pure stale-while-revalidate means newly-added entries take two
+  // refreshes to appear, which fights the "edit a command, reload to
+  // verify" workflow. Compromise: network-first with a short timeout,
+  // falling back to cache only when network is too slow (or offline).
+  // GH Pages TTFB to TW is normally ~200-400ms, so 600ms gives normal
+  // visits the fresh response while still snapping to cache on weak
+  // networks.
+  if (url.pathname.endsWith("/commands.json")) {
+    const cached = await cache.match(request, { ignoreSearch: true });
+    const network = fetch(request)
+      .then((fresh) => {
+        if (fresh.ok) {
+          cache.put(request, fresh.clone()).catch(() => {});
+        }
+        return fresh;
+      });
+
+    if (!cached) {
+      try {
+        return await network;
+      } catch (error) {
+        return new Response("Offline", {
+          status: 503,
+          headers: { "Content-Type": "text/plain; charset=utf-8" }
+        });
+      }
+    }
+
+    // Swallow rejections on the network promise we feed into Promise.race
+    // so a fast network failure resolves to cached instead of throwing.
+    const networkOrCached = network.catch(() => cached);
+    return Promise.race([
+      networkOrCached,
+      new Promise((resolve) => setTimeout(() => resolve(cached), 600))
+    ]);
+  }
+
+  // Everything else (navigation, app shell, app.js) stays network-first
+  // so fresh content reaches users without waiting for a new SW version.
   try {
     const fresh = await fetch(request);
 
