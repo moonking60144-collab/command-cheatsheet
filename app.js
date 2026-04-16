@@ -1937,11 +1937,22 @@ function togglePin(commandId, buttonEl = null) {
 
   updatePinnedPill();
 
+  // Full re-render is only necessary when the toggled pin actually changes
+  // which cards are visible — that's either when we just emptied the pinned
+  // filter (and bounced back to "all") or when the user is currently looking
+  // at the pinned list (where the toggled card must appear / disappear).
+  // In every other case, the pin button's visual state is already updated
+  // above, and the pinned-first re-ordering can wait for the next genuine
+  // filter change instead of rebuilding every visible card on every star click.
   if (categoryChanged) {
     updateFilterPillActive();
+    applyFiltersAnimated();
+    return;
   }
 
-  applyFiltersAnimated();
+  if (state.activeCategory === "pinned") {
+    applyFilters();
+  }
 }
 
 function updatePinnedPill() {
