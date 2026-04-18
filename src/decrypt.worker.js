@@ -1,86 +1,98 @@
-// Decrypt worker — runs PBKDF2 + AES off the main thread so the unlock
-// button doesn't freeze the UI for ~1s on desktop or several seconds
-// on slower devices. crypto-js is loaded lazily via importScripts on
-// the first message so the worker boot itself stays cheap.
+// Decrypt worker — uses Web Crypto (SubtleCrypto) directly so we don't
+// ship crypto-js. Supports the current AES-256-CBC payloads and the
+// future AES-GCM format (selected via the payload's `encryption` field).
+//
+// AES-CBC with PKCS7 padding is interoperable with CryptoJS, so existing
+// ciphertext in secure-categories.json keeps decrypting correctly.
 
-let cryptoLoaded = false;
-
-function ensureCrypto() {
-  if (cryptoLoaded) {
-    return;
+function hexToBytes(hex) {
+  const clean = String(hex ?? "").trim();
+  const bytes = new Uint8Array(clean.length / 2);
+  for (let i = 0; i < bytes.length; i++) {
+    bytes[i] = parseInt(clean.substr(i * 2, 2), 16);
   }
-  // Worker lives in /src/, crypto-js.min.js is at /assets/ — up one level.
-  importScripts("../assets/crypto-js.min.js");
-  if (!self.CryptoJS?.AES) {
-    throw new Error("CryptoJS not available after importScripts");
-  }
-  cryptoLoaded = true;
+  return bytes;
 }
 
-function isModernPayload(target) {
-  return target.kdf === "PBKDF2-SHA256"
-    && typeof target.iterations === "number"
-    && typeof target.salt === "string"
-    && typeof target.iv === "string";
+function base64ToBytes(b64) {
+  const binary = atob(String(b64 ?? "").trim());
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
 }
 
-function decryptModern(target, password) {
-  const salt = self.CryptoJS.enc.Hex.parse(target.salt);
-  const iv = self.CryptoJS.enc.Hex.parse(target.iv);
-  const ciphertext = self.CryptoJS.enc.Base64.parse(target.ciphertext);
-  const key = self.CryptoJS.PBKDF2(password, salt, {
-    keySize: 256 / 32,
-    iterations: target.iterations,
-    hasher: self.CryptoJS.algo.SHA256
-  });
-  const decryptedBytes = self.CryptoJS.AES.decrypt(
-    { ciphertext },
-    key,
-    {
-      iv,
-      mode: self.CryptoJS.mode.CBC,
-      padding: self.CryptoJS.pad.Pkcs7
-    }
+function pickAlgorithm(target) {
+  // Treat anything with "GCM" in the name as AES-GCM; otherwise default
+  // to CBC, which matches both the explicit "AES-256-CBC" label and any
+  // older payload that predates the field.
+  const label = String(target.encryption ?? "").toUpperCase();
+  return label.includes("GCM") ? "AES-GCM" : "AES-CBC";
+}
+
+async function deriveKey(password, saltBytes, iterations, algorithm) {
+  const keyMaterial = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(password),
+    { name: "PBKDF2" },
+    false,
+    ["deriveKey"]
   );
-  return decryptedBytes.toString(self.CryptoJS.enc.Utf8);
+  return crypto.subtle.deriveKey(
+    {
+      name: "PBKDF2",
+      salt: saltBytes,
+      iterations,
+      hash: "SHA-256"
+    },
+    keyMaterial,
+    { name: algorithm, length: 256 },
+    false,
+    ["decrypt"]
+  );
 }
 
-function decryptLegacy(ciphertext, password) {
-  const decryptedBytes = self.CryptoJS.AES.decrypt(ciphertext, password);
-  return decryptedBytes.toString(self.CryptoJS.enc.Utf8);
+async function decryptPayload(target, password) {
+  if (!target.ciphertext || !target.salt || !target.iv || !target.iterations) {
+    throw new Error("Missing required decryption fields (salt/iv/iterations/ciphertext)");
+  }
+
+  const algorithm = pickAlgorithm(target);
+  const saltBytes = hexToBytes(target.salt);
+  const ivBytes = hexToBytes(target.iv);
+  const ciphertextBytes = base64ToBytes(target.ciphertext);
+  const key = await deriveKey(password, saltBytes, target.iterations, algorithm);
+
+  const plaintextBytes = await crypto.subtle.decrypt(
+    { name: algorithm, iv: ivBytes },
+    key,
+    ciphertextBytes
+  );
+
+  return new TextDecoder().decode(plaintextBytes);
 }
 
-self.onmessage = (event) => {
+self.onmessage = async (event) => {
   const { type, id, target, password } = event.data;
 
-  // Fire-and-forget preload — main thread calls this when the secure
-  // panel opens so the importScripts cost happens before the user
-  // submits a password.
+  // The preload path used to give us time to importScripts(crypto-js).
+  // SubtleCrypto is built into the worker global, so there's nothing to
+  // load — we still ack so the main thread's preloadDecryptWorker() stays
+  // a meaningful signal.
   if (type === "preload") {
-    try {
-      ensureCrypto();
-      self.postMessage({ type: "preload-result", success: true });
-    } catch (error) {
-      self.postMessage({
-        type: "preload-result",
-        success: false,
-        error: String(error?.message ?? error)
-      });
-    }
+    self.postMessage({ type: "preload-result", success: true });
     return;
   }
 
   if (type === "decrypt") {
-    // phase distinguishes "couldn't load crypto-js" (network/CDN issue)
-    // from "decrypted but result was empty / wrong password" so the
-    // main thread can show a more useful error message.
+    // phase distinguishes "couldn't set up crypto" from "decrypted but
+    // result was empty / wrong password" so the main thread can show a
+    // more useful error message.
     let phase = "init";
     try {
-      ensureCrypto();
       phase = "decrypt";
-      const plaintext = isModernPayload(target)
-        ? decryptModern(target, password)
-        : decryptLegacy(target.ciphertext, password);
+      const plaintext = await decryptPayload(target, password);
       if (!plaintext) {
         throw new Error("Decryption produced empty result");
       }
