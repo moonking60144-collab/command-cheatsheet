@@ -1922,7 +1922,11 @@ body.is-list-view .command-card:focus-within .tag-list {
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .command-card {
+  /* Entrance animation is opt-in: the filter pipeline tags the card with
+     .is-fresh-batch only on a genuinely new result set. Pagination
+     re-renders skip it, so paging through a long list doesn't re-animate
+     every card. */
+  .command-card.is-fresh-batch {
     animation: card-in 0.18s ease both;
     animation-delay: calc(var(--card-index, 0) * 20ms);
   }

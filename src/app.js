@@ -374,7 +374,10 @@ function bindEvents() {
 
       if (target === "public" || target === "protected") {
         state.pagination[target] = nextPage;
-        applyFiltersAnimated();
+        // Pagination renders the same filter result, sliced differently —
+        // skip card-in animation so the user doesn't see 50 cards fade
+        // in every time they click a page number.
+        applyFiltersAnimated({ fresh: false });
         (target === "public" ? ui.publicResultsSection : ui.protectedResultsSection)
           ?.scrollIntoView({ behavior: "smooth", block: "start" });
       }

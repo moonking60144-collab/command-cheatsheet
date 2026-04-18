@@ -27,20 +27,25 @@ import { getUnlockedCommands } from "./secure.js";
 let searchDebounceId = 0;
 let workerSeq = 0;
 let lastFilterAnimated = false;
+// Whether the last/in-flight render should tag cards with
+// .is-fresh-batch. Paging re-renders pass fresh=false so visible cards
+// don't replay card-in on every page click.
+let lastFilterFresh = true;
 let firstFilterDone = false;
 
-export function applyFilters() {
-  _runFilters(false);
+export function applyFilters({ fresh = true } = {}) {
+  _runFilters(false, fresh);
 }
 
-export function applyFiltersAnimated() {
-  _runFilters(true);
+export function applyFiltersAnimated({ fresh = true } = {}) {
+  _runFilters(true, fresh);
 }
 
-function _runFilters(animated) {
+function _runFilters(animated, fresh) {
   const tokens = tokenize(state.query);
   const seq = ++workerSeq;
   lastFilterAnimated = animated;
+  lastFilterFresh = fresh;
 
   // First call: run filter on the main thread instead of waiting on the
   // worker. 196 commands filter in a few ms and we skip the worker-script
@@ -52,7 +57,7 @@ function _runFilters(animated) {
     const pinnedSet = state.pinned;
     const filteredPublic = filterCommands(state.publicCommands, tokens, state.activeCategory, pinnedSet);
     const filteredProtected = filterCommands(getUnlockedCommands(), tokens, state.activeCategory, pinnedSet);
-    _renderFilterResults(filteredPublic, filteredProtected, animated);
+    _renderFilterResults(filteredPublic, filteredProtected, animated, fresh);
     return;
   }
 
@@ -68,14 +73,14 @@ function _runFilters(animated) {
     });
   } else {
     const { filteredPublic, filteredProtected } = syncFilterBothLists(tokens, state.activeCategory, state.pinned);
-    _renderFilterResults(filteredPublic, filteredProtected, animated);
+    _renderFilterResults(filteredPublic, filteredProtected, animated, fresh);
   }
 }
 
-function _renderFilterResults(filteredPublic, filteredProtected, animated) {
+function _renderFilterResults(filteredPublic, filteredProtected, animated, fresh) {
   const totalResults = filteredPublic.length + filteredProtected.length;
   updateSummary(totalResults);
-  const doRender = () => renderResultSections(filteredPublic, filteredProtected, totalResults);
+  const doRender = () => renderResultSections(filteredPublic, filteredProtected, totalResults, fresh);
 
   if (animated && document.startViewTransition) {
     document.startViewTransition(doRender);
@@ -91,13 +96,13 @@ export function handleWorkerResult(event) {
     return;
   }
 
-  _renderFilterResults(filteredPublic, filteredProtected, lastFilterAnimated);
+  _renderFilterResults(filteredPublic, filteredProtected, lastFilterAnimated, lastFilterFresh);
 }
 
 export function handleWorkerFallback() {
   const tokens = tokenize(state.query);
   const { filteredPublic, filteredProtected } = syncFilterBothLists(tokens, state.activeCategory, state.pinned);
-  _renderFilterResults(filteredPublic, filteredProtected, lastFilterAnimated);
+  _renderFilterResults(filteredPublic, filteredProtected, lastFilterAnimated, lastFilterFresh);
 }
 
 export function updateQuery(value, sourceInput = null) {

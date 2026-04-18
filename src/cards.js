@@ -36,7 +36,11 @@ import {
 // has already replaced the DOM.
 const renderGenerations = new WeakMap();
 
-export function renderResultSections(publicItems, protectedItems, totalResults) {
+// fresh=true means this is a genuinely new filter result (user typed
+// something, switched category, toggled a pin that's visible); cards
+// should animate in. fresh=false is a paging re-render — same filter,
+// different slice — where replaying card-in on every card looks jumpy.
+export function renderResultSections(publicItems, protectedItems, totalResults, fresh = true) {
   const hasPublicItems = publicItems.length > 0;
   const hasProtectedItems = protectedItems.length > 0;
   const publicPage = getValidPage("public", publicItems.length);
@@ -53,7 +57,7 @@ export function renderResultSections(publicItems, protectedItems, totalResults) 
   }
 
   if (!totalResults) {
-    renderResults(ui.results, []);
+    renderResults(ui.results, [], fresh);
     ui.protectedResults?.replaceChildren();
     renderPagination(ui.publicPagination, "public", 0, 1);
     renderPagination(ui.protectedPagination, "protected", 0, 1);
@@ -61,13 +65,13 @@ export function renderResultSections(publicItems, protectedItems, totalResults) 
   }
 
   if (hasPublicItems) {
-    renderResults(ui.results, visiblePublicItems);
+    renderResults(ui.results, visiblePublicItems, fresh);
   } else {
     ui.results.replaceChildren();
   }
 
   if (hasProtectedItems && ui.protectedResults) {
-    renderResults(ui.protectedResults, visibleProtectedItems);
+    renderResults(ui.protectedResults, visibleProtectedItems, fresh);
   } else {
     ui.protectedResults?.replaceChildren();
   }
@@ -177,7 +181,7 @@ function getVisiblePageNumbers(currentPage, totalPages) {
   return result;
 }
 
-function renderResults(container, items) {
+function renderResults(container, items, fresh = true) {
   if (!items.length) {
     const queryLabel = state.query.trim() || "*";
     const scope = state.activeCategory && state.activeCategory !== "all"
@@ -202,7 +206,7 @@ function renderResults(container, items) {
   const tokens = tokenize(state.query);
   const highlightPattern = compileHighlightPattern(tokens);
   const commandHighlightPattern = compileTextHighlightPattern(tokens);
-  const ctx = { tokens, highlightPattern, commandHighlightPattern };
+  const ctx = { tokens, highlightPattern, commandHighlightPattern, fresh };
 
   // First batch: render above-the-fold cards synchronously so the user
   // sees content the moment the filter result lands.
@@ -243,7 +247,7 @@ function scheduleRemainingCards(container, items, startIdx, gen, ctx) {
 }
 
 function buildCommandCard(item, index, ctx) {
-  const { tokens, highlightPattern, commandHighlightPattern } = ctx;
+  const { tokens, highlightPattern, commandHighlightPattern, fresh } = ctx;
   // _fuzzy is attached by filterCommands when the item matched only via
   // fuzzyScore. Carrying the flag through avoids recomputing on the main
   // thread for the current page.
@@ -258,7 +262,7 @@ function buildCommandCard(item, index, ctx) {
   const accent = getCategoryAccent(item.category);
   const isPinned = state.pinned.has(item.id);
   const card = document.createElement("article");
-  card.className = `command-card${isPinned ? " is-pinned" : ""}${hasVariants ? " has-variants" : ""}`;
+  card.className = `command-card${isPinned ? " is-pinned" : ""}${hasVariants ? " has-variants" : ""}${fresh ? " is-fresh-batch" : ""}`;
   card.dataset.commandId = item.id;
   card.style.setProperty("--category-accent", accent.color);
   card.style.setProperty("--category-accent-soft", accent.soft);
