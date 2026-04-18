@@ -128,10 +128,27 @@ export function renderCommandCode(codeElement, commandText, language, highlightP
 // Cache hljs output by (language, text). hljs.highlight is the single most
 // expensive step in the render loop — the same command text obviously
 // produces the same HTML every call, so each unique (language, text) pair
-// only needs to be computed once. Only cache when hljs is actually loaded;
-// the fallback branch is cheap enough to skip caching and avoid stale
-// entries before the real hljs lands.
+// only needs to be computed once. LRU-capped because the text key includes
+// current placeholder substitutions, so typing in a placeholder input
+// would otherwise let the map grow unbounded.
+const HLJS_CACHE_MAX = 300;
 const hljsHtmlCache = new Map();
+
+function hljsCacheGet(key) {
+  const value = hljsHtmlCache.get(key);
+  if (value !== undefined) {
+    hljsHtmlCache.delete(key);
+    hljsHtmlCache.set(key, value);
+  }
+  return value;
+}
+
+function hljsCacheSet(key, value) {
+  if (hljsHtmlCache.size >= HLJS_CACHE_MAX) {
+    hljsHtmlCache.delete(hljsHtmlCache.keys().next().value);
+  }
+  hljsHtmlCache.set(key, value);
+}
 
 function getCommandCodeHtml(commandText, language) {
   const text = String(commandText ?? "");
@@ -142,7 +159,7 @@ function getCommandCodeHtml(commandText, language) {
   }
 
   const cacheKey = `${language}|${text}`;
-  const cached = hljsHtmlCache.get(cacheKey);
+  const cached = hljsCacheGet(cacheKey);
   if (cached !== undefined) {
     return cached;
   }
@@ -161,7 +178,7 @@ function getCommandCodeHtml(commandText, language) {
     html = escapeHtml(text);
   }
 
-  hljsHtmlCache.set(cacheKey, html);
+  hljsCacheSet(cacheKey, html);
   return html;
 }
 

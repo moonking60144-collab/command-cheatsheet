@@ -16,7 +16,29 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Playwright smoke tests
+        run: npm test
+
   build:
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -28,9 +50,10 @@ jobs:
       - name: Prepare deployment
         run: |
           mkdir _site
-          cp index.html app.js utils.js highlight.js search-core.js search.worker.js decrypt.worker.js sw.js _site/
+          cp index.html style.css sw.js _site/
           cp commands.json manifest.json _site/
           [ -f secure-categories.json ] && cp secure-categories.json _site/ || true
+          cp -r src _site/
           cp -r assets _site/
 
       - name: Configure GitHub Pages

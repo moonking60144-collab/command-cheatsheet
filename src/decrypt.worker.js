@@ -9,7 +9,8 @@ function ensureCrypto() {
   if (cryptoLoaded) {
     return;
   }
-  importScripts("./assets/crypto-js.min.js");
+  // Worker lives in /src/, crypto-js.min.js is at /assets/ — up one level.
+  importScripts("../assets/crypto-js.min.js");
   if (!self.CryptoJS?.AES) {
     throw new Error("CryptoJS not available after importScripts");
   }

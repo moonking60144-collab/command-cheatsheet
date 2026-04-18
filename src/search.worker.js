@@ -1,5 +1,5 @@
-// Search Web Worker — scoring logic loaded from search-core.js
-importScripts("./search-core.js");
+// Search module worker — scoring logic imported as ESM.
+import { filterCommands } from "./search-core.js";
 
 let cachedPublicCommands = [];
 let cachedUnlockedCommands = [];

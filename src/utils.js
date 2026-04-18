@@ -27,6 +27,14 @@ export function escapeRegex(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+export function tokenize(query) {
+  return String(query ?? "")
+    .toLowerCase()
+    .split(/\s+/)
+    .map((token) => token.trim())
+    .filter(Boolean);
+}
+
 // Single-slot caches for the two highlight pattern compilers. Every render of
 // the result section calls both with the same tokens, and the tokens only
 // change when the user types — so a one-entry cache avoids rebuilding the
