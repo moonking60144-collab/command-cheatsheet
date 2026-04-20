@@ -294,6 +294,25 @@ function bindEvents() {
         return;
       }
 
+      const suggestionChip = event.target.closest("[data-suggestion-for]");
+
+      if (suggestionChip) {
+        event.stopPropagation();
+        const token = suggestionChip.dataset.suggestionFor;
+        const value = suggestionChip.dataset.suggestionValue ?? "";
+        const chipCard = suggestionChip.closest(".command-card");
+        const input = Array.from(chipCard?.querySelectorAll("[data-placeholder-token]") ?? [])
+          .find((el) => el.dataset.placeholderToken === token);
+        if (input) {
+          input.value = value;
+          // Reuse the existing input listener: it calls
+          // syncCardPlaceholderValues + updateCommandPreview.
+          input.dispatchEvent(new Event("input", { bubbles: true }));
+          input.focus();
+        }
+        return;
+      }
+
       if (event.target.closest(".placeholder-fields") || event.target.closest("[data-placeholder-token]")) {
         return;
       }

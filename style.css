@@ -1453,6 +1453,50 @@ body.has-active-filter .category-badge-button:hover {
   width: 100%;
 }
 
+.placeholder-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.1rem;
+}
+
+.placeholder-chip {
+  appearance: none;
+  padding: 0.22rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid rgba(121, 184, 255, 0.2);
+  background: rgba(121, 184, 255, 0.05);
+  color: var(--text-dim);
+  font: inherit;
+  font-size: 0.74rem;
+  line-height: 1.25;
+  cursor: pointer;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: background 0.14s ease, color 0.14s ease, border-color 0.14s ease;
+}
+
+.placeholder-chip:hover {
+  background: rgba(121, 184, 255, 0.14);
+  color: var(--accent-strong);
+  border-color: rgba(121, 184, 255, 0.42);
+}
+
+.placeholder-chip:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(121, 184, 255, 0.28);
+}
+
+@media (pointer: coarse) {
+  .placeholder-chip {
+    padding: 0.36rem 0.7rem;
+    font-size: 0.78rem;
+  }
+}
+
 mark {
   background: rgba(121, 184, 255, 0.18);
   color: var(--accent-strong);

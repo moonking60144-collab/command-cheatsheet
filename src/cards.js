@@ -296,7 +296,7 @@ function buildCommandCard(item, index, ctx) {
       ${variantStripHtml}
       <div class="command-block">
         <pre class="command-line"><code class="command-code" data-command-language="${escapeAttribute(commandLanguage)}"></code></pre>
-        <div class="placeholder-slot">${renderPlaceholderFields(placeholders, placeholderValues)}</div>
+        <div class="placeholder-slot">${renderPlaceholderFields(placeholders, placeholderValues, item.placeholderSuggestions)}</div>
         <button class="copy-button" type="button" data-copy-command="${escapeAttribute(activeCommand)}">複製</button>
       </div>
       <p class="description">${highlightText(item.description, highlightPattern)}</p>

@@ -230,7 +230,35 @@
       "config",
       "encoding"
     ],
-    "notes": "把 `<檔案路徑>` 換成實際路徑，例如 `.codex\\config.toml`。在 Windows 排查設定檔亂碼時特別好用。"
+    "notes": "把 `<檔案路徑>` 換成實際路徑，例如 `.codex\\config.toml`。在 Windows 排查設定檔亂碼時特別好用。",
+    "placeholderSuggestions": {
+      "<檔案路徑>": [
+        {
+          "label": "LocalAppData",
+          "value": "$env:LOCALAPPDATA"
+        },
+        {
+          "label": "AppData",
+          "value": "$env:APPDATA"
+        },
+        {
+          "label": "UserProfile",
+          "value": "$env:USERPROFILE"
+        },
+        {
+          "label": "ProgramFiles",
+          "value": "$env:ProgramFiles"
+        },
+        {
+          "label": "ProgramFiles x86",
+          "value": "${env:ProgramFiles(x86)}"
+        },
+        {
+          "label": "TEMP",
+          "value": "$env:TEMP"
+        }
+      ]
+    }
   },
   {
     "id": "powershell-search",
@@ -267,7 +295,35 @@
       "file",
       "security"
     ],
-    "notes": "把 `<目標路徑>` 換成實際路徑。若只是處理下載資料夾，可用 `gci \"$env:USERPROFILE\\Downloads\" -Recurse -File | Unblock-File -Verbose`。"
+    "notes": "把 `<目標路徑>` 換成實際路徑。若只是處理下載資料夾，可用 `gci \"$env:USERPROFILE\\Downloads\" -Recurse -File | Unblock-File -Verbose`。",
+    "placeholderSuggestions": {
+      "<目標路徑>": [
+        {
+          "label": "LocalAppData",
+          "value": "$env:LOCALAPPDATA"
+        },
+        {
+          "label": "AppData",
+          "value": "$env:APPDATA"
+        },
+        {
+          "label": "UserProfile",
+          "value": "$env:USERPROFILE"
+        },
+        {
+          "label": "ProgramFiles",
+          "value": "$env:ProgramFiles"
+        },
+        {
+          "label": "ProgramFiles x86",
+          "value": "${env:ProgramFiles(x86)}"
+        },
+        {
+          "label": "TEMP",
+          "value": "$env:TEMP"
+        }
+      ]
+    }
   },
   {
     "id": "windows-hostname",
@@ -339,7 +395,27 @@
       "nslookup",
       "windows"
     ],
-    "notes": "輸出會顯示是哪一台 DNS 伺服器回應。`nslookup google.com 8.8.8.8` 可比對不同 resolver 的差異。"
+    "notes": "輸出會顯示是哪一台 DNS 伺服器回應。`nslookup google.com 8.8.8.8` 可比對不同 resolver 的差異。",
+    "placeholderSuggestions": {
+      "<網域>": [
+        {
+          "label": "google.com",
+          "value": "google.com"
+        },
+        {
+          "label": "cloudflare.com",
+          "value": "cloudflare.com"
+        },
+        {
+          "label": "github.com",
+          "value": "github.com"
+        },
+        {
+          "label": "localhost",
+          "value": "localhost"
+        }
+      ]
+    }
   },
   {
     "id": "windows-ping",
@@ -364,7 +440,31 @@
       "dns",
       "windows"
     ],
-    "notes": "預設優先 IPv6；若顯示 IPv6 但你需要 192.168.x.x，改用 `-4`。只代表基本 reachability，不代表 Web/RDP/DB 服務一定可用。例：`ping -4 DBSERVER`。"
+    "notes": "預設優先 IPv6；若顯示 IPv6 但你需要 192.168.x.x，改用 `-4`。只代表基本 reachability，不代表 Web/RDP/DB 服務一定可用。例：`ping -4 DBSERVER`。",
+    "placeholderSuggestions": {
+      "<主機或 IP>": [
+        {
+          "label": "localhost",
+          "value": "localhost"
+        },
+        {
+          "label": "127.0.0.1",
+          "value": "127.0.0.1"
+        },
+        {
+          "label": "8.8.8.8 Google",
+          "value": "8.8.8.8"
+        },
+        {
+          "label": "1.1.1.1 CF",
+          "value": "1.1.1.1"
+        },
+        {
+          "label": "Gateway",
+          "value": "192.168.1.1"
+        }
+      ]
+    }
   },
   {
     "id": "windows-test-connection",
@@ -378,7 +478,31 @@
       "windows",
       "ping"
     ],
-    "notes": "如果你要做自動化或篩選輸出，這條通常比傳統 `ping` 更好用。"
+    "notes": "如果你要做自動化或篩選輸出，這條通常比傳統 `ping` 更好用。",
+    "placeholderSuggestions": {
+      "<主機或 IP>": [
+        {
+          "label": "localhost",
+          "value": "localhost"
+        },
+        {
+          "label": "127.0.0.1",
+          "value": "127.0.0.1"
+        },
+        {
+          "label": "8.8.8.8 Google",
+          "value": "8.8.8.8"
+        },
+        {
+          "label": "1.1.1.1 CF",
+          "value": "1.1.1.1"
+        },
+        {
+          "label": "Gateway",
+          "value": "192.168.1.1"
+        }
+      ]
+    }
   },
   {
     "id": "windows-tracert-route",
@@ -464,7 +588,65 @@
       "powershell",
       "windows"
     ],
-    "notes": "排網站、RDP、SQL、SMB、API 時比 `ping` 更接近實際問題。"
+    "notes": "排網站、RDP、SQL、SMB、API 時比 `ping` 更接近實際問題。",
+    "placeholderSuggestions": {
+      "<主機>": [
+        {
+          "label": "localhost",
+          "value": "localhost"
+        },
+        {
+          "label": "127.0.0.1",
+          "value": "127.0.0.1"
+        },
+        {
+          "label": "8.8.8.8 Google",
+          "value": "8.8.8.8"
+        },
+        {
+          "label": "1.1.1.1 CF",
+          "value": "1.1.1.1"
+        },
+        {
+          "label": "Gateway",
+          "value": "192.168.1.1"
+        }
+      ],
+      "<埠>": [
+        {
+          "label": "22 SSH",
+          "value": "22"
+        },
+        {
+          "label": "80 HTTP",
+          "value": "80"
+        },
+        {
+          "label": "443 HTTPS",
+          "value": "443"
+        },
+        {
+          "label": "3389 RDP",
+          "value": "3389"
+        },
+        {
+          "label": "3306 MySQL",
+          "value": "3306"
+        },
+        {
+          "label": "5432 PG",
+          "value": "5432"
+        },
+        {
+          "label": "6379 Redis",
+          "value": "6379"
+        },
+        {
+          "label": "27017 Mongo",
+          "value": "27017"
+        }
+      ]
+    }
   },
   {
     "id": "windows-telnet-port",
@@ -478,7 +660,65 @@
       "network",
       "windows"
     ],
-    "notes": "例：`telnet 118.163.115.30 80`。畫面變空白 / 游標停住即代表連線成功，`Ctrl+]` 後輸入 `quit` 離開。Windows 預設未安裝 Telnet Client，需先以 `dism /online /enable-feature /featurename:TelnetClient` 或「Windows 功能」啟用；PowerShell 環境建議改用 `Test-NetConnection`。"
+    "notes": "例：`telnet 118.163.115.30 80`。畫面變空白 / 游標停住即代表連線成功，`Ctrl+]` 後輸入 `quit` 離開。Windows 預設未安裝 Telnet Client，需先以 `dism /online /enable-feature /featurename:TelnetClient` 或「Windows 功能」啟用；PowerShell 環境建議改用 `Test-NetConnection`。",
+    "placeholderSuggestions": {
+      "<主機>": [
+        {
+          "label": "localhost",
+          "value": "localhost"
+        },
+        {
+          "label": "127.0.0.1",
+          "value": "127.0.0.1"
+        },
+        {
+          "label": "8.8.8.8 Google",
+          "value": "8.8.8.8"
+        },
+        {
+          "label": "1.1.1.1 CF",
+          "value": "1.1.1.1"
+        },
+        {
+          "label": "Gateway",
+          "value": "192.168.1.1"
+        }
+      ],
+      "<埠>": [
+        {
+          "label": "22 SSH",
+          "value": "22"
+        },
+        {
+          "label": "80 HTTP",
+          "value": "80"
+        },
+        {
+          "label": "443 HTTPS",
+          "value": "443"
+        },
+        {
+          "label": "3389 RDP",
+          "value": "3389"
+        },
+        {
+          "label": "3306 MySQL",
+          "value": "3306"
+        },
+        {
+          "label": "5432 PG",
+          "value": "5432"
+        },
+        {
+          "label": "6379 Redis",
+          "value": "6379"
+        },
+        {
+          "label": "27017 Mongo",
+          "value": "27017"
+        }
+      ]
+    }
   },
   {
     "id": "windows-netstat",
@@ -517,7 +757,43 @@
       "windows",
       "investigation"
     ],
-    "notes": "`-a` 列全部、`-n` 數字格式、`-o` 顯示 PID。先 `netstat -ano` 看全貌，再用 `findstr` 縮範圍。排可疑外連時 ESTABLISHED 可過濾 LISTENING 雜訊。"
+    "notes": "`-a` 列全部、`-n` 數字格式、`-o` 顯示 PID。先 `netstat -ano` 看全貌，再用 `findstr` 縮範圍。排可疑外連時 ESTABLISHED 可過濾 LISTENING 雜訊。",
+    "placeholderSuggestions": {
+      "<埠號>": [
+        {
+          "label": "22 SSH",
+          "value": "22"
+        },
+        {
+          "label": "80 HTTP",
+          "value": "80"
+        },
+        {
+          "label": "443 HTTPS",
+          "value": "443"
+        },
+        {
+          "label": "3389 RDP",
+          "value": "3389"
+        },
+        {
+          "label": "3306 MySQL",
+          "value": "3306"
+        },
+        {
+          "label": "5432 PG",
+          "value": "5432"
+        },
+        {
+          "label": "6379 Redis",
+          "value": "6379"
+        },
+        {
+          "label": "27017 Mongo",
+          "value": "27017"
+        }
+      ]
+    }
   },
   {
     "id": "windows-get-nettcpconnection",
@@ -546,7 +822,43 @@
       "network",
       "rdp"
     ],
-    "notes": "結果是物件化的，比傳統 netstat 更適合接管線分析。常用埠例如 3389 (RDP)、443 (HTTPS)、1433 (SQL)。"
+    "notes": "結果是物件化的，比傳統 netstat 更適合接管線分析。常用埠例如 3389 (RDP)、443 (HTTPS)、1433 (SQL)。",
+    "placeholderSuggestions": {
+      "<埠號>": [
+        {
+          "label": "22 SSH",
+          "value": "22"
+        },
+        {
+          "label": "80 HTTP",
+          "value": "80"
+        },
+        {
+          "label": "443 HTTPS",
+          "value": "443"
+        },
+        {
+          "label": "3389 RDP",
+          "value": "3389"
+        },
+        {
+          "label": "3306 MySQL",
+          "value": "3306"
+        },
+        {
+          "label": "5432 PG",
+          "value": "5432"
+        },
+        {
+          "label": "6379 Redis",
+          "value": "6379"
+        },
+        {
+          "label": "27017 Mongo",
+          "value": "27017"
+        }
+      ]
+    }
   },
   {
     "id": "windows-firewall-show-all",
@@ -1306,7 +1618,35 @@
       "cd",
       "cmd"
     ],
-    "notes": "把 `C:\\Temp` 換成你的實際目標路徑。"
+    "notes": "把 `C:\\Temp` 換成你的實際目標路徑。",
+    "placeholderSuggestions": {
+      "<目標路徑>": [
+        {
+          "label": "%LOCALAPPDATA%",
+          "value": "%LOCALAPPDATA%"
+        },
+        {
+          "label": "%APPDATA%",
+          "value": "%APPDATA%"
+        },
+        {
+          "label": "%USERPROFILE%",
+          "value": "%USERPROFILE%"
+        },
+        {
+          "label": "%ProgramFiles%",
+          "value": "%ProgramFiles%"
+        },
+        {
+          "label": "%ProgramFiles(x86)%",
+          "value": "%ProgramFiles(x86)%"
+        },
+        {
+          "label": "%TEMP%",
+          "value": "%TEMP%"
+        }
+      ]
+    }
   },
   {
     "id": "windows-mkdir-temp",
@@ -1320,7 +1660,35 @@
       "mkdir",
       "cmd"
     ],
-    "notes": "可改成你要建立的實際路徑。"
+    "notes": "可改成你要建立的實際路徑。",
+    "placeholderSuggestions": {
+      "<目標路徑>": [
+        {
+          "label": "%LOCALAPPDATA%",
+          "value": "%LOCALAPPDATA%"
+        },
+        {
+          "label": "%APPDATA%",
+          "value": "%APPDATA%"
+        },
+        {
+          "label": "%USERPROFILE%",
+          "value": "%USERPROFILE%"
+        },
+        {
+          "label": "%ProgramFiles%",
+          "value": "%ProgramFiles%"
+        },
+        {
+          "label": "%ProgramFiles(x86)%",
+          "value": "%ProgramFiles(x86)%"
+        },
+        {
+          "label": "%TEMP%",
+          "value": "%TEMP%"
+        }
+      ]
+    }
   },
   {
     "id": "windows-rmdir-recursive",
@@ -1334,7 +1702,35 @@
       "delete",
       "risk"
     ],
-    "notes": "高風險，會遞迴刪除整個目錄內容，請先確認路徑。"
+    "notes": "高風險，會遞迴刪除整個目錄內容，請先確認路徑。",
+    "placeholderSuggestions": {
+      "<目標路徑>": [
+        {
+          "label": "%LOCALAPPDATA%",
+          "value": "%LOCALAPPDATA%"
+        },
+        {
+          "label": "%APPDATA%",
+          "value": "%APPDATA%"
+        },
+        {
+          "label": "%USERPROFILE%",
+          "value": "%USERPROFILE%"
+        },
+        {
+          "label": "%ProgramFiles%",
+          "value": "%ProgramFiles%"
+        },
+        {
+          "label": "%ProgramFiles(x86)%",
+          "value": "%ProgramFiles(x86)%"
+        },
+        {
+          "label": "%TEMP%",
+          "value": "%TEMP%"
+        }
+      ]
+    }
   },
   {
     "id": "windows-del-file",
@@ -1348,7 +1744,35 @@
       "cmd",
       "risk"
     ],
-    "notes": "刪除前先確認路徑是否正確。"
+    "notes": "刪除前先確認路徑是否正確。",
+    "placeholderSuggestions": {
+      "<檔案路徑>": [
+        {
+          "label": "%LOCALAPPDATA%",
+          "value": "%LOCALAPPDATA%"
+        },
+        {
+          "label": "%APPDATA%",
+          "value": "%APPDATA%"
+        },
+        {
+          "label": "%USERPROFILE%",
+          "value": "%USERPROFILE%"
+        },
+        {
+          "label": "%ProgramFiles%",
+          "value": "%ProgramFiles%"
+        },
+        {
+          "label": "%ProgramFiles(x86)%",
+          "value": "%ProgramFiles(x86)%"
+        },
+        {
+          "label": "%TEMP%",
+          "value": "%TEMP%"
+        }
+      ]
+    }
   },
   {
     "id": "windows-copy-file",
@@ -1376,7 +1800,61 @@
       "cmd",
       "directory"
     ],
-    "notes": "如果目標檔名不同，也可視為搬移加改名。"
+    "notes": "如果目標檔名不同，也可視為搬移加改名。",
+    "placeholderSuggestions": {
+      "<來源路徑>": [
+        {
+          "label": "%LOCALAPPDATA%",
+          "value": "%LOCALAPPDATA%"
+        },
+        {
+          "label": "%APPDATA%",
+          "value": "%APPDATA%"
+        },
+        {
+          "label": "%USERPROFILE%",
+          "value": "%USERPROFILE%"
+        },
+        {
+          "label": "%ProgramFiles%",
+          "value": "%ProgramFiles%"
+        },
+        {
+          "label": "%ProgramFiles(x86)%",
+          "value": "%ProgramFiles(x86)%"
+        },
+        {
+          "label": "%TEMP%",
+          "value": "%TEMP%"
+        }
+      ],
+      "<目標路徑>": [
+        {
+          "label": "%LOCALAPPDATA%",
+          "value": "%LOCALAPPDATA%"
+        },
+        {
+          "label": "%APPDATA%",
+          "value": "%APPDATA%"
+        },
+        {
+          "label": "%USERPROFILE%",
+          "value": "%USERPROFILE%"
+        },
+        {
+          "label": "%ProgramFiles%",
+          "value": "%ProgramFiles%"
+        },
+        {
+          "label": "%ProgramFiles(x86)%",
+          "value": "%ProgramFiles(x86)%"
+        },
+        {
+          "label": "%TEMP%",
+          "value": "%TEMP%"
+        }
+      ]
+    }
   },
   {
     "id": "windows-ren-file",
@@ -1404,7 +1882,35 @@
       "view",
       "cmd"
     ],
-    "notes": "適合快速看小型文字檔內容。"
+    "notes": "適合快速看小型文字檔內容。",
+    "placeholderSuggestions": {
+      "<檔案路徑>": [
+        {
+          "label": "%LOCALAPPDATA%",
+          "value": "%LOCALAPPDATA%"
+        },
+        {
+          "label": "%APPDATA%",
+          "value": "%APPDATA%"
+        },
+        {
+          "label": "%USERPROFILE%",
+          "value": "%USERPROFILE%"
+        },
+        {
+          "label": "%ProgramFiles%",
+          "value": "%ProgramFiles%"
+        },
+        {
+          "label": "%ProgramFiles(x86)%",
+          "value": "%ProgramFiles(x86)%"
+        },
+        {
+          "label": "%TEMP%",
+          "value": "%TEMP%"
+        }
+      ]
+    }
   },
   {
     "id": "powershell-get-location",
@@ -1430,7 +1936,35 @@
       "cd",
       "location"
     ],
-    "notes": "把 `C:\\Temp` 換成你的實際目標路徑；也可直接用別名 `cd`。"
+    "notes": "把 `C:\\Temp` 換成你的實際目標路徑；也可直接用別名 `cd`。",
+    "placeholderSuggestions": {
+      "<目標路徑>": [
+        {
+          "label": "LocalAppData",
+          "value": "$env:LOCALAPPDATA"
+        },
+        {
+          "label": "AppData",
+          "value": "$env:APPDATA"
+        },
+        {
+          "label": "UserProfile",
+          "value": "$env:USERPROFILE"
+        },
+        {
+          "label": "ProgramFiles",
+          "value": "$env:ProgramFiles"
+        },
+        {
+          "label": "ProgramFiles x86",
+          "value": "${env:ProgramFiles(x86)}"
+        },
+        {
+          "label": "TEMP",
+          "value": "$env:TEMP"
+        }
+      ]
+    }
   },
   {
     "id": "powershell-new-item",
@@ -1454,7 +1988,61 @@
       "create",
       "new-item"
     ],
-    "notes": "適合在腳本內建立目錄結構或佔位檔案。"
+    "notes": "適合在腳本內建立目錄結構或佔位檔案。",
+    "placeholderSuggestions": {
+      "<目標路徑>": [
+        {
+          "label": "LocalAppData",
+          "value": "$env:LOCALAPPDATA"
+        },
+        {
+          "label": "AppData",
+          "value": "$env:APPDATA"
+        },
+        {
+          "label": "UserProfile",
+          "value": "$env:USERPROFILE"
+        },
+        {
+          "label": "ProgramFiles",
+          "value": "$env:ProgramFiles"
+        },
+        {
+          "label": "ProgramFiles x86",
+          "value": "${env:ProgramFiles(x86)}"
+        },
+        {
+          "label": "TEMP",
+          "value": "$env:TEMP"
+        }
+      ],
+      "<檔案路徑>": [
+        {
+          "label": "LocalAppData",
+          "value": "$env:LOCALAPPDATA"
+        },
+        {
+          "label": "AppData",
+          "value": "$env:APPDATA"
+        },
+        {
+          "label": "UserProfile",
+          "value": "$env:USERPROFILE"
+        },
+        {
+          "label": "ProgramFiles",
+          "value": "$env:ProgramFiles"
+        },
+        {
+          "label": "ProgramFiles x86",
+          "value": "${env:ProgramFiles(x86)}"
+        },
+        {
+          "label": "TEMP",
+          "value": "$env:TEMP"
+        }
+      ]
+    }
   },
   {
     "id": "powershell-copy-item",
@@ -1467,7 +2055,61 @@
       "copy",
       "copy-item"
     ],
-    "notes": "若要複製資料夾，通常需要再搭配 `-Recurse`。"
+    "notes": "若要複製資料夾，通常需要再搭配 `-Recurse`。",
+    "placeholderSuggestions": {
+      "<來源路徑>": [
+        {
+          "label": "LocalAppData",
+          "value": "$env:LOCALAPPDATA"
+        },
+        {
+          "label": "AppData",
+          "value": "$env:APPDATA"
+        },
+        {
+          "label": "UserProfile",
+          "value": "$env:USERPROFILE"
+        },
+        {
+          "label": "ProgramFiles",
+          "value": "$env:ProgramFiles"
+        },
+        {
+          "label": "ProgramFiles x86",
+          "value": "${env:ProgramFiles(x86)}"
+        },
+        {
+          "label": "TEMP",
+          "value": "$env:TEMP"
+        }
+      ],
+      "<目標路徑>": [
+        {
+          "label": "LocalAppData",
+          "value": "$env:LOCALAPPDATA"
+        },
+        {
+          "label": "AppData",
+          "value": "$env:APPDATA"
+        },
+        {
+          "label": "UserProfile",
+          "value": "$env:USERPROFILE"
+        },
+        {
+          "label": "ProgramFiles",
+          "value": "$env:ProgramFiles"
+        },
+        {
+          "label": "ProgramFiles x86",
+          "value": "${env:ProgramFiles(x86)}"
+        },
+        {
+          "label": "TEMP",
+          "value": "$env:TEMP"
+        }
+      ]
+    }
   },
   {
     "id": "powershell-move-item",
@@ -1480,7 +2122,61 @@
       "move",
       "move-item"
     ],
-    "notes": "也可以用來順手改名。"
+    "notes": "也可以用來順手改名。",
+    "placeholderSuggestions": {
+      "<來源路徑>": [
+        {
+          "label": "LocalAppData",
+          "value": "$env:LOCALAPPDATA"
+        },
+        {
+          "label": "AppData",
+          "value": "$env:APPDATA"
+        },
+        {
+          "label": "UserProfile",
+          "value": "$env:USERPROFILE"
+        },
+        {
+          "label": "ProgramFiles",
+          "value": "$env:ProgramFiles"
+        },
+        {
+          "label": "ProgramFiles x86",
+          "value": "${env:ProgramFiles(x86)}"
+        },
+        {
+          "label": "TEMP",
+          "value": "$env:TEMP"
+        }
+      ],
+      "<目標路徑>": [
+        {
+          "label": "LocalAppData",
+          "value": "$env:LOCALAPPDATA"
+        },
+        {
+          "label": "AppData",
+          "value": "$env:APPDATA"
+        },
+        {
+          "label": "UserProfile",
+          "value": "$env:USERPROFILE"
+        },
+        {
+          "label": "ProgramFiles",
+          "value": "$env:ProgramFiles"
+        },
+        {
+          "label": "ProgramFiles x86",
+          "value": "${env:ProgramFiles(x86)}"
+        },
+        {
+          "label": "TEMP",
+          "value": "$env:TEMP"
+        }
+      ]
+    }
   },
   {
     "id": "powershell-remove-item",
@@ -1505,7 +2201,35 @@
       "recurse",
       "risk"
     ],
-    "notes": "高風險，正式環境請先確認路徑與影響範圍。"
+    "notes": "高風險，正式環境請先確認路徑與影響範圍。",
+    "placeholderSuggestions": {
+      "<目標路徑>": [
+        {
+          "label": "LocalAppData",
+          "value": "$env:LOCALAPPDATA"
+        },
+        {
+          "label": "AppData",
+          "value": "$env:APPDATA"
+        },
+        {
+          "label": "UserProfile",
+          "value": "$env:USERPROFILE"
+        },
+        {
+          "label": "ProgramFiles",
+          "value": "$env:ProgramFiles"
+        },
+        {
+          "label": "ProgramFiles x86",
+          "value": "${env:ProgramFiles(x86)}"
+        },
+        {
+          "label": "TEMP",
+          "value": "$env:TEMP"
+        }
+      ]
+    }
   },
   {
     "id": "powershell-get-content",
@@ -1518,7 +2242,35 @@
       "content",
       "view"
     ],
-    "notes": "純文字檔案最常用；大檔案可再搭配 `-Tail` 或 `-Wait`。"
+    "notes": "純文字檔案最常用；大檔案可再搭配 `-Tail` 或 `-Wait`。",
+    "placeholderSuggestions": {
+      "<檔案路徑>": [
+        {
+          "label": "LocalAppData",
+          "value": "$env:LOCALAPPDATA"
+        },
+        {
+          "label": "AppData",
+          "value": "$env:APPDATA"
+        },
+        {
+          "label": "UserProfile",
+          "value": "$env:USERPROFILE"
+        },
+        {
+          "label": "ProgramFiles",
+          "value": "$env:ProgramFiles"
+        },
+        {
+          "label": "ProgramFiles x86",
+          "value": "${env:ProgramFiles(x86)}"
+        },
+        {
+          "label": "TEMP",
+          "value": "$env:TEMP"
+        }
+      ]
+    }
   },
   {
     "id": "powershell-get-process",
@@ -1568,7 +2320,35 @@
       "start",
       "windows"
     ],
-    "notes": "把 `Spooler` 換成實際服務名稱。"
+    "notes": "把 `Spooler` 換成實際服務名稱。",
+    "placeholderSuggestions": {
+      "<服務名稱>": [
+        {
+          "label": "Spooler",
+          "value": "Spooler"
+        },
+        {
+          "label": "BITS",
+          "value": "BITS"
+        },
+        {
+          "label": "wuauserv",
+          "value": "wuauserv"
+        },
+        {
+          "label": "Dhcp",
+          "value": "Dhcp"
+        },
+        {
+          "label": "Dnscache",
+          "value": "Dnscache"
+        },
+        {
+          "label": "W32Time",
+          "value": "W32Time"
+        }
+      ]
+    }
   },
   {
     "id": "powershell-stop-service",
@@ -1581,7 +2361,35 @@
       "stop",
       "windows"
     ],
-    "notes": "正式環境先確認服務影響範圍。"
+    "notes": "正式環境先確認服務影響範圍。",
+    "placeholderSuggestions": {
+      "<服務名稱>": [
+        {
+          "label": "Spooler",
+          "value": "Spooler"
+        },
+        {
+          "label": "BITS",
+          "value": "BITS"
+        },
+        {
+          "label": "wuauserv",
+          "value": "wuauserv"
+        },
+        {
+          "label": "Dhcp",
+          "value": "Dhcp"
+        },
+        {
+          "label": "Dnscache",
+          "value": "Dnscache"
+        },
+        {
+          "label": "W32Time",
+          "value": "W32Time"
+        }
+      ]
+    }
   },
   {
     "id": "powershell-restart-service",
@@ -1594,7 +2402,35 @@
       "restart",
       "windows"
     ],
-    "notes": "印表機、Agent 或某些卡住的 Windows 服務很常這樣處理。"
+    "notes": "印表機、Agent 或某些卡住的 Windows 服務很常這樣處理。",
+    "placeholderSuggestions": {
+      "<服務名稱>": [
+        {
+          "label": "Spooler",
+          "value": "Spooler"
+        },
+        {
+          "label": "BITS",
+          "value": "BITS"
+        },
+        {
+          "label": "wuauserv",
+          "value": "wuauserv"
+        },
+        {
+          "label": "Dhcp",
+          "value": "Dhcp"
+        },
+        {
+          "label": "Dnscache",
+          "value": "Dnscache"
+        },
+        {
+          "label": "W32Time",
+          "value": "W32Time"
+        }
+      ]
+    }
   },
   {
     "id": "powershell-get-pnpdevice",
@@ -1648,7 +2484,35 @@
       "file",
       "cmd"
     ],
-    "notes": "把 `<檔案路徑>` 換成實際檔案；從 WSL 呼叫 Windows 預設關聯很方便。"
+    "notes": "把 `<檔案路徑>` 換成實際檔案；從 WSL 呼叫 Windows 預設關聯很方便。",
+    "placeholderSuggestions": {
+      "<檔案路徑>": [
+        {
+          "label": "家目錄",
+          "value": "~"
+        },
+        {
+          "label": "/tmp",
+          "value": "/tmp"
+        },
+        {
+          "label": "/var/log",
+          "value": "/var/log"
+        },
+        {
+          "label": "/etc",
+          "value": "/etc"
+        },
+        {
+          "label": "/opt",
+          "value": "/opt"
+        },
+        {
+          "label": "當前目錄",
+          "value": "."
+        }
+      ]
+    }
   },
   {
     "id": "wsl-call-powershell",
@@ -1710,7 +2574,35 @@
       "path",
       "cd"
     ],
-    "notes": "把 `/var/log` 換成你的實際目標路徑。"
+    "notes": "把 `/var/log` 換成你的實際目標路徑。",
+    "placeholderSuggestions": {
+      "<目標路徑>": [
+        {
+          "label": "家目錄",
+          "value": "~"
+        },
+        {
+          "label": "/tmp",
+          "value": "/tmp"
+        },
+        {
+          "label": "/var/log",
+          "value": "/var/log"
+        },
+        {
+          "label": "/etc",
+          "value": "/etc"
+        },
+        {
+          "label": "/opt",
+          "value": "/opt"
+        },
+        {
+          "label": "當前目錄",
+          "value": "."
+        }
+      ]
+    }
   },
   {
     "id": "bash-mkdir",
@@ -1763,7 +2655,61 @@
       "copy",
       "file"
     ],
-    "notes": "複製資料夾時通常要再加 `-r`。"
+    "notes": "複製資料夾時通常要再加 `-r`。",
+    "placeholderSuggestions": {
+      "<來源路徑>": [
+        {
+          "label": "家目錄",
+          "value": "~"
+        },
+        {
+          "label": "/tmp",
+          "value": "/tmp"
+        },
+        {
+          "label": "/var/log",
+          "value": "/var/log"
+        },
+        {
+          "label": "/etc",
+          "value": "/etc"
+        },
+        {
+          "label": "/opt",
+          "value": "/opt"
+        },
+        {
+          "label": "當前目錄",
+          "value": "."
+        }
+      ],
+      "<目標路徑>": [
+        {
+          "label": "家目錄",
+          "value": "~"
+        },
+        {
+          "label": "/tmp",
+          "value": "/tmp"
+        },
+        {
+          "label": "/var/log",
+          "value": "/var/log"
+        },
+        {
+          "label": "/etc",
+          "value": "/etc"
+        },
+        {
+          "label": "/opt",
+          "value": "/opt"
+        },
+        {
+          "label": "當前目錄",
+          "value": "."
+        }
+      ]
+    }
   },
   {
     "id": "bash-mv",
@@ -1777,7 +2723,61 @@
       "rename",
       "file"
     ],
-    "notes": "目標若是新檔名，也可以直接當 rename 使用。"
+    "notes": "目標若是新檔名，也可以直接當 rename 使用。",
+    "placeholderSuggestions": {
+      "<來源路徑>": [
+        {
+          "label": "家目錄",
+          "value": "~"
+        },
+        {
+          "label": "/tmp",
+          "value": "/tmp"
+        },
+        {
+          "label": "/var/log",
+          "value": "/var/log"
+        },
+        {
+          "label": "/etc",
+          "value": "/etc"
+        },
+        {
+          "label": "/opt",
+          "value": "/opt"
+        },
+        {
+          "label": "當前目錄",
+          "value": "."
+        }
+      ],
+      "<目標路徑>": [
+        {
+          "label": "家目錄",
+          "value": "~"
+        },
+        {
+          "label": "/tmp",
+          "value": "/tmp"
+        },
+        {
+          "label": "/var/log",
+          "value": "/var/log"
+        },
+        {
+          "label": "/etc",
+          "value": "/etc"
+        },
+        {
+          "label": "/opt",
+          "value": "/opt"
+        },
+        {
+          "label": "當前目錄",
+          "value": "."
+        }
+      ]
+    }
   },
   {
     "id": "bash-rm",
@@ -1801,7 +2801,35 @@
       "directory",
       "risk"
     ],
-    "notes": "高風險，路徑打錯會很傷，正式環境務必再三確認。"
+    "notes": "高風險，路徑打錯會很傷，正式環境務必再三確認。",
+    "placeholderSuggestions": {
+      "<目標路徑>": [
+        {
+          "label": "家目錄",
+          "value": "~"
+        },
+        {
+          "label": "/tmp",
+          "value": "/tmp"
+        },
+        {
+          "label": "/var/log",
+          "value": "/var/log"
+        },
+        {
+          "label": "/etc",
+          "value": "/etc"
+        },
+        {
+          "label": "/opt",
+          "value": "/opt"
+        },
+        {
+          "label": "當前目錄",
+          "value": "."
+        }
+      ]
+    }
   },
   {
     "id": "bash-cat",
@@ -1815,7 +2843,35 @@
       "view",
       "cat"
     ],
-    "notes": "適合快速看小型文字檔內容。"
+    "notes": "適合快速看小型文字檔內容。",
+    "placeholderSuggestions": {
+      "<檔案路徑>": [
+        {
+          "label": "家目錄",
+          "value": "~"
+        },
+        {
+          "label": "/tmp",
+          "value": "/tmp"
+        },
+        {
+          "label": "/var/log",
+          "value": "/var/log"
+        },
+        {
+          "label": "/etc",
+          "value": "/etc"
+        },
+        {
+          "label": "/opt",
+          "value": "/opt"
+        },
+        {
+          "label": "當前目錄",
+          "value": "."
+        }
+      ]
+    }
   },
   {
     "id": "bash-less",
@@ -1829,7 +2885,35 @@
       "pager",
       "less"
     ],
-    "notes": "大檔案比 `cat` 更好讀。"
+    "notes": "大檔案比 `cat` 更好讀。",
+    "placeholderSuggestions": {
+      "<檔案路徑>": [
+        {
+          "label": "家目錄",
+          "value": "~"
+        },
+        {
+          "label": "/tmp",
+          "value": "/tmp"
+        },
+        {
+          "label": "/var/log",
+          "value": "/var/log"
+        },
+        {
+          "label": "/etc",
+          "value": "/etc"
+        },
+        {
+          "label": "/opt",
+          "value": "/opt"
+        },
+        {
+          "label": "當前目錄",
+          "value": "."
+        }
+      ]
+    }
   },
   {
     "id": "bash-head",
@@ -1843,7 +2927,35 @@
       "head",
       "logs"
     ],
-    "notes": "快速看檔頭或設定檔前段內容很方便。"
+    "notes": "快速看檔頭或設定檔前段內容很方便。",
+    "placeholderSuggestions": {
+      "<檔案路徑>": [
+        {
+          "label": "家目錄",
+          "value": "~"
+        },
+        {
+          "label": "/tmp",
+          "value": "/tmp"
+        },
+        {
+          "label": "/var/log",
+          "value": "/var/log"
+        },
+        {
+          "label": "/etc",
+          "value": "/etc"
+        },
+        {
+          "label": "/opt",
+          "value": "/opt"
+        },
+        {
+          "label": "當前目錄",
+          "value": "."
+        }
+      ]
+    }
   },
   {
     "id": "bash-tail",
@@ -1867,7 +2979,35 @@
       "logs",
       "follow"
     ],
-    "notes": "`-f` 即時看 application log 最常用。"
+    "notes": "`-f` 即時看 application log 最常用。",
+    "placeholderSuggestions": {
+      "<檔案路徑>": [
+        {
+          "label": "家目錄",
+          "value": "~"
+        },
+        {
+          "label": "/tmp",
+          "value": "/tmp"
+        },
+        {
+          "label": "/var/log",
+          "value": "/var/log"
+        },
+        {
+          "label": "/etc",
+          "value": "/etc"
+        },
+        {
+          "label": "/opt",
+          "value": "/opt"
+        },
+        {
+          "label": "當前目錄",
+          "value": "."
+        }
+      ]
+    }
   },
   {
     "id": "bash-find-name",
@@ -2051,7 +3191,43 @@
       "ss",
       "listen"
     ],
-    "notes": "`-l` listen、`-n` 數字、`-t` TCP、`-p` 顯示程序。"
+    "notes": "`-l` listen、`-n` 數字、`-t` TCP、`-p` 顯示程序。",
+    "placeholderSuggestions": {
+      "<埠號>": [
+        {
+          "label": "22 SSH",
+          "value": "22"
+        },
+        {
+          "label": "80 HTTP",
+          "value": "80"
+        },
+        {
+          "label": "443 HTTPS",
+          "value": "443"
+        },
+        {
+          "label": "3389 RDP",
+          "value": "3389"
+        },
+        {
+          "label": "3306 MySQL",
+          "value": "3306"
+        },
+        {
+          "label": "5432 PG",
+          "value": "5432"
+        },
+        {
+          "label": "6379 Redis",
+          "value": "6379"
+        },
+        {
+          "label": "27017 Mongo",
+          "value": "27017"
+        }
+      ]
+    }
   },
   {
     "id": "bash-ip-addr",
@@ -2093,7 +3269,31 @@
       "ping",
       "icmp"
     ],
-    "notes": "Linux 常用 `-c` 指定次數，避免一直打下去。"
+    "notes": "Linux 常用 `-c` 指定次數，避免一直打下去。",
+    "placeholderSuggestions": {
+      "<主機或 IP>": [
+        {
+          "label": "localhost",
+          "value": "localhost"
+        },
+        {
+          "label": "127.0.0.1",
+          "value": "127.0.0.1"
+        },
+        {
+          "label": "8.8.8.8 Google",
+          "value": "8.8.8.8"
+        },
+        {
+          "label": "1.1.1.1 CF",
+          "value": "1.1.1.1"
+        },
+        {
+          "label": "Gateway",
+          "value": "192.168.1.1"
+        }
+      ]
+    }
   },
   {
     "id": "bash-nslookup",
@@ -2107,7 +3307,27 @@
       "lookup",
       "network"
     ],
-    "notes": "快速確認網域是否能正常解析。"
+    "notes": "快速確認網域是否能正常解析。",
+    "placeholderSuggestions": {
+      "<網域>": [
+        {
+          "label": "google.com",
+          "value": "google.com"
+        },
+        {
+          "label": "cloudflare.com",
+          "value": "cloudflare.com"
+        },
+        {
+          "label": "github.com",
+          "value": "github.com"
+        },
+        {
+          "label": "localhost",
+          "value": "localhost"
+        }
+      ]
+    }
   },
   {
     "id": "bash-dig",
@@ -2121,7 +3341,27 @@
       "dig",
       "network"
     ],
-    "notes": "前提是系統有安裝 `dig`，通常來自 `dnsutils` 或類似套件。"
+    "notes": "前提是系統有安裝 `dig`，通常來自 `dnsutils` 或類似套件。",
+    "placeholderSuggestions": {
+      "<網域>": [
+        {
+          "label": "google.com",
+          "value": "google.com"
+        },
+        {
+          "label": "cloudflare.com",
+          "value": "cloudflare.com"
+        },
+        {
+          "label": "github.com",
+          "value": "github.com"
+        },
+        {
+          "label": "localhost",
+          "value": "localhost"
+        }
+      ]
+    }
   },
   {
     "id": "bash-curl-o",
@@ -3029,7 +4269,35 @@
       "windows",
       "security"
     ],
-    "notes": "需以系統管理員身分執行。先設為 Disabled 再 Stop，確保服務不會在下次開機時自動恢復。要恢復時用 `Set-Service -StartupType Automatic`。"
+    "notes": "需以系統管理員身分執行。先設為 Disabled 再 Stop，確保服務不會在下次開機時自動恢復。要恢復時用 `Set-Service -StartupType Automatic`。",
+    "placeholderSuggestions": {
+      "<服務名稱>": [
+        {
+          "label": "Spooler",
+          "value": "Spooler"
+        },
+        {
+          "label": "BITS",
+          "value": "BITS"
+        },
+        {
+          "label": "wuauserv",
+          "value": "wuauserv"
+        },
+        {
+          "label": "Dhcp",
+          "value": "Dhcp"
+        },
+        {
+          "label": "Dnscache",
+          "value": "Dnscache"
+        },
+        {
+          "label": "W32Time",
+          "value": "W32Time"
+        }
+      ]
+    }
   },
   {
     "id": "bash-curl-post",
@@ -3118,7 +4386,27 @@
       "network",
       "recon"
     ],
-    "notes": "`-p-` 掃全 65535 port，時間會明顯拉長。port 列表例：`80,443,5000,5001,8080`。"
+    "notes": "`-p-` 掃全 65535 port，時間會明顯拉長。port 列表例：`80,443,5000,5001,8080`。",
+    "placeholderSuggestions": {
+      "<目標>": [
+        {
+          "label": "localhost",
+          "value": "localhost"
+        },
+        {
+          "label": "127.0.0.1",
+          "value": "127.0.0.1"
+        },
+        {
+          "label": "Gateway",
+          "value": "192.168.1.1"
+        },
+        {
+          "label": "scanme.nmap.org",
+          "value": "scanme.nmap.org"
+        }
+      ]
+    }
   },
   {
     "id": "nmap-service-detect",
@@ -3141,7 +4429,27 @@
       "scan",
       "recon"
     ],
-    "notes": "`-sV` 會真的去打 banner，速度比單純 port 掃描慢，但能拿到 Apache/Nginx/OpenSSH 等版本資訊。"
+    "notes": "`-sV` 會真的去打 banner，速度比單純 port 掃描慢，但能拿到 Apache/Nginx/OpenSSH 等版本資訊。",
+    "placeholderSuggestions": {
+      "<目標>": [
+        {
+          "label": "localhost",
+          "value": "localhost"
+        },
+        {
+          "label": "127.0.0.1",
+          "value": "127.0.0.1"
+        },
+        {
+          "label": "Gateway",
+          "value": "192.168.1.1"
+        },
+        {
+          "label": "scanme.nmap.org",
+          "value": "scanme.nmap.org"
+        }
+      ]
+    }
   },
   {
     "id": "nmap-subnet-scan",
@@ -3164,7 +4472,27 @@
       "network",
       "discovery"
     ],
-    "notes": "`-sn` 只做 host discovery、不掃 port，速度最快。網段寫法例：`192.168.1.0/24`。"
+    "notes": "`-sn` 只做 host discovery、不掃 port，速度最快。網段寫法例：`192.168.1.0/24`。",
+    "placeholderSuggestions": {
+      "<網段>": [
+        {
+          "label": "192.168.1.0/24",
+          "value": "192.168.1.0/24"
+        },
+        {
+          "label": "192.168.0.0/24",
+          "value": "192.168.0.0/24"
+        },
+        {
+          "label": "10.0.0.0/24",
+          "value": "10.0.0.0/24"
+        },
+        {
+          "label": "172.16.0.0/24",
+          "value": "172.16.0.0/24"
+        }
+      ]
+    }
   },
   {
     "id": "nmap-os-detect",
@@ -3187,7 +4515,27 @@
       "scan",
       "recon"
     ],
-    "notes": "`-O` 需要 root/admin 權限。OS 判斷是機率性結果，僅供參考。"
+    "notes": "`-O` 需要 root/admin 權限。OS 判斷是機率性結果，僅供參考。",
+    "placeholderSuggestions": {
+      "<目標>": [
+        {
+          "label": "localhost",
+          "value": "localhost"
+        },
+        {
+          "label": "127.0.0.1",
+          "value": "127.0.0.1"
+        },
+        {
+          "label": "Gateway",
+          "value": "192.168.1.1"
+        },
+        {
+          "label": "scanme.nmap.org",
+          "value": "scanme.nmap.org"
+        }
+      ]
+    }
   },
   {
     "id": "nmap-combo",
@@ -3210,7 +4558,45 @@
       "recon",
       "web"
     ],
-    "notes": "完整掃描會花不少時間，實戰上會先用 `-sn` 縮範圍再挑目標深掃。"
+    "notes": "完整掃描會花不少時間，實戰上會先用 `-sn` 縮範圍再挑目標深掃。",
+    "placeholderSuggestions": {
+      "<目標>": [
+        {
+          "label": "localhost",
+          "value": "localhost"
+        },
+        {
+          "label": "127.0.0.1",
+          "value": "127.0.0.1"
+        },
+        {
+          "label": "Gateway",
+          "value": "192.168.1.1"
+        },
+        {
+          "label": "scanme.nmap.org",
+          "value": "scanme.nmap.org"
+        }
+      ],
+      "<網段>": [
+        {
+          "label": "192.168.1.0/24",
+          "value": "192.168.1.0/24"
+        },
+        {
+          "label": "192.168.0.0/24",
+          "value": "192.168.0.0/24"
+        },
+        {
+          "label": "10.0.0.0/24",
+          "value": "10.0.0.0/24"
+        },
+        {
+          "label": "172.16.0.0/24",
+          "value": "172.16.0.0/24"
+        }
+      ]
+    }
   },
   {
     "id": "powershell-find-file-recursive",
@@ -3226,7 +4612,61 @@
       "file",
       "exe"
     ],
-    "notes": "`<檔名>` 可用萬用字元，例：`Claude.exe`、`*.exe`、`settings.json`。常用搜尋根目錄：`$env:LOCALAPPDATA`（`C:\\Users\\<user>\\AppData\\Local`）、`$env:APPDATA`（`Roaming`）、`$env:USERPROFILE`、`$env:ProgramFiles`、`${env:ProgramFiles(x86)}`。`-ErrorAction SilentlyContinue` 用來忽略權限不足或 ReparsePoint 造成的錯誤。"
+    "notes": "`<檔名>` 可用萬用字元，例：`Claude.exe`、`*.exe`、`settings.json`。常用搜尋根目錄：`$env:LOCALAPPDATA`（`C:\\Users\\<user>\\AppData\\Local`）、`$env:APPDATA`（`Roaming`）、`$env:USERPROFILE`、`$env:ProgramFiles`、`${env:ProgramFiles(x86)}`。`-ErrorAction SilentlyContinue` 用來忽略權限不足或 ReparsePoint 造成的錯誤。",
+    "placeholderSuggestions": {
+      "<搜尋根目錄>": [
+        {
+          "label": "LocalAppData",
+          "value": "$env:LOCALAPPDATA"
+        },
+        {
+          "label": "AppData",
+          "value": "$env:APPDATA"
+        },
+        {
+          "label": "UserProfile",
+          "value": "$env:USERPROFILE"
+        },
+        {
+          "label": "ProgramFiles",
+          "value": "$env:ProgramFiles"
+        },
+        {
+          "label": "ProgramFiles x86",
+          "value": "${env:ProgramFiles(x86)}"
+        },
+        {
+          "label": "TEMP",
+          "value": "$env:TEMP"
+        }
+      ],
+      "<檔名>": [
+        {
+          "label": "exe",
+          "value": "*.exe"
+        },
+        {
+          "label": "json",
+          "value": "*.json"
+        },
+        {
+          "label": "config",
+          "value": "*.config"
+        },
+        {
+          "label": "ini",
+          "value": "*.ini"
+        },
+        {
+          "label": "yaml",
+          "value": "*.yaml"
+        },
+        {
+          "label": "log",
+          "value": "*.log"
+        }
+      ]
+    }
   },
   {
     "id": "powershell-get-process-path-by-name",
@@ -3257,6 +4697,60 @@
       "where-object",
       "json"
     ],
-    "notes": "`<副檔名萬用字元>` 例：`*.json`、`*.config`、`*.ini`、`*.yaml`。`<關鍵字>` 會以 `*關鍵字*` 比對完整路徑（不分大小寫）。例：找 Claude 的 JSON 設定 → 搜尋根目錄填 `$env:APPDATA`、副檔名填 `*.json`、關鍵字填 `laude`。比純 `-Filter` 強的地方在於能針對「路徑裡包含某字串」做模糊過濾。"
+    "notes": "`<副檔名萬用字元>` 例：`*.json`、`*.config`、`*.ini`、`*.yaml`。`<關鍵字>` 會以 `*關鍵字*` 比對完整路徑（不分大小寫）。例：找 Claude 的 JSON 設定 → 搜尋根目錄填 `$env:APPDATA`、副檔名填 `*.json`、關鍵字填 `laude`。比純 `-Filter` 強的地方在於能針對「路徑裡包含某字串」做模糊過濾。",
+    "placeholderSuggestions": {
+      "<搜尋根目錄>": [
+        {
+          "label": "LocalAppData",
+          "value": "$env:LOCALAPPDATA"
+        },
+        {
+          "label": "AppData",
+          "value": "$env:APPDATA"
+        },
+        {
+          "label": "UserProfile",
+          "value": "$env:USERPROFILE"
+        },
+        {
+          "label": "ProgramFiles",
+          "value": "$env:ProgramFiles"
+        },
+        {
+          "label": "ProgramFiles x86",
+          "value": "${env:ProgramFiles(x86)}"
+        },
+        {
+          "label": "TEMP",
+          "value": "$env:TEMP"
+        }
+      ],
+      "<副檔名萬用字元>": [
+        {
+          "label": "exe",
+          "value": "*.exe"
+        },
+        {
+          "label": "json",
+          "value": "*.json"
+        },
+        {
+          "label": "config",
+          "value": "*.config"
+        },
+        {
+          "label": "ini",
+          "value": "*.ini"
+        },
+        {
+          "label": "yaml",
+          "value": "*.yaml"
+        },
+        {
+          "label": "log",
+          "value": "*.log"
+        }
+      ]
+    }
   }
 ]

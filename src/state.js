@@ -305,6 +305,28 @@ export function normalizeCommands(rawData, fallbackCategory = "") {
         ? rawVariants[0].command
         : String(item.command ?? "").trim();
 
+      // placeholderSuggestions: { "<token>": [{label, value}, ...] }
+      // Optional. Only keep entries whose value is a non-empty string so
+      // a malformed data shape can't crash the renderer.
+      const rawSuggestions = item.placeholderSuggestions;
+      const placeholderSuggestions = rawSuggestions && typeof rawSuggestions === "object" && !Array.isArray(rawSuggestions)
+        ? Object.fromEntries(
+            Object.entries(rawSuggestions)
+              .map(([token, list]) => [
+                token,
+                Array.isArray(list)
+                  ? list
+                      .filter((s) => s && typeof s.value === "string" && s.value !== "")
+                      .map((s) => ({
+                        label: String(s.label ?? s.value).trim(),
+                        value: String(s.value)
+                      }))
+                  : []
+              ])
+              .filter(([, list]) => list.length > 0)
+          )
+        : {};
+
       const normalized = {
         id: item.id ?? `command-${index + 1}`,
         category: derivedCategory,
@@ -312,7 +334,8 @@ export function normalizeCommands(rawData, fallbackCategory = "") {
         variants: rawVariants,
         description: String(item.description ?? "").trim(),
         tags: Array.isArray(item.tags) ? item.tags.map((tag) => String(tag).trim()).filter(Boolean) : [],
-        notes: String(item.notes ?? "").trim()
+        notes: String(item.notes ?? "").trim(),
+        placeholderSuggestions
       };
 
       const commandLower = normalized.command.toLowerCase();

@@ -35,27 +35,47 @@ export function extractPlaceholders(command) {
   return tokens;
 }
 
-export function renderPlaceholderFields(placeholders, currentValues = {}) {
+export function renderPlaceholderFields(placeholders, currentValues = {}, suggestions = {}) {
   if (!placeholders.length) {
     return "";
   }
 
   return `
     <div class="placeholder-fields">
-      ${placeholders.map((token) => `
-        <label class="placeholder-field">
-          <span>${escapeHtml(token.slice(1, -1))}</span>
-          <input
-            class="secure-input placeholder-input"
-            type="text"
-            data-placeholder-token="${escapeAttribute(token)}"
-            placeholder="貼上實際值"
-            value="${escapeAttribute(currentValues[token] ?? "")}"
-            autocomplete="off"
-            spellcheck="false"
-          >
-        </label>
-      `).join("")}
+      ${placeholders.map((token) => {
+        const chips = Array.isArray(suggestions[token]) ? suggestions[token] : [];
+        const chipsHtml = chips.length > 0
+          ? `
+            <div class="placeholder-suggestions" role="list" aria-label="${escapeAttribute(token.slice(1, -1))} 的常用值">
+              ${chips.map((s) => `
+                <button
+                  class="placeholder-chip"
+                  type="button"
+                  role="listitem"
+                  data-suggestion-for="${escapeAttribute(token)}"
+                  data-suggestion-value="${escapeAttribute(s.value)}"
+                  title="${escapeAttribute(s.value)}"
+                >${escapeHtml(s.label)}</button>
+              `).join("")}
+            </div>
+          `
+          : "";
+        return `
+          <label class="placeholder-field">
+            <span>${escapeHtml(token.slice(1, -1))}</span>
+            <input
+              class="secure-input placeholder-input"
+              type="text"
+              data-placeholder-token="${escapeAttribute(token)}"
+              placeholder="貼上實際值"
+              value="${escapeAttribute(currentValues[token] ?? "")}"
+              autocomplete="off"
+              spellcheck="false"
+            >
+            ${chipsHtml}
+          </label>
+        `;
+      }).join("")}
     </div>
   `;
 }
@@ -247,7 +267,7 @@ export function switchCardVariant(card, nextIndex) {
   if (placeholderSlot) {
     const placeholders = extractPlaceholders(activeCommand);
     const placeholderValues = state.placeholderValues.get(item.id) ?? {};
-    placeholderSlot.innerHTML = renderPlaceholderFields(placeholders, placeholderValues);
+    placeholderSlot.innerHTML = renderPlaceholderFields(placeholders, placeholderValues, item.placeholderSuggestions);
   }
 
   updateCommandPreview(card);
