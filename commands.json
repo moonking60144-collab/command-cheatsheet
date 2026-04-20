@@ -3211,5 +3211,52 @@
       "web"
     ],
     "notes": "完整掃描會花不少時間，實戰上會先用 `-sn` 縮範圍再挑目標深掃。"
+  },
+  {
+    "id": "powershell-find-file-recursive",
+    "category": "PowerShell",
+    "command": "Get-ChildItem \"<搜尋根目錄>\" -Recurse -Filter \"<檔名>\" -ErrorAction SilentlyContinue | Select-Object FullName",
+    "description": "從指定資料夾遞迴搜尋符合檔名的檔案，列出完整路徑。",
+    "tags": [
+      "powershell",
+      "search",
+      "find",
+      "get-childitem",
+      "recurse",
+      "file",
+      "exe"
+    ],
+    "notes": "`<檔名>` 可用萬用字元，例：`Claude.exe`、`*.exe`、`settings.json`。常用搜尋根目錄：`$env:LOCALAPPDATA`（`C:\\Users\\<user>\\AppData\\Local`）、`$env:APPDATA`（`Roaming`）、`$env:USERPROFILE`、`$env:ProgramFiles`、`${env:ProgramFiles(x86)}`。`-ErrorAction SilentlyContinue` 用來忽略權限不足或 ReparsePoint 造成的錯誤。"
+  },
+  {
+    "id": "powershell-get-process-path-by-name",
+    "category": "PowerShell",
+    "command": "Get-Process -Name \"<程序名>\" -ErrorAction SilentlyContinue | Select-Object Name, Id, Path",
+    "description": "依程序名反查正在執行的 exe 實體路徑（最快）。",
+    "tags": [
+      "powershell",
+      "process",
+      "path",
+      "get-process",
+      "exe",
+      "investigation"
+    ],
+    "notes": "`<程序名>` 不要加 `.exe`（例：`Claude`、`chrome`、`Code`）。前提是程式必須正在執行；若沒在跑就改用遞迴檔名搜尋 `Get-ChildItem -Recurse -Filter`。若已經知道 PID，用 `Get-Process -Id <PID> | Select-Object Path` 更直接。"
+  },
+  {
+    "id": "powershell-find-files-fuzzy",
+    "category": "PowerShell",
+    "command": "Get-ChildItem \"<搜尋根目錄>\" -Recurse -Filter \"<副檔名萬用字元>\" -ErrorAction SilentlyContinue | Where-Object { $_.FullName -like \"*<關鍵字>*\" } | Select-Object FullName",
+    "description": "遞迴搜尋檔案後再用關鍵字過濾完整路徑（模糊找設定檔）。",
+    "tags": [
+      "powershell",
+      "search",
+      "fuzzy",
+      "config",
+      "get-childitem",
+      "where-object",
+      "json"
+    ],
+    "notes": "`<副檔名萬用字元>` 例：`*.json`、`*.config`、`*.ini`、`*.yaml`。`<關鍵字>` 會以 `*關鍵字*` 比對完整路徑（不分大小寫）。例：找 Claude 的 JSON 設定 → 搜尋根目錄填 `$env:APPDATA`、副檔名填 `*.json`、關鍵字填 `laude`。比純 `-Filter` 強的地方在於能針對「路徑裡包含某字串」做模糊過濾。"
   }
 ]
