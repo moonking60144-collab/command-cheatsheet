@@ -1161,9 +1161,21 @@ kbd {
 }
 
 .command-card:hover .pin-button,
+.command-card:focus-within .pin-button,
 .pin-button[aria-pressed="true"],
 .pin-button:focus-visible {
   opacity: 1;
+}
+
+/* Keyboard focus must be visible immediately — the 0.16s opacity fade
+   would otherwise leave the focus ring invisible at the exact moment
+   the user needs it. Both pin and copy buttons are opacity:0 by default
+   on desktop, so Tab navigation would land on an invisible target
+   without this override. */
+.pin-button:focus-visible,
+.copy-button:focus-visible {
+  opacity: 1;
+  transition: none;
 }
 
 .pin-button[aria-pressed="true"] {

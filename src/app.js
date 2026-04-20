@@ -347,6 +347,23 @@ function bindEvents() {
           return;
         }
 
+        // On a variant tab, horizontal arrows cycle through sibling tabs
+        // within the same card instead of hopping to the next card. This
+        // matches tablist convention (ARIA role="tablist").
+        if (
+          event.target.matches(".variant-tab") &&
+          (event.key === "ArrowLeft" || event.key === "ArrowRight")
+        ) {
+          event.preventDefault();
+          event.stopPropagation();
+          const tabs = Array.from(card.querySelectorAll(".variant-tab"));
+          const tabIdx = tabs.indexOf(event.target);
+          const tabDelta = event.key === "ArrowRight" ? 1 : -1;
+          const next = tabs[(tabIdx + tabDelta + tabs.length) % tabs.length];
+          next?.focus();
+          return;
+        }
+
         event.preventDefault();
         event.stopPropagation();
         const cards = Array.from(container.querySelectorAll(".command-card"));
