@@ -4752,5 +4752,250 @@
         }
       ]
     }
+  },
+  {
+    "id": "windows-net-user-list",
+    "category": "Windows User & Account",
+    "command": "net user",
+    "description": "列出本機所有使用者帳號。",
+    "tags": [
+      "windows",
+      "net",
+      "user",
+      "account",
+      "local"
+    ],
+    "notes": "顯示本機 SAM 中所有帳號（含停用、隱藏帳號）。網域帳號不會列出。WinRE 觸發 SYSTEM cmd 後第一步常用此確認本機帳號名（同事誤以為 admin 但實際是 User 的情境）。"
+  },
+  {
+    "id": "windows-net-user-show",
+    "category": "Windows User & Account",
+    "command": "net user <帳號>",
+    "description": "顯示指定本機帳號的詳細資訊。",
+    "tags": [
+      "windows",
+      "net",
+      "user",
+      "account",
+      "details"
+    ],
+    "notes": "包含密碼到期日、上次登入時間、帳號是否啟用、所屬群組等。"
+  },
+  {
+    "id": "windows-net-user-reset-password",
+    "category": "Windows User & Account",
+    "command": "net user <帳號> <新密碼>",
+    "description": "重設本機帳號密碼。",
+    "tags": [
+      "windows",
+      "net",
+      "user",
+      "password",
+      "reset",
+      "winre"
+    ],
+    "notes": "需以系統管理員身份執行。WinRE/輕鬆存取觸發的 SYSTEM cmd 中最常用。網域帳號無法用此方式重設（需到 DC 上 dsa.msc 或 PowerShell Set-ADAccountPassword）。"
+  },
+  {
+    "id": "windows-net-user-activate",
+    "category": "Windows User & Account",
+    "command": "net user <帳號> /active:yes",
+    "description": "啟用被停用的本機帳號（/active:no 為停用）。",
+    "tags": [
+      "windows",
+      "net",
+      "user",
+      "active",
+      "enable"
+    ],
+    "notes": "Windows 預設的 Administrator 帳號為停用狀態，可用此啟用。停用帳號用 /active:no。"
+  },
+  {
+    "id": "windows-net-localgroup-admins",
+    "category": "Windows User & Account",
+    "command": "net localgroup administrators",
+    "description": "列出本機 Administrators 群組成員。",
+    "tags": [
+      "windows",
+      "net",
+      "localgroup",
+      "administrators",
+      "group"
+    ],
+    "notes": "確認哪些帳號（含網域帳號）有本機系統管理員權限。其他常用群組：users、remote desktop users、power users。加 <帳號> /add 可加成員，/delete 可移除。"
+  },
+  {
+    "id": "windows-reg-load-hive",
+    "category": "Windows Registry",
+    "command": "reg load HKLM\\<掛載點名稱> <Hive檔案路徑>",
+    "description": "離線載入登錄檔 hive 到 HKLM 下的暫存掛載點。",
+    "tags": [
+      "windows",
+      "reg",
+      "registry",
+      "hive",
+      "load",
+      "offline",
+      "winre"
+    ],
+    "notes": "用於 WinRE 環境讀取/修改本機 SAM、SYSTEM、SOFTWARE 等 hive。例：reg load HKLM\\SAM_OFFLINE C:\\Windows\\System32\\config\\SAM。掛載點名稱自取（避免與既有 key 衝突）。修改完務必 reg unload，否則檔案被鎖、系統無法正常啟動。"
+  },
+  {
+    "id": "windows-reg-query",
+    "category": "Windows Registry",
+    "command": "reg query <KeyPath>",
+    "description": "查詢登錄檔指定 key 下的所有 value 與子鍵。",
+    "tags": [
+      "windows",
+      "reg",
+      "registry",
+      "query"
+    ],
+    "notes": "加 /s 遞迴所有子鍵；加 /v <name> 只查特定 value；加 /f <pattern> 模糊搜尋。例：reg query HKLM\\SAM_OFFLINE\\SAM\\Domains\\Account\\Users\\Names 列出本機帳號清單（離線載入後）。"
+  },
+  {
+    "id": "windows-reg-unload-hive",
+    "category": "Windows Registry",
+    "command": "reg unload HKLM\\<掛載點名稱>",
+    "description": "卸載先前以 reg load 載入的 hive。",
+    "tags": [
+      "windows",
+      "reg",
+      "registry",
+      "hive",
+      "unload"
+    ],
+    "notes": "離線編輯 SAM/SYSTEM 後必執行，否則檔案處於鎖定狀態，系統重開機會卡。對應 reg load 時的掛載點名稱。"
+  },
+  {
+    "id": "windows-netsh-set-dns",
+    "category": "Windows Network & DNS",
+    "command": "netsh interface ip set dns \"<介面名稱>\" static <DNS_IP> primary",
+    "description": "為指定網路介面設定靜態 DNS 伺服器。",
+    "tags": [
+      "windows",
+      "netsh",
+      "dns",
+      "interface",
+      "static",
+      "domain"
+    ],
+    "notes": "介面名稱常見：「乙太網路」「Wi-Fi」（用 ipconfig 確認）。primary 表主要 DNS。改回 DHCP 取得：netsh interface ip set dns \"<介面>\" dhcp。加網域前必設 DNS 指向 DC，否則找不到 _ldap._tcp.dc._msdcs.<domain> 的 SRV 記錄、會卡網域帳號登入。",
+    "placeholderSuggestions": {
+      "<介面名稱>": [
+        {
+          "label": "乙太網路",
+          "value": "乙太網路"
+        },
+        {
+          "label": "Wi-Fi",
+          "value": "Wi-Fi"
+        }
+      ],
+      "<DNS_IP>": [
+        {
+          "label": "Google",
+          "value": "8.8.8.8"
+        },
+        {
+          "label": "Cloudflare",
+          "value": "1.1.1.1"
+        },
+        {
+          "label": "HiNet",
+          "value": "168.95.1.1"
+        }
+      ]
+    }
+  },
+  {
+    "id": "windows-nslookup-ad-srv",
+    "category": "Windows Network & DNS",
+    "command": "nslookup -type=SRV _ldap._tcp.dc._msdcs.<網域名>",
+    "description": "查詢網域控制站（DC）的 SRV 記錄，確認 AD DNS 設定正確。",
+    "tags": [
+      "windows",
+      "nslookup",
+      "dns",
+      "active-directory",
+      "domain",
+      "srv",
+      "dc"
+    ],
+    "notes": "查不到 SRV 記錄通常代表客戶端 DNS 沒指向 DC。網域加入失敗、登入失敗時的第一步診斷。也可查 _kerberos._tcp.<domain>、_gc._tcp.<domain>（Global Catalog）。"
+  },
+  {
+    "id": "windows-nltest-sc-verify",
+    "category": "Windows Network & DNS",
+    "command": "nltest /sc_verify:<網域名>",
+    "description": "驗證本機與網域控制站的安全通道是否正常。",
+    "tags": [
+      "windows",
+      "nltest",
+      "domain",
+      "trust",
+      "active-directory",
+      "secure-channel"
+    ],
+    "notes": "預期看到 Trust Verification Status = 0 NERR_Success。若失敗（例 0xc0000022）通常是電腦帳號密碼不同步，需 nltest /sc_reset:<網域> 重設或重新加入網域。"
+  },
+  {
+    "id": "windows-sfc-scanfile",
+    "category": "Windows Repair",
+    "command": "sfc /scanfile=<C:\\Path\\to\\file>",
+    "description": "驗證並修復指定的單一系統檔案完整性。",
+    "tags": [
+      "windows",
+      "sfc",
+      "scan",
+      "repair",
+      "system-file",
+      "verify"
+    ],
+    "notes": "比 sfc /scannow 快，只檢查特定檔案。WinRE 救援後修改過 utilman.exe / sethc.exe 等系統元件，必跑此指令還原原始版本並驗證簽章。例：sfc /scanfile=C:\\Windows\\System32\\utilman.exe。"
+  },
+  {
+    "id": "windows-wpeutil-reboot",
+    "category": "Windows Repair",
+    "command": "wpeutil reboot",
+    "description": "從 WinPE / WinRE 環境立即重開機。",
+    "tags": [
+      "windows",
+      "winpe",
+      "winre",
+      "reboot",
+      "recovery"
+    ],
+    "notes": "WinRE 命令提示字元中使用，比 shutdown /r 更快、不會卡 reboot 訊息。離開 WinRE 完成救援作業必用。"
+  },
+  {
+    "id": "windows-winre-utilman-replace",
+    "category": "Windows Repair",
+    "command": "ren utilman.exe utilman.exe.bak && copy cmd.exe utilman.exe",
+    "description": "WinRE 救援技巧：將輕鬆存取按鈕替換為 cmd，登入畫面點擊可開 SYSTEM 權限的命令提示字元。",
+    "tags": [
+      "windows",
+      "winre",
+      "recovery",
+      "utilman",
+      "cmd",
+      "password-reset",
+      "system-account"
+    ],
+    "notes": "標準 IT 救援流程：本機 admin 密碼遺失時用此重置。執行前 cd /d <系統碟>:\\Windows\\System32（注意 WinRE 的代號通常 ≠ 正常開機代號，用 dir 驗證 utilman.exe 存在）。優先用 utilman.exe 不用 sethc.exe（相黏鍵在企業 image 常被關閉，觸發失敗）。完成密碼重設後，務必還原 utilman（del utilman.exe & ren utilman.exe.bak utilman.exe）並跑 sfc /scanfile 驗證簽章。"
+  },
+  {
+    "id": "powershell-get-volume",
+    "category": "PowerShell",
+    "command": "Get-Volume",
+    "description": "列出系統上所有磁區，含磁碟代號、檔案系統、大小、剩餘空間。",
+    "tags": [
+      "powershell",
+      "volume",
+      "disk",
+      "storage",
+      "winre"
+    ],
+    "notes": "比 diskpart 互動式 list volume 快、可直接 pipeline 處理。WinRE 環境如有 PowerShell 也可用，免進 diskpart。加 -DriveLetter C 篩特定磁碟。"
   }
 ]
