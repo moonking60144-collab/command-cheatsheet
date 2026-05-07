@@ -4765,7 +4765,7 @@
       "account",
       "local"
     ],
-    "notes": "顯示本機 SAM 中所有帳號（含停用、隱藏帳號）。網域帳號不會列出。WinRE 觸發 SYSTEM cmd 後第一步常用此確認本機帳號名（同事誤以為 admin 但實際是 User 的情境）。"
+    "notes": "顯示本機 SAM 中所有帳號（含停用、隱藏帳號）。網域帳號不會列出。WinRE 觸發 SYSTEM cmd 後第一步常用此確認本機帳號名，避免重設到不存在的帳號。"
   },
   {
     "id": "windows-net-user-show",
@@ -4942,7 +4942,7 @@
   {
     "id": "windows-sfc-scanfile",
     "category": "Windows Repair",
-    "command": "sfc /scanfile=<C:\\Path\\to\\file>",
+    "command": "sfc /scanfile=<完整檔案路徑>",
     "description": "驗證並修復指定的單一系統檔案完整性。",
     "tags": [
       "windows",
@@ -4971,7 +4971,7 @@
   {
     "id": "windows-winre-utilman-replace",
     "category": "Windows Repair",
-    "command": "ren utilman.exe utilman.exe.bak && copy cmd.exe utilman.exe",
+    "command": "cd /d <系統碟>:\\Windows\\System32 && ren utilman.exe utilman.exe.bak && copy cmd.exe utilman.exe",
     "description": "WinRE 救援技巧：將輕鬆存取按鈕替換為 cmd，登入畫面點擊可開 SYSTEM 權限的命令提示字元。",
     "tags": [
       "windows",
@@ -4982,7 +4982,7 @@
       "password-reset",
       "system-account"
     ],
-    "notes": "標準 IT 救援流程：本機 admin 密碼遺失時用此重置。執行前 cd /d <系統碟>:\\Windows\\System32（注意 WinRE 的代號通常 ≠ 正常開機代號，用 dir 驗證 utilman.exe 存在）。優先用 utilman.exe 不用 sethc.exe（相黏鍵在企業 image 常被關閉，觸發失敗）。完成密碼重設後，務必還原 utilman（del utilman.exe & ren utilman.exe.bak utilman.exe）並跑 sfc /scanfile 驗證簽章。"
+    "notes": "標準 IT 救援流程：本機 admin 密碼遺失時用此重置。WinRE 的磁碟代號通常 ≠ 正常開機代號，先用 dir <碟>:\\Windows\\System32\\utilman.exe 驗證系統碟。優先用 utilman.exe 不用 sethc.exe（相黏鍵在企業 image 常被關閉，觸發失敗）。完成密碼重設後，務必還原 utilman（del utilman.exe & ren utilman.exe.bak utilman.exe）並跑 sfc /scanfile 驗證簽章。"
   },
   {
     "id": "powershell-get-volume",
