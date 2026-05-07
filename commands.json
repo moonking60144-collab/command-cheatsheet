@@ -4982,7 +4982,7 @@
       "password-reset",
       "system-account"
     ],
-    "notes": "標準 IT 救援流程：本機 admin 密碼遺失時用此重置。WinRE 的磁碟代號通常 ≠ 正常開機代號，先用 dir <碟>:\\Windows\\System32\\utilman.exe 驗證系統碟。優先用 utilman.exe 不用 sethc.exe（相黏鍵在企業 image 常被關閉，觸發失敗）。完成密碼重設後，務必還原 utilman（del utilman.exe & ren utilman.exe.bak utilman.exe）並跑 sfc /scanfile 驗證簽章。"
+    "notes": "標準 IT 救援流程：本機 admin 密碼遺失時用此重置。WinRE 的磁碟代號通常 ≠ 正常開機代號，先用 dir <碟>:\\Windows\\System32\\utilman.exe 驗證系統碟。優先用 utilman.exe 不用 sethc.exe（相黏鍵在企業 image 常被關閉，觸發失敗）。完成密碼重設後，務必還原 utilman（cd /d <系統碟>:\\Windows\\System32 && del utilman.exe && ren utilman.exe.bak utilman.exe）並跑 sfc /scanfile 驗證簽章。"
   },
   {
     "id": "powershell-get-volume",
