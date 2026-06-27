@@ -64,7 +64,7 @@ export function renderPlaceholderFields(placeholders, currentValues = {}, sugges
           <label class="placeholder-field">
             <span>${escapeHtml(token.slice(1, -1))}</span>
             <input
-              class="secure-input placeholder-input"
+              class="placeholder-input"
               type="text"
               data-placeholder-token="${escapeAttribute(token)}"
               placeholder="貼上實際值"
@@ -193,21 +193,6 @@ export function handleScopedInputEscape(activeElement) {
       const card = placeholderInput.closest(".command-card");
       syncCardPlaceholderValues(card);
       updateCommandPreview(card);
-      announce("已清除目前欄位。");
-    }
-
-    return true;
-  }
-
-  const secureInput = activeElement instanceof Element
-    && activeElement.matches(".secure-input")
-    && activeElement.closest("[data-secure-form]")
-    ? activeElement
-    : null;
-
-  if (secureInput) {
-    if (secureInput.value) {
-      secureInput.value = "";
       announce("已清除目前欄位。");
     }
 

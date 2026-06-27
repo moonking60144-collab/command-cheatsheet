@@ -13,25 +13,20 @@ const ASSETS = [
   "./src/picker.js",
   "./src/pins.js",
   "./src/placeholders.js",
-  "./src/secure.js",
   "./src/workers.js",
   "./src/chrome.js",
   "./src/keyboard.js",
   "./src/search-core.js",
   "./src/search.worker.js",
-  "./src/decrypt.worker.js",
   "./commands.json",
   "./manifest.json",
   "./assets/icons/icon-192.svg",
   "./assets/icons/icon-512.svg"
 ];
 
-// crypto-js and highlight.* are intentionally NOT precached — app.js
-// lazy-loads them after first paint / on secure panel open, and the
-// runtime fetch handler below caches them on first request.
-const OPTIONAL_ASSETS = [
-  "./secure-categories.json"
-];
+// highlight.* is intentionally NOT precached — app.js lazy-loads it
+// after first paint, and the runtime fetch handler below caches it on
+// first request.
 
 self.addEventListener("install", (event) => {
   event.waitUntil((async () => {
@@ -40,18 +35,6 @@ self.addEventListener("install", (event) => {
 
     // Required assets — all must succeed
     await cache.addAll(ASSETS.map(toRequest));
-
-    // Optional assets — skip silently on 404
-    await Promise.allSettled(
-      OPTIONAL_ASSETS.map(async (path) => {
-        try {
-          const response = await fetch(toRequest(path));
-          if (response.ok) {
-            await cache.put(toRequest(path), response);
-          }
-        } catch (_) { /* optional, ignore */ }
-      })
-    );
 
     await self.skipWaiting();
   })());
@@ -88,7 +71,7 @@ async function handleRequest(request) {
   // the old cache), so serve cache-first with stale-while-revalidate:
   // instant response from cache, background fetch to freshen for next
   // visit. This is what gives repeat visits a truly zero-wait lazy-load
-  // of highlight.js / crypto-js.
+  // of highlight.js.
   if (url.pathname.includes("/assets/")) {
     const cached = await cache.match(request, { ignoreSearch: true });
 

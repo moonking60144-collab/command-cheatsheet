@@ -60,36 +60,22 @@ test.describe("UX exploratory", () => {
   });
 
   test("switching variant keeps placeholder values in state", async ({ page }) => {
-    const variantCard = page.locator(".command-card.has-variants").first();
-
-    if ((await variantCard.count()) === 0) {
-      test.skip();
-      return;
-    }
-
-    const placeholderExists = (await variantCard.locator(".placeholder-input").count()) > 0;
-    if (!placeholderExists) {
-      test.skip();
-      return;
-    }
+    await page.locator("#search-input").fill("git switch");
+    const variantCard = page.locator('.command-card[data-command-id="git-switch"]');
+    await expect(variantCard).toBeVisible();
+    await expect(variantCard.locator(".placeholder-input").first()).toBeVisible();
 
     await variantCard.locator(".placeholder-input").first().fill("testval");
 
     const tabs = variantCard.locator(".variant-tab");
-    const tabCount = await tabs.count();
-    if (tabCount < 2) {
-      test.skip();
-      return;
-    }
+    await expect(tabs).toHaveCount(2);
 
     await tabs.nth(1).click();
     await tabs.nth(0).click();
 
     // Back on first variant — placeholder value should still be there
     const inputs = variantCard.locator(".placeholder-input");
-    if ((await inputs.count()) > 0) {
-      await expect(inputs.first()).toHaveValue("testval");
-    }
+    await expect(inputs.first()).toHaveValue("testval");
   });
 
   test("category picker: search-within filters list, ArrowDown focuses first item", async ({ page }) => {

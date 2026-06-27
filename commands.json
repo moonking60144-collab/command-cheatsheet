@@ -2310,6 +2310,21 @@
     "notes": "高風險，未儲存資料會直接丟失。"
   },
   {
+    "id": "powershell-stop-code-codex",
+    "category": "PowerShell",
+    "command": "Get-Process Code,codex,Codex -ErrorAction SilentlyContinue | Stop-Process -Force",
+    "description": "強制關閉 VS Code 與 Codex 相關程序。",
+    "tags": [
+      "powershell",
+      "process",
+      "stop",
+      "vscode",
+      "codex",
+      "reset"
+    ],
+    "notes": "`-ErrorAction SilentlyContinue` 會忽略找不到程序的錯誤；`-Force` 會直接終止程序，未儲存內容會消失。"
+  },
+  {
     "id": "powershell-start-service",
     "category": "PowerShell",
     "command": "Start-Service <服務名稱>",

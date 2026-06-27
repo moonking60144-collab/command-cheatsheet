@@ -21,31 +21,33 @@ import {
   closeAllCategoryPickers,
   getCategoryPickerPairs
 } from "./picker.js";
-import { syncWorkerData, getSearchWorker, syncFilterBothLists } from "./workers.js";
-import { getUnlockedCommands } from "./secure.js";
+import { syncWorkerData, getSearchWorker, syncFilterCommands } from "./workers.js";
 
 let searchDebounceId = 0;
 let workerSeq = 0;
 let lastFilterAnimated = false;
+let lastFilterScrollY = null;
+const SCROLL_RESTORE_DELAYS_MS = [120, 360];
 // Whether the last/in-flight render should tag cards with
 // .is-fresh-batch. Paging re-renders pass fresh=false so visible cards
 // don't replay card-in on every page click.
 let lastFilterFresh = true;
 let firstFilterDone = false;
 
-export function applyFilters({ fresh = true } = {}) {
-  _runFilters(false, fresh);
+export function applyFilters({ fresh = true, preserveScroll = false } = {}) {
+  _runFilters(false, fresh, preserveScroll);
 }
 
-export function applyFiltersAnimated({ fresh = true } = {}) {
-  _runFilters(true, fresh);
+export function applyFiltersAnimated({ fresh = true, preserveScroll = false } = {}) {
+  _runFilters(true, fresh, preserveScroll);
 }
 
-function _runFilters(animated, fresh) {
+function _runFilters(animated, fresh, preserveScroll) {
   const tokens = tokenize(state.query);
   const seq = ++workerSeq;
   lastFilterAnimated = animated;
   lastFilterFresh = fresh;
+  lastFilterScrollY = preserveScroll ? window.scrollY : null;
 
   // First call: run filter on the main thread instead of waiting on the
   // worker. 196 commands filter in a few ms and we skip the worker-script
@@ -56,8 +58,7 @@ function _runFilters(animated, fresh) {
     firstFilterDone = true;
     const pinnedSet = state.pinned;
     const filteredPublic = filterCommands(state.publicCommands, tokens, state.activeCategory, pinnedSet);
-    const filteredProtected = filterCommands(getUnlockedCommands(), tokens, state.activeCategory, pinnedSet);
-    _renderFilterResults(filteredPublic, filteredProtected, animated, fresh);
+    _renderFilterResults(filteredPublic, animated, fresh, lastFilterScrollY);
     return;
   }
 
@@ -72,17 +73,24 @@ function _runFilters(animated, fresh) {
       pinned: Array.from(state.pinned)
     });
   } else {
-    const { filteredPublic, filteredProtected } = syncFilterBothLists(tokens, state.activeCategory, state.pinned);
-    _renderFilterResults(filteredPublic, filteredProtected, animated, fresh);
+    const filteredPublic = syncFilterCommands(tokens, state.activeCategory, state.pinned);
+    _renderFilterResults(filteredPublic, animated, fresh, lastFilterScrollY);
   }
 }
 
-function _renderFilterResults(filteredPublic, filteredProtected, animated, fresh) {
-  const totalResults = filteredPublic.length + filteredProtected.length;
+function _renderFilterResults(filteredPublic, animated, fresh, scrollY) {
+  const totalResults = filteredPublic.length;
   updateSummary(totalResults);
-  const doRender = () => renderResultSections(filteredPublic, filteredProtected, totalResults, fresh);
+  const doRender = () => {
+    renderResultSections(filteredPublic, totalResults, fresh);
+    if (scrollY !== null) {
+      const restore = () => window.scrollTo(0, scrollY);
+      requestAnimationFrame(restore);
+      SCROLL_RESTORE_DELAYS_MS.forEach((delay) => window.setTimeout(restore, delay));
+    }
+  };
 
-  if (animated && document.startViewTransition) {
+  if (animated && scrollY === null && document.startViewTransition) {
     document.startViewTransition(doRender);
   } else {
     doRender();
@@ -90,19 +98,19 @@ function _renderFilterResults(filteredPublic, filteredProtected, animated, fresh
 }
 
 export function handleWorkerResult(event) {
-  const { seq, filteredPublic, filteredProtected } = event.data;
+  const { seq, filteredPublic } = event.data;
 
   if (seq !== workerSeq) {
     return;
   }
 
-  _renderFilterResults(filteredPublic, filteredProtected, lastFilterAnimated, lastFilterFresh);
+  _renderFilterResults(filteredPublic, lastFilterAnimated, lastFilterFresh, lastFilterScrollY);
 }
 
 export function handleWorkerFallback() {
   const tokens = tokenize(state.query);
-  const { filteredPublic, filteredProtected } = syncFilterBothLists(tokens, state.activeCategory, state.pinned);
-  _renderFilterResults(filteredPublic, filteredProtected, lastFilterAnimated, lastFilterFresh);
+  const filteredPublic = syncFilterCommands(tokens, state.activeCategory, state.pinned);
+  _renderFilterResults(filteredPublic, lastFilterAnimated, lastFilterFresh, lastFilterScrollY);
 }
 
 export function updateQuery(value, sourceInput = null) {
@@ -126,14 +134,14 @@ export function syncSearchInputs(sourceInput = null) {
   });
 }
 
-export function clearFilters() {
+export function clearFilters({ preserveScroll = false } = {}) {
   state.query = "";
   state.activeCategory = "all";
   resetPagination();
   syncSearchInputs();
   saveState();
   updateFilterPillActive();
-  applyFiltersAnimated();
+  applyFiltersAnimated({ preserveScroll });
   closeAllCategoryPickers();
 }
 
@@ -332,4 +340,3 @@ export function updateFilterBarOverflow() {
   wrap.classList.toggle("has-left-overflow", hasLeft);
   wrap.classList.toggle("has-right-overflow", hasRight);
 }
-

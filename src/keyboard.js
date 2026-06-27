@@ -18,7 +18,7 @@ function shouldFocusMainSearchOnEnter(target) {
     return false;
   }
 
-  if (target.closest(".command-card, .placeholder-fields, .secure-form, .category-picker, .help-wrap")) {
+  if (target.closest(".command-card, .placeholder-fields, .category-picker, .help-wrap")) {
     return false;
   }
 
@@ -70,7 +70,7 @@ export function setupGlobalKeyboard({ closeShortcutsTooltip }) {
       }
 
       closeShortcutsTooltip?.();
-      clearFilters();
+      clearFilters({ preserveScroll: true });
       focusActiveSearch({ select: false });
     }
   });

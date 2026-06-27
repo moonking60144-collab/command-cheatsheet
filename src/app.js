@@ -15,16 +15,8 @@ import {
   getCommandCounts,
   updateMetrics,
   updateViewModeUI,
-  resetPagination,
   getUrlState
 } from "./state.js";
-import {
-  fetchProtectedCategories,
-  renderProtectedCategories,
-  unlockProtectedCategory,
-  getUnlockedCommands,
-  preloadDecryptWorker
-} from "./secure.js";
 import {
   registerWorkerHandlers,
   getSearchWorker,
@@ -101,15 +93,9 @@ async function init() {
   getSearchWorker();
 
   try {
-    const [publicPayload, protectedPayload] = await Promise.all([
-      fetchJson(DATA_URL, "公開指令資料"),
-      fetchProtectedCategories()
-    ]);
-
+    const publicPayload = await fetchJson(DATA_URL, "公開指令資料");
     state.publicCommands = normalizeCommands(publicPayload);
-    state.protectedCategories = protectedPayload;
 
-    renderProtectedCategories();
     rebuildCommandState();
     registerServiceWorker();
     scheduleHighlightLoad(upgradeAllCodeBlocks);
@@ -120,8 +106,7 @@ async function init() {
 }
 
 function rebuildCommandState() {
-  const unlocked = getUnlockedCommands();
-  state.commands = [...state.publicCommands, ...unlocked];
+  state.commands = [...state.publicCommands];
   prunePinnedIds();
   state.categories = getCategories(state.commands);
   state.commandCounts = getCommandCounts();
@@ -253,7 +238,7 @@ function bindEvents() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   });
 
-  [ui.results, ui.protectedResults].forEach((container) => {
+  [ui.results].forEach((container) => {
     container?.addEventListener("click", async (event) => {
       const categoryButton = event.target.closest("[data-category]");
 
@@ -393,7 +378,7 @@ function bindEvents() {
     });
   });
 
-  [ui.publicPagination, ui.protectedPagination].forEach((container) => {
+  [ui.publicPagination].forEach((container) => {
     container?.addEventListener("click", (event) => {
       const button = event.target.closest("[data-page-target][data-page-number]");
 
@@ -408,33 +393,15 @@ function bindEvents() {
         return;
       }
 
-      if (target === "public" || target === "protected") {
+      if (target === "public") {
         state.pagination[target] = nextPage;
         // Pagination renders the same filter result, sliced differently —
         // skip card-in animation so the user doesn't see 50 cards fade
         // in every time they click a page number.
         applyFiltersAnimated({ fresh: false });
-        (target === "public" ? ui.publicResultsSection : ui.protectedResultsSection)
-          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+        ui.publicResultsSection?.scrollIntoView({ behavior: "smooth", block: "start" });
       }
     });
-  });
-
-  ui.secureCategoryList?.addEventListener("submit", async (event) => {
-    const form = event.target.closest("[data-secure-form]");
-
-    if (!form) {
-      return;
-    }
-
-    event.preventDefault();
-    await unlockProtectedCategory(form, rebuildCommandState);
-  });
-
-  ui.securePanel?.addEventListener("toggle", () => {
-    if (ui.securePanel.open) {
-      preloadDecryptWorker();
-    }
   });
 
   const helpBtn = document.getElementById("help-btn");

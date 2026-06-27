@@ -7,7 +7,6 @@ export const PINNED_KEY = "command-atlas-pinned-v1";
 export const PLACEHOLDER_KEY = "command-atlas-placeholders-v1";
 export const PLACEHOLDER_SESSION_KEY = "command-atlas-placeholders-session-v1";
 export const DATA_URL = "./commands.json";
-export const SECURE_DATA_URL = "./secure-categories.json";
 export const SEARCH_DEBOUNCE_MS = 80;
 export const RESULTS_PER_PAGE = 50;
 export const FIRST_RENDER_BATCH = 20;
@@ -30,8 +29,6 @@ export const CATEGORY_GROUPS = [
 
 export const state = {
   publicCommands: [],
-  protectedCategories: [],
-  unlockedCommands: new Map(),
   placeholderValues: new Map(),
   activeVariants: new Map(),
   pinned: new Set(),
@@ -42,8 +39,7 @@ export const state = {
   activeCategory: "all",
   viewMode: "cards",
   pagination: {
-    public: 1,
-    protected: 1
+    public: 1
   }
 };
 
@@ -62,9 +58,6 @@ export const ui = {
   publicResultsSection: null,
   results: null,
   publicPagination: null,
-  protectedResultsSection: null,
-  protectedResults: null,
-  protectedPagination: null,
   resultSummary: null,
   commandCount: null,
   categoryCount: null,
@@ -72,8 +65,6 @@ export const ui = {
   viewToggleButton: null,
   clearButton: null,
   scrollTopButton: null,
-  securePanel: null,
-  secureCategoryList: null,
   announcer: null
 };
 
@@ -93,9 +84,6 @@ export function bindUiRefs() {
   ui.publicResultsSection = document.getElementById("public-results-section");
   ui.results = document.getElementById("results");
   ui.publicPagination = document.getElementById("public-pagination");
-  ui.protectedResultsSection = document.getElementById("protected-results-section");
-  ui.protectedResults = document.getElementById("protected-results");
-  ui.protectedPagination = document.getElementById("protected-pagination");
   ui.resultSummary = document.getElementById("result-summary");
   ui.commandCount = document.getElementById("command-count");
   ui.categoryCount = document.getElementById("category-count");
@@ -103,14 +91,11 @@ export function bindUiRefs() {
   ui.viewToggleButton = document.getElementById("view-toggle-btn");
   ui.clearButton = document.getElementById("clear-btn");
   ui.scrollTopButton = document.getElementById("scroll-top-btn");
-  ui.securePanel = document.getElementById("secure-panel");
-  ui.secureCategoryList = document.getElementById("secure-category-list");
   ui.announcer = document.getElementById("app-announcer");
 }
 
 export function resetPagination() {
   state.pagination.public = 1;
-  state.pagination.protected = 1;
 }
 
 export function getCategories(commands) {

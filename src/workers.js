@@ -1,10 +1,7 @@
-// Search worker lifecycle. Decrypt worker lives in secure.js — this
-// module is scoped to the on-main-thread search worker used by filter
-// application.
+// Search worker lifecycle for command filtering.
 
 import { filterCommands } from "./search-core.js";
 import { state } from "./state.js";
-import { getUnlockedCommands } from "./secure.js";
 
 let searchWorker = null;
 let searchWorkerDisabled = false;
@@ -63,15 +60,12 @@ export function syncWorkerData() {
 
   worker.postMessage({
     type: "init",
-    publicCommands: state.publicCommands,
-    unlockedCommands: getUnlockedCommands()
+    publicCommands: state.publicCommands
   });
 }
 
 // Synchronous fallback used when the worker is not available (or after
 // it has failed). Runs filterCommands on the main thread.
-export function syncFilterBothLists(tokens, activeCategory, pinnedSet) {
-  const filteredPublic = filterCommands(state.publicCommands, tokens, activeCategory, pinnedSet);
-  const filteredProtected = filterCommands(getUnlockedCommands(), tokens, activeCategory, pinnedSet);
-  return { filteredPublic, filteredProtected };
+export function syncFilterCommands(tokens, activeCategory, pinnedSet) {
+  return filterCommands(state.publicCommands, tokens, activeCategory, pinnedSet);
 }

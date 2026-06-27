@@ -1,7 +1,6 @@
-// Command-card rendering: the right-hand result grid (public + protected),
-// pagination, per-card DOM assembly. Also owns the "render generation"
-// counter that lets deferred rAF chunks bail out when a newer render
-// supersedes them.
+// Command-card rendering: result grid, pagination, per-card DOM assembly.
+// Also owns the "render generation" counter that lets deferred rAF chunks
+// bail out when a newer render supersedes them.
 
 import {
   escapeHtml,
@@ -40,27 +39,18 @@ const renderGenerations = new WeakMap();
 // something, switched category, toggled a pin that's visible); cards
 // should animate in. fresh=false is a paging re-render — same filter,
 // different slice — where replaying card-in on every card looks jumpy.
-export function renderResultSections(publicItems, protectedItems, totalResults, fresh = true) {
+export function renderResultSections(publicItems, totalResults, fresh = true) {
   const hasPublicItems = publicItems.length > 0;
-  const hasProtectedItems = protectedItems.length > 0;
   const publicPage = getValidPage("public", publicItems.length);
-  const protectedPage = getValidPage("protected", protectedItems.length);
   const visiblePublicItems = paginateItems(publicItems, publicPage);
-  const visibleProtectedItems = paginateItems(protectedItems, protectedPage);
 
   if (ui.publicResultsSection) {
     ui.publicResultsSection.hidden = !hasPublicItems && totalResults > 0;
   }
 
-  if (ui.protectedResultsSection) {
-    ui.protectedResultsSection.hidden = !hasProtectedItems;
-  }
-
   if (!totalResults) {
     renderResults(ui.results, [], fresh);
-    ui.protectedResults?.replaceChildren();
     renderPagination(ui.publicPagination, "public", 0, 1);
-    renderPagination(ui.protectedPagination, "protected", 0, 1);
     return;
   }
 
@@ -70,14 +60,7 @@ export function renderResultSections(publicItems, protectedItems, totalResults, 
     ui.results.replaceChildren();
   }
 
-  if (hasProtectedItems && ui.protectedResults) {
-    renderResults(ui.protectedResults, visibleProtectedItems, fresh);
-  } else {
-    ui.protectedResults?.replaceChildren();
-  }
-
   renderPagination(ui.publicPagination, "public", publicItems.length, publicPage);
-  renderPagination(ui.protectedPagination, "protected", protectedItems.length, protectedPage);
 }
 
 function getPageCount(totalItems) {
@@ -330,17 +313,9 @@ export function renderError(error) {
     ui.publicResultsSection.hidden = false;
   }
 
-  if (ui.protectedResultsSection) {
-    ui.protectedResultsSection.hidden = true;
-  }
-
   ui.publicPagination?.replaceChildren();
-  ui.protectedPagination?.replaceChildren();
   if (ui.publicPagination) {
     ui.publicPagination.hidden = true;
-  }
-  if (ui.protectedPagination) {
-    ui.protectedPagination.hidden = true;
   }
 }
 
