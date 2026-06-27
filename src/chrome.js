@@ -3,32 +3,28 @@
 
 import { ui, announce } from "./state.js";
 
-// Single IntersectionObserver drives both the scroll-to-top button and
-// the sticky search bar: the moment the hero is no longer intersecting
-// the top of the viewport (offset by 72px to trigger slightly before the
-// hero's bottom edge crosses), both chrome elements come in together,
-// and they leave together when the user scrolls back.
 export function setupUtilityChromeObserver() {
-  if (!ui.hero || typeof IntersectionObserver === "undefined") {
+  if (!ui.hero) {
     return;
   }
 
-  const observer = new IntersectionObserver(
-    ([entry]) => {
-      const showChrome = !entry.isIntersecting;
-      if (ui.scrollTopButton) {
-        ui.scrollTopButton.classList.toggle("is-visible", showChrome);
-        ui.scrollTopButton.setAttribute("aria-hidden", String(!showChrome));
-      }
-      if (ui.stickySearchBar) {
-        ui.stickySearchBar.classList.toggle("is-visible", showChrome);
-        ui.stickySearchBar.setAttribute("aria-hidden", String(!showChrome));
-      }
-    },
-    { rootMargin: "-72px 0px 0px 0px", threshold: 0 }
-  );
+  const updateChromeVisibility = () => {
+    const showChrome = window.scrollY > ui.hero.offsetHeight + 24;
 
-  observer.observe(ui.hero);
+    if (ui.scrollTopButton) {
+      ui.scrollTopButton.classList.toggle("is-visible", showChrome);
+      ui.scrollTopButton.setAttribute("aria-hidden", String(!showChrome));
+    }
+
+    if (ui.stickySearchBar) {
+      ui.stickySearchBar.classList.toggle("is-visible", showChrome);
+      ui.stickySearchBar.setAttribute("aria-hidden", String(!showChrome));
+    }
+  };
+
+  updateChromeVisibility();
+  window.addEventListener("scroll", updateChromeVisibility, { passive: true });
+  window.addEventListener("resize", updateChromeVisibility, { passive: true });
 }
 
 export async function copyToClipboard(text, button, card = null) {

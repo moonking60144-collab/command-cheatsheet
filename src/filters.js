@@ -27,7 +27,7 @@ let searchDebounceId = 0;
 let workerSeq = 0;
 let lastFilterAnimated = false;
 let lastFilterScrollY = null;
-const SCROLL_RESTORE_DELAYS_MS = [120, 360];
+const SCROLL_RESTORE_DELAYS_MS = [80, 180, 320, 460, 560, 720];
 // Whether the last/in-flight render should tag cards with
 // .is-fresh-batch. Paging re-renders pass fresh=false so visible cards
 // don't replay card-in on every page click.
