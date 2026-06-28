@@ -14,14 +14,12 @@ test.describe("Command Atlas smoke", () => {
 
   test("typing in search filters the result list", async ({ page }) => {
     const search = page.locator("#search-input");
-    const beforeCount = await page.locator(".command-card").count();
 
-    await search.fill("git");
-    await expect(page.locator("#result-summary")).not.toHaveText(/正在載入/);
+    await search.fill("docker ps");
+    await expect(page.locator("#result-summary")).toContainText("共找到 2 筆結果");
 
-    const afterCount = await page.locator(".command-card").count();
-    expect(afterCount).toBeGreaterThan(0);
-    expect(afterCount).toBeLessThanOrEqual(beforeCount);
+    await expect(page.locator(".command-card")).toHaveCount(2);
+    await expect(page.locator(".command-card").first()).toContainText("docker ps");
   });
 
   test("Esc clears the search and re-focuses the active search input", async ({ page }) => {

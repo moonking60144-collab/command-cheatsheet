@@ -35,7 +35,7 @@ export function extractPlaceholders(command) {
   return tokens;
 }
 
-export function renderPlaceholderFields(placeholders, currentValues = {}, suggestions = {}) {
+export function renderPlaceholderFields(placeholders, currentValues = {}, suggestions = {}, inferredValues = {}) {
   if (!placeholders.length) {
     return "";
   }
@@ -60,13 +60,18 @@ export function renderPlaceholderFields(placeholders, currentValues = {}, sugges
             </div>
           `
           : "";
+        const isInferred = inferredValues[token] && inferredValues[token] === currentValues[token];
         return `
-          <label class="placeholder-field">
-            <span>${escapeHtml(token.slice(1, -1))}</span>
+          <label class="placeholder-field${isInferred ? " is-inferred" : ""}">
+            <span class="placeholder-label-row">
+              <span>${escapeHtml(token.slice(1, -1))}</span>
+              ${isInferred ? '<span class="placeholder-source">搜尋帶入</span>' : ""}
+            </span>
             <input
               class="placeholder-input"
               type="text"
               data-placeholder-token="${escapeAttribute(token)}"
+              ${isInferred ? 'data-placeholder-inferred="true"' : ""}
               placeholder="貼上實際值"
               value="${escapeAttribute(currentValues[token] ?? "")}"
               autocomplete="off"
@@ -85,6 +90,36 @@ export function resolveCommandTemplate(template, values) {
     const nextValue = values[token];
     return typeof nextValue === "string" && nextValue !== "" ? nextValue : token;
   });
+}
+
+export function inferPlaceholderValuesFromQuery(template, query) {
+  const placeholders = extractPlaceholders(template);
+
+  if (!placeholders.length || !query.trim()) {
+    return {};
+  }
+
+  const parts = String(template).split(/(<[^>]+>)/g);
+  const pattern = parts
+    .map((part) => {
+      if (/^<[^>]+>$/.test(part)) {
+        return "(.+?)";
+      }
+
+      return escapeRegExp(part).replace(/\s+/g, "\\s+");
+    })
+    .join("");
+  const match = query.trim().match(new RegExp(`^\\s*${pattern}\\s*$`, "i"));
+
+  if (!match) {
+    return {};
+  }
+
+  return Object.fromEntries(
+    placeholders
+      .map((token, index) => [token, match[index + 1]?.trim() ?? ""])
+      .filter(([, value]) => value)
+  );
 }
 
 export function getPlaceholderValues(card) {
@@ -106,8 +141,22 @@ export function syncCardPlaceholderValues(card) {
     return;
   }
 
-  state.placeholderValues.set(card.dataset.commandId, getPlaceholderValues(card));
+  state.placeholderValues.set(card.dataset.commandId, {
+    ...(state.placeholderValues.get(card.dataset.commandId) ?? {}),
+    ...getPlaceholderValues(card)
+  });
   savePlaceholders();
+}
+
+export function clearPlaceholderInference(input) {
+  if (!input?.hasAttribute?.("data-placeholder-inferred")) {
+    return;
+  }
+
+  input.removeAttribute("data-placeholder-inferred");
+  const field = input.closest(".placeholder-field");
+  field?.classList.remove("is-inferred");
+  field?.querySelector(".placeholder-source")?.remove();
 }
 
 export function updateCommandPreview(card) {
@@ -217,6 +266,10 @@ export function getActiveVariantIndex(item) {
   return 0;
 }
 
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 export function switchCardVariant(card, nextIndex) {
   const commandId = card.dataset.commandId;
   const item = commandId
@@ -233,6 +286,7 @@ export function switchCardVariant(card, nextIndex) {
     return;
   }
 
+  syncCardPlaceholderValues(card);
   state.activeVariants.set(item.id, clampedIndex);
 
   const activeCommand = item.variants[clampedIndex].command;
@@ -251,8 +305,12 @@ export function switchCardVariant(card, nextIndex) {
   const placeholderSlot = card.querySelector(".placeholder-slot");
   if (placeholderSlot) {
     const placeholders = extractPlaceholders(activeCommand);
-    const placeholderValues = state.placeholderValues.get(item.id) ?? {};
-    placeholderSlot.innerHTML = renderPlaceholderFields(placeholders, placeholderValues, item.placeholderSuggestions);
+    const inferredValues = inferPlaceholderValuesFromQuery(activeCommand, state.query);
+    const placeholderValues = {
+      ...(state.placeholderValues.get(item.id) ?? {}),
+      ...inferredValues
+    };
+    placeholderSlot.innerHTML = renderPlaceholderFields(placeholders, placeholderValues, item.placeholderSuggestions, inferredValues);
   }
 
   updateCommandPreview(card);

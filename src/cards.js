@@ -20,14 +20,17 @@ import {
   ui,
   RESULTS_PER_PAGE,
   FIRST_RENDER_BATCH,
-  DEFERRED_RENDER_CHUNK
+  DEFERRED_RENDER_CHUNK,
+  syncUrlState
 } from "./state.js";
 import {
   extractPlaceholders,
   renderPlaceholderFields,
   getActiveVariantIndex,
-  resolveCommandTemplate
+  resolveCommandTemplate,
+  inferPlaceholderValuesFromQuery
 } from "./placeholders.js";
+import { normalizeCommandShapeToken, parseSearchTokenPlan } from "./search-core.js";
 
 // Per-container render generation. Each renderResults call bumps the
 // counter for its container; any pending rAF chunk from a previous
@@ -51,16 +54,18 @@ export function renderResultSections(publicItems, totalResults, fresh = true) {
   if (!totalResults) {
     renderResults(ui.results, [], fresh);
     renderPagination(ui.publicPagination, "public", 0, 1);
+    renderPageJumps("public", 0, 1);
     return;
   }
 
   if (hasPublicItems) {
-    renderResults(ui.results, visiblePublicItems, fresh);
+    renderResults(ui.results, visiblePublicItems, fresh, getPageStartIndex(publicPage));
   } else {
     ui.results.replaceChildren();
   }
 
   renderPagination(ui.publicPagination, "public", publicItems.length, publicPage);
+  renderPageJumps("public", publicItems.length, publicPage);
 }
 
 function getPageCount(totalItems) {
@@ -69,14 +74,24 @@ function getPageCount(totalItems) {
 
 function getValidPage(target, totalItems) {
   const totalPages = getPageCount(totalItems);
+  const currentPage = state.pagination[target] ?? 1;
   const nextPage = Math.min(Math.max(state.pagination[target] ?? 1, 1), totalPages);
   state.pagination[target] = nextPage;
+
+  if (nextPage !== currentPage) {
+    syncUrlState();
+  }
+
   return nextPage;
 }
 
 function paginateItems(items, page) {
-  const startIndex = (page - 1) * RESULTS_PER_PAGE;
+  const startIndex = getPageStartIndex(page);
   return items.slice(startIndex, startIndex + RESULTS_PER_PAGE);
+}
+
+function getPageStartIndex(page) {
+  return (page - 1) * RESULTS_PER_PAGE;
 }
 
 function renderPagination(container, target, totalItems, currentPage) {
@@ -135,6 +150,50 @@ function renderPagination(container, target, totalItems, currentPage) {
   `;
 }
 
+function renderPageJump(container, target, totalItems, currentPage) {
+  if (!container) {
+    return;
+  }
+
+  const totalPages = getPageCount(totalItems);
+
+  if (totalItems <= RESULTS_PER_PAGE) {
+    container.hidden = true;
+    container.replaceChildren();
+    return;
+  }
+
+  const startItem = (currentPage - 1) * RESULTS_PER_PAGE + 1;
+  const endItem = Math.min(totalItems, currentPage * RESULTS_PER_PAGE);
+
+  container.hidden = false;
+  container.innerHTML = `
+    <button
+      class="page-jump-button page-jump-prev"
+      type="button"
+      data-page-target="${target}"
+      data-page-number="${Math.max(1, currentPage - 1)}"
+      aria-label="上一頁"
+      ${currentPage <= 1 ? "disabled" : ""}
+    >‹</button>
+    <span class="page-jump-current" aria-label="目前顯示第 ${startItem} 到 ${endItem} 筆，共 ${totalItems} 筆，第 ${currentPage} 頁，共 ${totalPages} 頁">${startItem}-${endItem} / ${totalItems}</span>
+    <button
+      class="page-jump-button page-jump-next"
+      type="button"
+      data-page-target="${target}"
+      data-page-number="${Math.min(totalPages, currentPage + 1)}"
+      aria-label="下一頁"
+      ${currentPage >= totalPages ? "disabled" : ""}
+    >›</button>
+  `;
+}
+
+function renderPageJumps(target, totalItems, currentPage) {
+  [ui.pageJump, ui.stickyPageJump].forEach((container) => {
+    renderPageJump(container, target, totalItems, currentPage);
+  });
+}
+
 function getVisiblePageNumbers(currentPage, totalPages) {
   if (totalPages <= 5) {
     return Array.from({ length: totalPages }, (_, index) => index + 1);
@@ -164,17 +223,32 @@ function getVisiblePageNumbers(currentPage, totalPages) {
   return result;
 }
 
-function renderResults(container, items, fresh = true) {
+function renderResults(container, items, fresh = true, rowOffset = 0) {
   if (!items.length) {
     const queryLabel = state.query.trim() || "*";
+    const hasQuery = state.query.trim().length > 0;
+    const hasCategory = state.activeCategory !== "all";
     const scope = state.activeCategory && state.activeCategory !== "all"
       ? `./${state.activeCategory}`
       : "./commands";
+    const clearQueryAction = hasQuery
+      ? '<button class="empty-action" type="button" data-empty-action="clear-query">只清搜尋</button>'
+      : "";
+    const clearCategoryAction = hasCategory
+      ? '<button class="empty-action" type="button" data-category="all">回到全部分類</button>'
+      : "";
+    const clearAllAction = hasQuery || hasCategory
+      ? '<button class="empty-action empty-action-primary" type="button" data-empty-action="clear-all">清除條件</button>'
+      : "";
+    const actionHtml = clearAllAction || clearQueryAction || clearCategoryAction
+      ? `<div class="empty-actions">${clearAllAction}${clearQueryAction}${clearCategoryAction}</div>`
+      : "";
     container.innerHTML = `
       <article class="empty-state" role="status">
         <p class="empty-state-prompt"><span class="empty-state-sigil">$</span>grep -r <span class="empty-state-token">"${escapeHtml(queryLabel)}"</span> ${escapeHtml(scope)}</p>
         <p class="empty-state-result">→ <span class="empty-state-zero">0 matches</span></p>
         <p class="empty-state-hint">試試更短的關鍵字，或先清除目前的分類篩選。</p>
+        ${actionHtml}
       </article>
     `;
     // Invalidate any pending deferred render for this container so a
@@ -186,10 +260,12 @@ function renderResults(container, items, fresh = true) {
   const myGen = (renderGenerations.get(container) ?? 0) + 1;
   renderGenerations.set(container, myGen);
 
-  const tokens = tokenize(state.query);
+  const rawTokens = tokenize(state.query);
+  const queryPlan = parseSearchTokenPlan(rawTokens);
+  const tokens = queryPlan.searchTokens;
   const highlightPattern = compileHighlightPattern(tokens);
   const commandHighlightPattern = compileTextHighlightPattern(tokens);
-  const ctx = { tokens, highlightPattern, commandHighlightPattern, fresh };
+  const ctx = { tokens, queryPlan, highlightPattern, commandHighlightPattern, fresh, rowOffset };
 
   // First batch: render above-the-fold cards synchronously so the user
   // sees content the moment the filter result lands.
@@ -230,7 +306,7 @@ function scheduleRemainingCards(container, items, startIdx, gen, ctx) {
 }
 
 function buildCommandCard(item, index, ctx) {
-  const { tokens, highlightPattern, commandHighlightPattern, fresh } = ctx;
+  const { tokens, queryPlan, highlightPattern, commandHighlightPattern, fresh, rowOffset } = ctx;
   // _fuzzy is attached by filterCommands when the item matched only via
   // fuzzyScore. Carrying the flag through avoids recomputing on the main
   // thread for the current page.
@@ -239,11 +315,19 @@ function buildCommandCard(item, index, ctx) {
   const activeVariantIndex = hasVariants ? getActiveVariantIndex(item) : 0;
   const activeCommand = hasVariants ? item.variants[activeVariantIndex].command : item.command;
   const placeholders = extractPlaceholders(activeCommand);
-  const placeholderValues = state.placeholderValues.get(item.id) ?? {};
+  const inferredValues = inferPlaceholderValuesFromQuery(activeCommand, state.query);
+  const placeholderValues = {
+    ...(state.placeholderValues.get(item.id) ?? {}),
+    ...inferredValues
+  };
   const previewCommand = resolveCommandTemplate(activeCommand, placeholderValues);
   const commandLanguage = getCommandHighlightLanguage(item);
   const accent = getCategoryAccent(item.category);
   const isPinned = state.pinned.has(item.id);
+  const matchSignals = getMatchSignals(item, tokens, isFuzzy, queryPlan);
+  const matchSignalHtml = matchSignals.length
+    ? `<div class="match-line" aria-label="搜尋命中來源">命中：${matchSignals.map((signal) => `<span>${signal}</span>`).join("")}</div>`
+    : "";
   const card = document.createElement("article");
   card.className = `command-card${isPinned ? " is-pinned" : ""}${hasVariants ? " has-variants" : ""}${fresh ? " is-fresh-batch" : ""}`;
   card.dataset.commandId = item.id;
@@ -268,21 +352,25 @@ function buildCommandCard(item, index, ctx) {
     : "";
   card.innerHTML = `
       <div class="card-top">
+        <span class="row-index" aria-hidden="true">${String(rowOffset + index + 1).padStart(3, "0")}</span>
+        <button class="pin-button" type="button" data-pin-id="${escapeAttribute(item.id)}" aria-label="${isPinned ? "取消釘選" : "釘選此指令"}" aria-pressed="${isPinned}" title="${isPinned ? "取消釘選" : "釘選"}">
+          <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><polygon points="8,1.5 10.2,6 15,6.6 11.5,9.9 12.5,14.5 8,12.1 3.5,14.5 4.5,9.9 1,6.6 5.8,6"/></svg>
+        </button>
         <button class="category-badge category-badge-button" type="button" data-category="${escapeAttribute(item.category)}" aria-label="篩選分類 ${escapeAttribute(item.category)}" title="篩選分類 ${escapeAttribute(item.category)}">
           ${highlightText(item.category, highlightPattern)}
         </button>
         ${isFuzzy ? '<span class="fuzzy-hint">近似匹配</span>' : ''}
-        <button class="pin-button" type="button" data-pin-id="${escapeAttribute(item.id)}" aria-label="${isPinned ? "取消釘選" : "釘選此指令"}" aria-pressed="${isPinned}" title="${isPinned ? "取消釘選" : "釘選"}">
-          <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><polygon points="8,1.5 10.2,6 15,6.6 11.5,9.9 12.5,14.5 8,12.1 3.5,14.5 4.5,9.9 1,6.6 5.8,6"/></svg>
-        </button>
       </div>
       ${variantStripHtml}
       <div class="command-block">
         <pre class="command-line"><code class="command-code" data-command-language="${escapeAttribute(commandLanguage)}"></code></pre>
-        <div class="placeholder-slot">${renderPlaceholderFields(placeholders, placeholderValues, item.placeholderSuggestions)}</div>
+        <div class="placeholder-slot">${renderPlaceholderFields(placeholders, placeholderValues, item.placeholderSuggestions, inferredValues)}</div>
         <button class="copy-button" type="button" data-copy-command="${escapeAttribute(activeCommand)}">複製</button>
       </div>
-      <p class="description">${highlightText(item.description, highlightPattern)}</p>
+      <div class="description-stack">
+        ${matchSignalHtml}
+        <p class="description">${highlightText(item.description, highlightPattern)}</p>
+      </div>
       ${item.notes ? `<p class="notes">${highlightText(item.notes, highlightPattern)}</p>` : ""}
       <div class="card-footer">
         <div class="tag-list">
@@ -298,6 +386,70 @@ function buildCommandCard(item, index, ctx) {
   );
   card.setAttribute("tabindex", "0");
   return card;
+}
+
+function getMatchSignals(item, tokens, isFuzzy, queryPlan) {
+  if (!tokens.length && !queryPlan.tagFilters.length && !queryPlan.categoryFilters.length) {
+    return [];
+  }
+
+  const signals = [];
+  const includesAnyToken = (text) => tokens.some((token) => String(text ?? "").toLowerCase().includes(token));
+
+  if (includesAnyToken([item.command, ...item.variants.map((variant) => variant.command)].join(" "))) {
+    signals.push("指令");
+  }
+
+  if (hasTemplateMatch(item, tokens)) {
+    signals.push("模板");
+  }
+
+  if (
+    item.tagsLower.some((tag) => tokens.some((token) => tag.includes(token))) ||
+    (queryPlan.tagFilters.length > 0 && queryPlan.tagFilters.every((filter) => item.tagsLower.some((tag) => tag.includes(filter))))
+  ) {
+    signals.push("標籤");
+  }
+
+  if (
+    tokens.some((token) => item.categoryLower.includes(token)) ||
+    (queryPlan.categoryFilters.length > 0 && queryPlan.categoryFilters.every((filter) => item.categoryLower.includes(filter)))
+  ) {
+    signals.push("分類");
+  }
+
+  if (includesAnyToken(item.description)) {
+    signals.push("說明");
+  }
+
+  if (item.notes && includesAnyToken(item.notes)) {
+    signals.push("備註");
+  }
+
+  if (isFuzzy) {
+    signals.push("近似");
+  }
+
+  return [...new Set(signals)].slice(0, 3);
+}
+
+function hasTemplateMatch(item, tokens) {
+  if (!item.commandTemplateTokenSets?.length) {
+    return false;
+  }
+
+  const queryTokens = tokens.map(normalizeCommandShapeToken).filter(Boolean);
+
+  return item.commandTemplateTokenSets.some((templateTokens) =>
+    templateTokens.length > 0 &&
+    templateTokens.every((templateToken) =>
+      queryTokens.some((queryToken) =>
+        queryToken === templateToken ||
+        queryToken.startsWith(`${templateToken}:`) ||
+        queryToken.startsWith(`${templateToken}=`)
+      )
+    )
+  );
 }
 
 export function renderError(error) {
@@ -317,6 +469,14 @@ export function renderError(error) {
   if (ui.publicPagination) {
     ui.publicPagination.hidden = true;
   }
+  [ui.pageJump, ui.stickyPageJump].forEach((container) => {
+    if (!container) {
+      return;
+    }
+
+    container.replaceChildren();
+    container.hidden = true;
+  });
 }
 
 export function upgradeAllCodeBlocks() {

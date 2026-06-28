@@ -2,7 +2,7 @@
 // dispatch, filter pill bar rendering + animated indicator.
 
 import { escapeHtml, escapeCssSelector, tokenize } from "./utils.js";
-import { filterCommands } from "./search-core.js";
+import { filterCommands, parseSearchTokenPlan } from "./search-core.js";
 import {
   state,
   ui,
@@ -10,6 +10,7 @@ import {
   resetPagination,
   saveState,
   updateViewModeUI,
+  updateDocumentTitle,
   getActiveCategoryLabel,
   getFilterSequence
 } from "./state.js";
@@ -27,7 +28,6 @@ let searchDebounceId = 0;
 let workerSeq = 0;
 let lastFilterAnimated = false;
 let lastFilterScrollY = null;
-const SCROLL_RESTORE_DELAYS_MS = [80, 180, 320, 460, 560, 720];
 // Whether the last/in-flight render should tag cards with
 // .is-fresh-batch. Paging re-renders pass fresh=false so visible cards
 // don't replay card-in on every page click.
@@ -35,10 +35,12 @@ let lastFilterFresh = true;
 let firstFilterDone = false;
 
 export function applyFilters({ fresh = true, preserveScroll = false } = {}) {
+  window.clearTimeout(searchDebounceId);
   _runFilters(false, fresh, preserveScroll);
 }
 
 export function applyFiltersAnimated({ fresh = true, preserveScroll = false } = {}) {
+  window.clearTimeout(searchDebounceId);
   _runFilters(true, fresh, preserveScroll);
 }
 
@@ -48,6 +50,7 @@ function _runFilters(animated, fresh, preserveScroll) {
   lastFilterAnimated = animated;
   lastFilterFresh = fresh;
   lastFilterScrollY = preserveScroll ? window.scrollY : null;
+  setFilterPending();
 
   // First call: run filter on the main thread instead of waiting on the
   // worker. 196 commands filter in a few ms and we skip the worker-script
@@ -83,10 +86,12 @@ function _renderFilterResults(filteredPublic, animated, fresh, scrollY) {
   updateSummary(totalResults);
   const doRender = () => {
     renderResultSections(filteredPublic, totalResults, fresh);
+    document.dispatchEvent(new CustomEvent("commandatlas:results-rendered", {
+      detail: { totalResults }
+    }));
     if (scrollY !== null) {
       const restore = () => window.scrollTo(0, scrollY);
       requestAnimationFrame(restore);
-      SCROLL_RESTORE_DELAYS_MS.forEach((delay) => window.setTimeout(restore, delay));
     }
   };
 
@@ -132,6 +137,7 @@ export function syncSearchInputs(sourceInput = null) {
 
     input.value = state.query;
   });
+  syncSearchClearButtons();
 }
 
 export function clearFilters({ preserveScroll = false } = {}) {
@@ -161,7 +167,7 @@ export function cycleCategory(direction) {
 }
 
 export function filterByTag(tag) {
-  state.query = tag;
+  state.query = `tag:${tag}`;
   resetPagination();
   syncSearchInputs();
   saveState();
@@ -173,6 +179,7 @@ export function restoreStateFromUrl(urlState) {
   state.activeCategory = urlState.activeCategory;
   state.viewMode = urlState.viewMode;
   resetPagination();
+  state.pagination.public = urlState.page;
   syncSearchInputs();
   updateViewModeUI();
 
@@ -191,18 +198,70 @@ export function restoreStateFromUrl(urlState) {
 }
 
 export function updateSummary(resultCount) {
-  const categoryLabel = getActiveCategoryLabel();
+  clearFilterPending();
   const trimmedQuery = state.query.trim();
-  const queryLabel = trimmedQuery ? `，關鍵字「${trimmedQuery}」` : "";
   const hasActiveFilters = trimmedQuery.length > 0 || state.activeCategory !== "all";
 
-  ui.activeState.textContent = `目前：${categoryLabel}${queryLabel}`;
+  ui.activeState.innerHTML = getActiveStateHtml();
   ui.resultSummary.textContent = `共找到 ${resultCount} 筆結果`;
+  if (ui.stickyResultSummary) {
+    ui.stickyResultSummary.textContent = `${resultCount} 筆`;
+  }
+  updateDocumentTitle(resultCount);
   ui.clearButton.hidden = !hasActiveFilters;
   if (ui.stickyClearButton) {
     ui.stickyClearButton.hidden = !hasActiveFilters;
   }
   updateStickySearchState();
+}
+
+function getActiveStateHtml() {
+  const categoryLabel = getActiveCategoryLabel();
+  const queryPlan = parseSearchTokenPlan(tokenize(state.query));
+  const parts = [
+    `<span class="active-state-prefix">目前</span>`,
+    `<span class="active-token"><span>分類</span>${escapeHtml(categoryLabel)}</span>`
+  ];
+
+  if (queryPlan.searchTokens.length > 0) {
+    parts.push(`<span class="active-token"><span>關鍵字</span>${escapeHtml(queryPlan.searchTokens.join(" "))}</span>`);
+  }
+
+  queryPlan.tagFilters.forEach((tag) => {
+    parts.push(`<span class="active-token active-token-operator"><span>標籤</span>${escapeHtml(tag)}</span>`);
+  });
+
+  queryPlan.categoryFilters.forEach((category) => {
+    parts.push(`<span class="active-token active-token-operator"><span>語法分類</span>${escapeHtml(category)}</span>`);
+  });
+
+  return parts.join("");
+}
+
+function setFilterPending() {
+  const trimmedQuery = state.query.trim();
+  const pendingLabel = trimmedQuery ? "搜尋中…" : "篩選中…";
+
+  document.body.classList.add("is-searching");
+  ui.resultSummary.classList.add("is-searching");
+  ui.resultSummary.textContent = pendingLabel;
+  if (ui.stickyResultSummary) {
+    ui.stickyResultSummary.textContent = pendingLabel;
+  }
+}
+
+function clearFilterPending() {
+  document.body.classList.remove("is-searching");
+  ui.resultSummary.classList.remove("is-searching");
+}
+
+function syncSearchClearButtons() {
+  const hasQuery = state.query.trim().length > 0;
+  [ui.searchClearButton, ui.stickySearchClearButton].forEach((button) => {
+    if (button) {
+      button.hidden = !hasQuery;
+    }
+  });
 }
 
 export function updateStickySearchState() {

@@ -41,6 +41,18 @@
               <span class="shortcut-desc">聚焦搜尋</span>
             </div>
             <div class="shortcut-row">
+              <span class="shortcut-keys"><kbd>Ctrl</kbd> <kbd>V</kbd></span>
+              <span class="shortcut-desc">空白處貼上並搜尋</span>
+            </div>
+            <div class="shortcut-row">
+              <span class="shortcut-keys"><kbd>tag:</kbd> <kbd>cat:</kbd></span>
+              <span class="shortcut-desc">限定標籤 / 分類搜尋</span>
+            </div>
+            <div class="shortcut-row">
+              <span class="shortcut-keys"><kbd>?</kbd></span>
+              <span class="shortcut-desc">顯示 / 隱藏快捷鍵</span>
+            </div>
+            <div class="shortcut-row">
               <span class="shortcut-keys"><kbd>Esc</kbd></span>
               <span class="shortcut-desc">回到頂部 / 關閉選單 / 清除搜尋</span>
             </div>
@@ -49,11 +61,35 @@
               <span class="shortcut-desc">切換上 / 下一個分類</span>
             </div>
             <div class="shortcut-row">
+              <span class="shortcut-keys"><kbd>PageUp</kbd> <kbd>PageDown</kbd></span>
+              <span class="shortcut-desc">切換上 / 下一頁結果</span>
+            </div>
+            <div class="shortcut-row">
+              <span class="shortcut-keys"><kbd>V</kbd></span>
+              <span class="shortcut-desc">切換卡片 / 緊湊檢視</span>
+            </div>
+            <div class="shortcut-row">
               <span class="shortcut-keys"><kbd>Enter</kbd></span>
               <span class="shortcut-desc">空白狀態聚焦搜尋</span>
             </div>
             <div class="shortcut-row">
+              <span class="shortcut-keys"><kbd>Enter</kbd></span>
+              <span class="shortcut-desc">搜尋框內複製第一筆</span>
+            </div>
+            <div class="shortcut-row">
+              <span class="shortcut-keys"><kbd>↑</kbd> <kbd>↓</kbd></span>
+              <span class="shortcut-desc">搜尋框與結果間移動</span>
+            </div>
+            <div class="shortcut-row">
+              <span class="shortcut-keys"><kbd>Ctrl</kbd> <kbd>Enter</kbd></span>
+              <span class="shortcut-desc">複製目前第一筆結果</span>
+            </div>
+            <div class="shortcut-row">
               <span class="shortcut-keys"><kbd>Enter</kbd> <kbd>Space</kbd></span>
+              <span class="shortcut-desc">卡片 focus 時複製指令</span>
+            </div>
+            <div class="shortcut-row">
+              <span class="shortcut-keys"><kbd>Ctrl</kbd> <kbd>C</kbd></span>
               <span class="shortcut-desc">卡片 focus 時複製指令</span>
             </div>
           </div>
@@ -62,7 +98,8 @@
 
       <section class="hero-panel" aria-label="搜尋與篩選">
         <div class="panel-heading">
-          <label class="search-panel" for="search-input">
+          <div class="search-panel">
+            <label class="sr-only" for="search-input">搜尋指令、描述、標籤或分類</label>
             <input
               id="search-input"
               class="search-input"
@@ -71,7 +108,15 @@
               aria-label="搜尋指令、描述、標籤或分類"
               placeholder="搜尋指令、描述、標籤或分類…"
             >
-          </label>
+            <button id="search-clear-btn" class="search-clear-btn" type="button" aria-label="清除搜尋" title="清除搜尋" hidden>×</button>
+          </div>
+          <div id="search-assists" class="search-assists" aria-label="搜尋語法提示">
+            <span class="search-assist-label">語法</span>
+            <button class="search-assist-chip" type="button" data-query-template="tag:dns">tag:dns</button>
+            <button class="search-assist-chip" type="button" data-query-template="cat:&quot;Windows Network &amp; DNS&quot;">cat:"Windows"</button>
+            <button class="search-assist-chip" type="button" data-query-template="docker ps">docker ps</button>
+            <button class="search-assist-chip" type="button" data-query-template="Test-NetConnection &lt;主機&gt; -Port &lt;埠&gt;">模板值</button>
+          </div>
         </div>
 
         <div class="filter-row">
@@ -106,7 +151,9 @@
         <div class="toolbar">
           <p id="active-state" class="active-state">目前：全部分類</p>
           <p id="result-summary" class="result-summary">正在載入指令資料...</p>
+          <div id="page-jump" class="page-jump" hidden aria-label="快速分頁"></div>
           <button id="view-toggle-btn" class="ghost-button view-toggle-btn" type="button" aria-pressed="false">緊湊</button>
+          <button id="current-link-btn" class="ghost-button current-link-btn" type="button" title="複製目前查詢連結">連結</button>
           <button id="clear-btn" class="ghost-button" type="button" hidden>清空</button>
         </div>
       </section>
@@ -115,7 +162,8 @@
 
     <div id="sticky-search-bar" class="sticky-search-bar" aria-hidden="true">
       <div class="sticky-search-shell">
-        <label class="sticky-search-input-wrap" for="sticky-search-input">
+        <div class="sticky-search-input-wrap search-panel">
+          <label class="sr-only" for="sticky-search-input">快速搜尋指令</label>
           <input
             id="sticky-search-input"
             class="search-input search-input-sticky"
@@ -124,8 +172,11 @@
             aria-label="快速搜尋指令"
             placeholder="快速搜尋指令…"
           >
-        </label>
+          <button id="sticky-search-clear-btn" class="search-clear-btn search-clear-btn-sticky" type="button" aria-label="清除搜尋" title="清除搜尋" hidden>×</button>
+        </div>
         <span id="sticky-active-category" class="sticky-active-category">全部分類</span>
+        <span id="sticky-result-summary" class="sticky-result-summary">0 筆</span>
+        <div id="sticky-page-jump" class="page-jump sticky-page-jump" hidden aria-label="快速分頁"></div>
         <div class="picker-wrap picker-wrap-sticky">
           <button
             id="sticky-category-picker-btn"
@@ -149,6 +200,8 @@
             aria-label="選擇分類"
           ></div>
         </div>
+        <button id="sticky-view-toggle-btn" class="ghost-button sticky-view-toggle-btn" type="button" aria-pressed="false">緊湊</button>
+        <button id="sticky-current-link-btn" class="ghost-button sticky-current-link-btn" type="button" title="複製目前查詢連結">連結</button>
         <button id="sticky-clear-btn" class="ghost-button sticky-clear-btn" type="button" hidden>清空</button>
       </div>
     </div>
@@ -156,7 +209,9 @@
     <main class="layout">
       <section id="public-results-section" class="results-section" aria-labelledby="results-title">
         <div class="section-header">
-          <h2 id="results-title">公開分類</h2>
+          <h2 id="results-title">指令索引</h2>
+          <span class="section-column-label" aria-hidden="true">指令</span>
+          <span class="section-column-label" aria-hidden="true">說明 / 標籤</span>
         </div>
 
         <div id="results" class="card-grid">
@@ -180,6 +235,11 @@
       <path d="M6 14l6-6 6 6" />
     </svg>
   </button>
+
+  <div id="copy-toast" class="copy-toast" aria-hidden="true">
+    <span class="copy-toast-status">已複製</span>
+    <code class="copy-toast-command"></code>
+  </div>
 
   <noscript>
     <div class="noscript-banner">這個網站需要啟用 JavaScript 才能使用搜尋、分類與複製功能。</div>

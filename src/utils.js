@@ -28,10 +28,42 @@ export function escapeRegex(value) {
 }
 
 export function tokenize(query) {
-  return String(query ?? "")
-    .toLowerCase()
-    .split(/\s+/)
-    .map((token) => token.trim())
+  const tokens = [];
+  let current = "";
+  let quote = "";
+
+  for (const char of String(query ?? "").toLowerCase()) {
+    if (quote) {
+      if (char === quote) {
+        quote = "";
+      } else {
+        current += char;
+      }
+      continue;
+    }
+
+    if (char === '"' || char === "'") {
+      quote = char;
+      continue;
+    }
+
+    if (/\s/.test(char)) {
+      if (current.trim()) {
+        tokens.push(current.trim());
+        current = "";
+      }
+      continue;
+    }
+
+    current += char;
+  }
+
+  if (current.trim()) {
+    tokens.push(current.trim());
+  }
+
+  return tokens
+    .map((token) => token.trim().replace(/^#+/, ""))
     .filter(Boolean);
 }
 

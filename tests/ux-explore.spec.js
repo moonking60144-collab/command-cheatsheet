@@ -84,6 +84,7 @@ test.describe("UX exploratory", () => {
     await expect(panel).toBeVisible();
 
     const pickerSearch = panel.locator(".picker-search");
+    await expect(pickerSearch).toBeFocused();
     await pickerSearch.fill("git");
 
     // Any item that doesn't contain "git" should be hidden
@@ -113,13 +114,196 @@ test.describe("UX exploratory", () => {
     await expect(page.locator("#category-picker")).toBeHidden();
   });
 
-  test("tag click fills search input with the tag text", async ({ page }) => {
+  test("mobile category picker stays inside viewport with search visible", async ({ browser }, testInfo) => {
+    const context = await browser.newContext({
+      baseURL: testInfo.project.use.baseURL,
+      viewport: { width: 390, height: 844 },
+      isMobile: true,
+      hasTouch: true
+    });
+    const mobilePage = await context.newPage();
+
+    await mobilePage.goto("/");
+    await expect(mobilePage.locator(".command-card").first()).toBeVisible();
+    await mobilePage.locator("#category-picker-btn").click();
+    await expect(mobilePage.locator("#category-picker")).toBeVisible();
+
+    const geometry = await mobilePage.evaluate(() => {
+      const panel = document.querySelector("#category-picker").getBoundingClientRect();
+      const search = document.querySelector("#category-picker .picker-search").getBoundingClientRect();
+
+      return {
+        viewportHeight: window.innerHeight,
+        panelTop: Math.round(panel.top),
+        panelBottom: Math.round(panel.bottom),
+        searchTop: Math.round(search.top),
+        searchBottom: Math.round(search.bottom)
+      };
+    });
+
+    await context.close();
+    expect(geometry.panelTop).toBeGreaterThanOrEqual(0);
+    expect(geometry.panelBottom).toBeLessThanOrEqual(geometry.viewportHeight);
+    expect(geometry.searchTop).toBeGreaterThanOrEqual(geometry.panelTop);
+    expect(geometry.searchBottom).toBeLessThanOrEqual(geometry.viewportHeight);
+  });
+
+  test("mobile category picker does not autofocus search to avoid opening the keyboard", async ({ browser }, testInfo) => {
+    const context = await browser.newContext({
+      baseURL: testInfo.project.use.baseURL,
+      viewport: { width: 390, height: 844 },
+      isMobile: true,
+      hasTouch: true
+    });
+    const mobilePage = await context.newPage();
+
+    await mobilePage.goto("/");
+    await expect(mobilePage.locator(".command-card").first()).toBeVisible();
+    await mobilePage.locator("#category-picker-btn").click();
+    await expect(mobilePage.locator("#category-picker")).toBeVisible();
+
+    const activeClass = await mobilePage.evaluate(() => document.activeElement?.className ?? "");
+
+    await context.close();
+    expect(activeClass).not.toContain("picker-search");
+  });
+
+  test("mobile category picker locks and dims the page behind the sheet", async ({ browser }, testInfo) => {
+    const context = await browser.newContext({
+      baseURL: testInfo.project.use.baseURL,
+      viewport: { width: 390, height: 844 },
+      isMobile: true,
+      hasTouch: true
+    });
+    const mobilePage = await context.newPage();
+
+    await mobilePage.goto("/");
+    await expect(mobilePage.locator(".command-card").first()).toBeVisible();
+    await mobilePage.locator("#category-picker-btn").click();
+    await expect(mobilePage.locator("#category-picker")).toBeVisible();
+
+    const openState = await mobilePage.evaluate(() => {
+      const backdrop = getComputedStyle(document.body, "::after");
+      return {
+        hasClass: document.body.classList.contains("has-open-picker"),
+        overflow: getComputedStyle(document.body).overflow,
+        backdropContent: backdrop.content,
+        backdropZIndex: backdrop.zIndex
+      };
+    });
+
+    expect(openState.hasClass).toBe(true);
+    expect(openState.overflow).toBe("hidden");
+    expect(openState.backdropContent).not.toBe("none");
+    expect(Number(openState.backdropZIndex)).toBeGreaterThan(0);
+
+    await mobilePage.mouse.click(8, 8);
+    await expect(mobilePage.locator("#category-picker")).toBeHidden();
+    await expect.poll(() => mobilePage.evaluate(() => document.body.classList.contains("has-open-picker"))).toBe(false);
+
+    await context.close();
+  });
+
+  test("tag click fills search input with the tag operator", async ({ page }) => {
     const firstTag = page.locator(".tag-btn").first();
     await expect(firstTag).toBeVisible();
-    const tagText = (await firstTag.textContent())?.trim().replace(/^#/, "") ?? "";
+    const tagValue = await firstTag.getAttribute("data-tag");
     await firstTag.click();
 
-    await expect(page.locator("#search-input")).toHaveValue(tagText);
+    await expect(page.locator("#search-input")).toHaveValue(`tag:${tagValue}`);
+    await expect(page.locator("#active-state")).toContainText("標籤");
+  });
+
+  test("typing a visible #tag searches the normalized tag value", async ({ page }) => {
+    const firstTag = page.locator(".tag-btn").first();
+    await expect(firstTag).toBeVisible();
+    const tagText = (await firstTag.textContent())?.trim() ?? "";
+
+    await page.locator("#search-input").fill(tagText);
+
+    await expect(page.locator(".command-card").first()).toBeVisible();
+    await expect(page.locator(".tag-btn").filter({ hasText: tagText }).first()).toBeVisible();
+    await expect(page.locator("#result-summary")).not.toContainText("0 筆");
+  });
+
+  test("tag: operator filters results by tag", async ({ page }) => {
+    await page.locator("#search-input").fill("tag:dns");
+
+    await expect(page.locator(".command-card").first()).toBeVisible();
+    await expect(page.locator(".command-card .match-line").first()).toContainText("標籤");
+    await expect(page.locator("#active-state")).toContainText("標籤");
+    await expect(page.locator("#active-state")).toContainText("dns");
+
+    const allVisibleCardsHaveDnsTag = await page.locator(".command-card").evaluateAll((cards) =>
+      cards.every((card) =>
+        Array.from(card.querySelectorAll(".tag-btn")).some((tag) =>
+          tag.textContent.toLowerCase().includes("dns")
+        )
+      )
+    );
+    expect(allVisibleCardsHaveDnsTag).toBe(true);
+  });
+
+  test("search assist chip applies an operator query", async ({ page }) => {
+    await page.locator('.search-assist-chip[data-query-template="tag:dns"]').click();
+
+    await expect(page.locator("#search-input")).toHaveValue("tag:dns");
+    await expect(page.locator(".command-card").first()).toBeVisible();
+    await expect(page.locator(".command-card .match-line").first()).toContainText("標籤");
+  });
+
+  test("cat: operator scopes search to matching categories", async ({ page }) => {
+    await page.locator("#search-input").fill("cat:docker ps");
+
+    await expect(page.locator(".command-card").first()).toBeVisible();
+    await expect(page.locator(".command-card .match-line").first()).toContainText("分類");
+    await expect(page.locator("#active-state")).toContainText("語法分類");
+    await expect(page.locator("#active-state")).toContainText("關鍵字");
+    await expect(page.locator(".command-card .command-code").first()).toContainText("ps");
+
+    const allVisibleCardsAreDocker = await page.locator(".command-card").evaluateAll((cards) =>
+      cards.every((card) => card.querySelector(".category-badge")?.textContent.includes("Docker"))
+    );
+    expect(allVisibleCardsAreDocker).toBe(true);
+  });
+
+  test("quoted cat: operator supports categories with spaces and symbols", async ({ page }) => {
+    await page.locator("#search-input").fill('cat:"Windows Network & DNS" dns');
+
+    await expect(page.locator(".command-card").first()).toBeVisible();
+    await expect(page.locator("#active-state")).toContainText("語法分類");
+    await expect(page.locator("#active-state")).toContainText("windows network & dns");
+
+    const allVisibleCardsAreNetworkDns = await page.locator(".command-card").evaluateAll((cards) =>
+      cards.every((card) => card.querySelector(".category-badge")?.textContent.includes("Windows Network & DNS"))
+    );
+    expect(allVisibleCardsAreNetworkDns).toBe(true);
+  });
+
+  test("empty state can clear only the failed search query", async ({ page }) => {
+    await page.locator("#search-input").fill("zzzz-no-match-command-atlas");
+
+    await expect(page.locator(".empty-state")).toBeVisible();
+    await expect(page.getByRole("button", { name: "只清搜尋" })).toBeVisible();
+
+    await page.getByRole("button", { name: "只清搜尋" }).click();
+
+    await expect(page.locator("#search-input")).toHaveValue("");
+    await expect(page.locator(".command-card").first()).toBeVisible();
+  });
+
+  test("empty state can return to all categories without dropping the query", async ({ page }) => {
+    await page.locator('.filter-pill[data-category="Docker"]').click();
+    await page.locator("#search-input").fill("git status");
+
+    await expect(page.locator(".empty-state")).toBeVisible();
+    await expect(page.getByRole("button", { name: "回到全部分類" })).toBeVisible();
+
+    await page.getByRole("button", { name: "回到全部分類" }).click();
+
+    await expect(page.locator("#search-input")).toHaveValue("git status");
+    await expect(page.locator("#active-state")).toContainText("全部分類");
+    await expect(page.locator(".command-card").first()).toBeVisible();
   });
 
   test("URL q/cat params round-trip across reload", async ({ page }) => {
@@ -136,6 +320,93 @@ test.describe("UX exploratory", () => {
     await expect(page.locator("#search-input")).toHaveValue("git");
   });
 
+  test("document title reflects result count, search query, and category", async ({ page }) => {
+    await expect.poll(() => page.title()).toMatch(/^\d+ 筆指令 \| Command Atlas$/);
+
+    await page.locator("#search-input").fill("git status");
+    await expect.poll(() => page.title()).toMatch(/^\d+ 筆 · git status \| Command Atlas$/);
+
+    await page.locator('.filter-pill[data-category="Git"]').click();
+    await expect.poll(() => page.title()).toMatch(/^\d+ 筆 · git status · Git \| Command Atlas$/);
+  });
+
+  test("URL page param round-trips across reload", async ({ page }) => {
+    const page2Btn = page.locator('[data-page-target="public"][data-page-number="2"]').first();
+    await expect(page2Btn).toBeVisible();
+
+    await page2Btn.click();
+
+    await expect(page.locator(".pagination-button.is-active")).toHaveText("2");
+    expect(page.url()).toMatch(/[?&]page=2/);
+
+    await page.reload();
+
+    await expect(page.locator(".command-card .row-index").first()).toHaveText("101");
+    await expect(page.locator(".pagination-button.is-active")).toHaveText("2");
+  });
+
+  test("URL page param is clamped to the last valid page", async ({ page }) => {
+    await page.goto("/?page=999");
+
+    await expect(page.locator(".command-card").first()).toBeVisible();
+    await expect(page.locator(".pagination-button.is-active")).toHaveText("3");
+    await expect(page.locator(".command-card .row-index").first()).toHaveText("201");
+    expect(page.url()).toMatch(/[?&]page=3/);
+  });
+
+  test("current link button copies the exact current URL", async ({ page, context }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+
+    await page.locator('[data-page-target="public"][data-page-number="2"]').first().click();
+    await expect(page.locator(".pagination-button.is-active")).toHaveText("2");
+    await page.locator("#view-toggle-btn").click();
+    await expect(page.locator("body")).toHaveClass(/is-list-view/);
+
+    const expectedUrl = page.url();
+    await page.locator("#current-link-btn").click();
+
+    await expect(page.locator("#copy-toast")).toHaveClass(/is-visible/);
+    await expect(page.locator("#copy-toast .copy-toast-command")).toContainText(expectedUrl);
+    await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe(expectedUrl);
+    await expect(page.locator("#app-announcer")).toContainText("目前視圖連結已複製。");
+  });
+
+  test("sticky current link button copies the current URL while browsing results", async ({ page, context }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    await page.setViewportSize({ width: 1280, height: 500 });
+    await expect(page.locator(".command-card").nth(10)).toBeVisible();
+
+    await page.evaluate(() => window.scrollTo(0, 640));
+    await expect(page.locator("#sticky-search-bar")).toHaveClass(/is-visible/);
+
+    const expectedUrl = page.url();
+    await page.locator("#sticky-current-link-btn").click();
+
+    await expect(page.locator("#copy-toast")).toHaveClass(/is-visible/);
+    await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe(expectedUrl);
+  });
+
+  test("current link button restores its own label after clipboard failure", async ({ page }) => {
+    await page.evaluate(() => {
+      Object.defineProperty(navigator, "clipboard", {
+        configurable: true,
+        value: {
+          writeText: () => Promise.reject(new Error("clipboard denied"))
+        }
+      });
+    });
+
+    const button = page.locator("#current-link-btn");
+    await expect(button).toHaveText("連結");
+
+    await button.click();
+
+    await expect(button).toHaveText("失敗");
+    await expect(page.locator("#copy-toast")).toHaveClass(/is-error/);
+    await expect(page.locator("#copy-toast .copy-toast-status")).toHaveText("複製失敗");
+    await expect(button).toHaveText("連結", { timeout: 2000 });
+  });
+
   test("pagination resets to page 1 when a new filter is applied", async ({ page }) => {
     const page2Btn = page.locator('[data-page-target="public"][data-page-number="2"]').first();
     if ((await page2Btn.count()) === 0) {
@@ -146,7 +417,7 @@ test.describe("UX exploratory", () => {
     await page2Btn.click();
     await expect(page.locator(".pagination-button.is-active")).toHaveText("2");
 
-    // Apply a filter that still leaves >50 results so pagination is
+    // Apply a filter that still leaves >100 results so pagination is
     // guaranteed to stay visible, so we can assert the active page
     // specifically (not a "maybe disappeared" branch).
     await page.locator('.filter-pill[data-category="all"]').click();
@@ -161,6 +432,88 @@ test.describe("UX exploratory", () => {
         await expect(activeBtn).toHaveText("1");
       }
     }).toPass({ timeout: 3000 });
+  });
+
+  test("pagination uses 100 commands per page", async ({ page }) => {
+    const pagination = page.locator("#public-pagination");
+    await expect(pagination).toBeVisible();
+    await expect(pagination.locator(".pagination-meta")).toContainText("每頁 100 筆");
+    await expect(page.locator(".command-card")).toHaveCount(100);
+  });
+
+  test("visible command rows show stable three-digit row indexes", async ({ page }) => {
+    await expect(page.locator(".command-card").first()).toBeVisible();
+
+    await expect(page.locator(".command-card .row-index").nth(0)).toHaveText("001");
+    await expect(page.locator(".command-card .row-index").nth(1)).toHaveText("002");
+    await expect(page.locator(".command-card .row-index").nth(9)).toHaveText("010");
+  });
+
+  test("row indexes continue across pagination pages", async ({ page }) => {
+    const page2Btn = page.locator('[data-page-target="public"][data-page-number="2"]').first();
+    await expect(page2Btn).toBeVisible();
+
+    await page2Btn.click();
+
+    await expect(page.locator(".pagination-button.is-active")).toHaveText("2");
+    await expect(page.locator(".command-card .row-index").first()).toHaveText("101");
+  });
+
+  test("top mini pager changes pages without scrolling to the bottom pager", async ({ page }) => {
+    const pageJump = page.locator("#page-jump");
+    await expect(pageJump).toBeVisible();
+    await expect(pageJump.locator(".page-jump-current")).toHaveText(/1-100 \/ \d+/);
+
+    await pageJump.locator(".page-jump-next").click();
+
+    await expect(pageJump.locator(".page-jump-current")).toHaveText(/101-200 \/ \d+/);
+    await expect(page.locator(".pagination-button.is-active")).toHaveText("2");
+    await expect(page.locator(".command-card .row-index").first()).toHaveText("101");
+  });
+
+  test("sticky mini pager mirrors pagination while browsing results", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 500 });
+    await expect(page.locator(".command-card").nth(10)).toBeVisible();
+
+    await page.evaluate(() => window.scrollTo(0, 640));
+    await expect(page.locator("#sticky-search-bar")).toHaveClass(/is-visible/);
+
+    const stickyPageJump = page.locator("#sticky-page-jump");
+    await expect(stickyPageJump).toBeVisible();
+    await expect(stickyPageJump.locator(".page-jump-current")).toHaveText(/1-100 \/ \d+/);
+
+    await stickyPageJump.locator(".page-jump-next").click();
+
+    await expect(stickyPageJump.locator(".page-jump-current")).toHaveText(/101-200 \/ \d+/);
+    await expect(page.locator("#page-jump .page-jump-current")).toHaveText(/101-200 \/ \d+/);
+    await expect(page.locator(".pagination-button.is-active")).toHaveText("2");
+    await expect(page.locator(".command-card .row-index").first()).toHaveText("101");
+  });
+
+  test("PageDown and PageUp keyboard shortcuts change result pages", async ({ page }) => {
+    await expect(page.locator("#page-jump")).toBeVisible();
+    await expect(page.locator(".command-card .row-index").first()).toHaveText("001");
+
+    await page.locator("body").click({ position: { x: 5, y: 5 } });
+    await page.keyboard.press("PageDown");
+
+    await expect(page.locator(".pagination-button.is-active")).toHaveText("2");
+    await expect(page.locator(".command-card .row-index").first()).toHaveText("101");
+    expect(page.url()).toMatch(/[?&]page=2/);
+
+    await page.keyboard.press("PageUp");
+
+    await expect(page.locator(".pagination-button.is-active")).toHaveText("1");
+    await expect(page.locator(".command-card .row-index").first()).toHaveText("001");
+    expect(page.url()).not.toMatch(/[?&]page=2/);
+  });
+
+  test("PageDown shortcut does not change pages while typing in search", async ({ page }) => {
+    await page.locator("#search-input").focus();
+    await page.keyboard.press("PageDown");
+
+    await expect(page.locator(".pagination-button.is-active")).toHaveText("1");
+    await expect(page.locator(".command-card .row-index").first()).toHaveText("001");
   });
 
   test("pagination re-render does NOT add is-fresh-batch animation class", async ({ page }) => {
@@ -207,6 +560,163 @@ test.describe("UX exploratory", () => {
     await expect(page.locator("#search-input")).toHaveValue("docker");
   });
 
+  test("inline search clear removes only the query and keeps the active category", async ({ page }) => {
+    await page.locator('.filter-pill[data-category="Docker"]').click();
+    await page.locator("#search-input").fill("ps");
+    await expect(page.locator("#search-clear-btn")).toBeVisible();
+
+    await page.locator("#search-clear-btn").click();
+
+    await expect(page.locator("#search-input")).toHaveValue("");
+    await expect(page.locator("#sticky-search-input")).toHaveValue("");
+    await expect(page.locator("#active-state")).toContainText("Docker");
+    await expect(page.locator("#search-clear-btn")).toBeHidden();
+    await expect(page.locator(".command-card").first()).toBeVisible();
+  });
+
+  test("sticky inline search clear stays synced with the main search", async ({ page }) => {
+    await page.locator("#search-input").fill("git");
+    await page.waitForTimeout(200);
+
+    await page.evaluate(() => window.scrollTo(0, 2000));
+    await expect(page.locator("#sticky-search-bar")).toHaveClass(/is-visible/);
+    await expect(page.locator("#sticky-search-clear-btn")).toBeVisible();
+
+    await page.locator("#sticky-search-clear-btn").click();
+
+    await expect(page.locator("#sticky-search-input")).toHaveValue("");
+    await expect(page.locator("#search-input")).toHaveValue("");
+    await expect(page.locator("#sticky-search-clear-btn")).toBeHidden();
+    await expect(page.locator("#sticky-search-input")).toBeFocused();
+  });
+
+  test("sticky result summary mirrors the current result count", async ({ page }) => {
+    const expectStickySummaryToMirrorMain = async () => {
+      await expect.poll(async () => {
+        const mainSummary = await page.locator("#result-summary").textContent();
+        const stickySummary = await page.locator("#sticky-result-summary").textContent();
+        const count = mainSummary?.match(/(\d+) 筆/)?.[1];
+
+        return Boolean(count && stickySummary === `${count} 筆`);
+      }).toBe(true);
+    };
+
+    await page.locator("#search-input").fill("git");
+    await page.waitForTimeout(200);
+
+    await page.evaluate(() => window.scrollTo(0, 2000));
+    await expect(page.locator("#sticky-search-bar")).toHaveClass(/is-visible/);
+    await expectStickySummaryToMirrorMain();
+
+    await page.locator("#sticky-search-input").fill("docker");
+    await page.waitForTimeout(200);
+    await expectStickySummaryToMirrorMain();
+  });
+
+  test("search summary shows a pending state while worker filtering is in flight", async ({ page }) => {
+    await page.addInitScript(() => {
+      const NativeWorker = window.Worker;
+      window.Worker = class DelayedSearchWorker extends NativeWorker {
+        postMessage(message, transfer) {
+          const send = () => NativeWorker.prototype.postMessage.call(this, message, transfer);
+
+          if (message?.type === "search") {
+            window.setTimeout(send, 180);
+            return;
+          }
+
+          send();
+        }
+      };
+    });
+    await page.reload();
+    await expect(page.locator(".command-card").first()).toBeVisible();
+
+    await page.locator("#search-input").fill("git");
+    await expect(page.locator("#result-summary")).toHaveClass(/is-searching/);
+    await expect(page.locator("#result-summary")).not.toHaveClass(/is-searching/, { timeout: 3000 });
+  });
+
+  test("late worker results do not overwrite the latest search", async ({ page }) => {
+    await page.addInitScript(() => {
+      const NativeWorker = window.Worker;
+      window.Worker = class OutOfOrderSearchWorker extends NativeWorker {
+        postMessage(message, transfer) {
+          const send = () => NativeWorker.prototype.postMessage.call(this, message, transfer);
+
+          if (message?.type === "search" && message.tokens?.includes("git")) {
+            window.setTimeout(send, 260);
+            return;
+          }
+
+          send();
+        }
+      };
+    });
+    await page.reload();
+    await expect(page.locator(".command-card").first()).toBeVisible();
+
+    await page.locator("#search-input").fill("git");
+    await page.waitForTimeout(120);
+    await page.locator("#search-input").fill("docker");
+
+    await expect(page.locator(".command-card").first()).toHaveAttribute("data-command-id", /docker/, { timeout: 3000 });
+    await page.waitForTimeout(360);
+
+    await expect(page.locator("#search-input")).toHaveValue("docker");
+    await expect(page.locator("#active-state")).toContainText("docker");
+    await expect(page.locator(".command-card").first()).toHaveAttribute("data-command-id", /docker/);
+  });
+
+  test("search matches placeholder command templates with pasted concrete values", async ({ page, context }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    await page.locator("#search-input").fill("Test-NetConnection google.com -Port 443");
+
+    const firstCard = page.locator(".command-card").first();
+    await expect(firstCard).toHaveAttribute("data-command-id", "windows-test-netconnection");
+    await expect(firstCard.locator(".placeholder-input").nth(0)).toHaveValue("google.com");
+    await expect(firstCard.locator(".placeholder-input").nth(1)).toHaveValue("443");
+    await expect(firstCard.locator(".placeholder-input").nth(0)).toHaveAttribute("data-placeholder-inferred", "true");
+    await expect(firstCard.locator(".placeholder-source")).toHaveCount(2);
+    await expect(firstCard.locator(".placeholder-source").first()).toHaveText("搜尋帶入");
+    await expect(page.locator(".command-card .command-code").first()).toContainText("Test-NetConnection google.com -Port 443");
+    await expect(page.locator(".command-card .match-line").first()).toContainText("模板");
+
+    await firstCard.locator(".copy-button").click();
+    await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe("Test-NetConnection google.com -Port 443");
+  });
+
+  test("editing an inferred placeholder clears its search-source marker", async ({ page }) => {
+    await page.locator("#search-input").fill("Test-NetConnection google.com -Port 443");
+
+    const firstCard = page.locator(".command-card").first();
+    const hostInput = firstCard.locator(".placeholder-input").nth(0);
+    await expect(hostInput).toHaveAttribute("data-placeholder-inferred", "true");
+    await expect(firstCard.locator(".placeholder-source")).toHaveCount(2);
+
+    await hostInput.fill("example.com");
+
+    await expect(hostInput).not.toHaveAttribute("data-placeholder-inferred", "true");
+    await expect(firstCard.locator(".placeholder-source")).toHaveCount(1);
+    await expect(page.locator(".command-card .command-code").first()).toContainText("Test-NetConnection example.com -Port 443");
+  });
+
+  test("search ranks placeholder variants above fuzzy description matches", async ({ page }) => {
+    await page.locator("#search-input").fill("npm install react");
+
+    await expect(page.locator(".command-card").first()).toHaveAttribute("data-command-id", "npm-install");
+    await expect(page.locator(".command-card").first()).toContainText("npm install");
+    await expect(page.locator(".command-card .match-line").first()).toContainText("指令");
+    await expect(page.locator('.command-card[data-command-id="powershell-mas-activation"]')).toHaveCount(0);
+  });
+
+  test("search matches concrete port values against command variants", async ({ page }) => {
+    await page.locator("#search-input").fill("netstat -ano | findstr :443");
+
+    await expect(page.locator(".command-card").first()).toHaveAttribute("data-command-id", "windows-netstat");
+    await expect(page.locator(".command-card").first()).toContainText("netstat");
+  });
+
   test("[/] keyboard shortcut cycles category and is reversible", async ({ page }) => {
     // Collapse state: start at "all"
     await page.keyboard.press("]");
@@ -219,6 +729,151 @@ test.describe("UX exploratory", () => {
 
     expect(afterBack).toContain("全部分類");
     expect(afterForward).not.toEqual(afterBack);
+  });
+
+  test("V keyboard shortcut toggles compact list view without moving the page", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 500 });
+    await expect(page.locator(".command-card").nth(10)).toBeVisible();
+
+    await page.evaluate(() => window.scrollTo(0, 420));
+    await expect.poll(() => page.evaluate(() => Math.round(window.scrollY))).toBe(420);
+    const beforeY = await page.evaluate(() => Math.round(window.scrollY));
+    expect(beforeY).toBeGreaterThan(0);
+
+    await page.keyboard.press("KeyV");
+
+    await expect(page.locator("body")).toHaveClass(/is-list-view/);
+    await expect(page.locator("#view-toggle-btn")).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator("#view-toggle-btn")).toHaveText("卡片");
+    await expect.poll(() => page.evaluate(() => Math.round(window.scrollY))).toBe(beforeY);
+
+    await page.keyboard.press("KeyV");
+
+    await expect(page.locator("body")).not.toHaveClass(/is-list-view/);
+    await expect(page.locator("#view-toggle-btn")).toHaveAttribute("aria-pressed", "false");
+    await expect(page.locator("#view-toggle-btn")).toHaveText("緊湊");
+  });
+
+  test("sticky view toggle switches density and stays synced with the main toggle", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 500 });
+    await expect(page.locator(".command-card").nth(10)).toBeVisible();
+
+    await page.evaluate(() => window.scrollTo(0, 640));
+    await expect(page.locator("#sticky-search-bar")).toHaveClass(/is-visible/);
+    await expect.poll(() => page.evaluate(() => Math.round(window.scrollY))).toBe(640);
+    const beforeY = await page.evaluate(() => Math.round(window.scrollY));
+
+    await page.locator("#sticky-view-toggle-btn").click();
+
+    await expect(page.locator("body")).toHaveClass(/is-list-view/);
+    await expect(page.locator("#view-toggle-btn")).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator("#sticky-view-toggle-btn")).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator("#view-toggle-btn")).toHaveText("卡片");
+    await expect(page.locator("#sticky-view-toggle-btn")).toHaveText("卡片");
+    await expect.poll(() => page.evaluate(() => Math.round(window.scrollY))).toBe(beforeY);
+
+    await page.evaluate(() => {
+      document.documentElement.style.scrollBehavior = "auto";
+      window.scrollTo(0, 0);
+      window.dispatchEvent(new Event("scroll"));
+    });
+    await expect.poll(() => page.evaluate(() => Math.round(window.scrollY))).toBe(0);
+    await expect(page.locator("#sticky-search-bar")).not.toHaveClass(/is-visible/);
+    await page.locator("#view-toggle-btn").click();
+
+    await expect(page.locator("body")).not.toHaveClass(/is-list-view/);
+    await expect(page.locator("#view-toggle-btn")).toHaveAttribute("aria-pressed", "false");
+    await expect(page.locator("#sticky-view-toggle-btn")).toHaveAttribute("aria-pressed", "false");
+    await expect(page.locator("#sticky-view-toggle-btn")).toHaveText("緊湊");
+  });
+
+  test("V shortcut does not fire while typing in search", async ({ page }) => {
+    const search = page.locator("#search-input");
+    await search.focus();
+    await page.keyboard.press("KeyV");
+
+    await expect(search).toHaveValue("v");
+    await expect(page.locator("body")).not.toHaveClass(/is-list-view/);
+  });
+
+  test("V shortcut does not fire while category picker is open", async ({ page }) => {
+    await page.locator("#category-picker-btn").click();
+    await expect(page.locator("#category-picker")).toBeVisible();
+
+    await page.keyboard.press("KeyV");
+
+    await expect(page.locator("body")).not.toHaveClass(/is-list-view/);
+    await expect(page.locator("#category-picker")).toBeVisible();
+  });
+
+  test("pasting on page chrome fills search without toggling compact view", async ({ page }) => {
+    await page.locator("body").click({ position: { x: 5, y: 5 } });
+
+    await page.evaluate(() => {
+      const data = new DataTransfer();
+      data.setData("text/plain", "docker\nps");
+      document.body.dispatchEvent(new ClipboardEvent("paste", {
+        bubbles: true,
+        cancelable: true,
+        clipboardData: data
+      }));
+    });
+
+    await expect(page.locator("#search-input")).toHaveValue("docker ps");
+    await expect(page.locator("body")).not.toHaveClass(/is-list-view/);
+    await expect(page.locator("#active-state")).toContainText("docker ps");
+  });
+
+  test("Ctrl+V keydown does not trigger the V view toggle shortcut", async ({ page }) => {
+    const wasDefaultPrevented = await page.evaluate(() => {
+      const event = new KeyboardEvent("keydown", {
+        key: "v",
+        ctrlKey: true,
+        bubbles: true,
+        cancelable: true
+      });
+      document.dispatchEvent(event);
+      return event.defaultPrevented;
+    });
+
+    expect(wasDefaultPrevented).toBe(false);
+    await expect(page.locator("body")).not.toHaveClass(/is-list-view/);
+  });
+
+  test("pasting inside placeholder inputs is not hijacked by global search", async ({ page }) => {
+    const placeholderInput = page.locator(".placeholder-input").first();
+    await expect(placeholderInput).toBeVisible();
+    await placeholderInput.focus();
+
+    const wasDefaultPrevented = await placeholderInput.evaluate((input) => {
+      const data = new DataTransfer();
+      data.setData("text/plain", "C:\\Temp");
+      const event = new ClipboardEvent("paste", {
+        bubbles: true,
+        cancelable: true,
+        clipboardData: data
+      });
+      input.dispatchEvent(event);
+      return event.defaultPrevented;
+    });
+
+    expect(wasDefaultPrevented).toBe(false);
+    await expect(page.locator("#search-input")).toHaveValue("");
+  });
+
+  test("focused search marks the first visible command as the Enter copy target", async ({ page }) => {
+    const search = page.locator("#search-input");
+    await search.focus();
+
+    await expect(page.locator("body")).toHaveClass(/has-search-focus/);
+    await expect(page.locator(".command-card").first()).toHaveCSS("position", "relative");
+    const copyHint = await page.locator(".command-card .copy-button").first().evaluate((button) =>
+      getComputedStyle(button, "::before").content
+    );
+    expect(copyHint).toContain("Enter");
+
+    await page.locator(".command-card").first().focus();
+    await expect(page.locator("body")).not.toHaveClass(/has-search-focus/);
   });
 
   test("Enter on a focused command card triggers copy", async ({ page, context }) => {
@@ -238,6 +893,187 @@ test.describe("UX exploratory", () => {
     // Normalize whitespace — hljs may introduce inline spans that don't show
     // in textContent, but the actual copied command should roughly match.
     expect(clipboardText.replace(/\s+/g, "")).toContain(cmdText.replace(/\s+/g, "").slice(0, 10));
+  });
+
+  test("Ctrl+C on a focused command card triggers copy", async ({ page, context }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+
+    const simpleCard = page.locator(".command-card:not(:has(.placeholder-input))").first();
+    await expect(simpleCard).toBeVisible();
+
+    const cmdText = (await simpleCard.locator(".command-code").textContent())?.trim() ?? "";
+    await simpleCard.focus();
+    await page.keyboard.press("Control+C");
+
+    await expect(page.locator("#copy-toast")).toHaveClass(/is-visible/);
+    const clipboardText = await page.evaluate(() => navigator.clipboard.readText());
+    expect(clipboardText.replace(/\s+/g, "")).toContain(cmdText.replace(/\s+/g, "").slice(0, 10));
+  });
+
+  test("copy action shows a visible clipboard toast", async ({ page, context }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+
+    const card = page.locator(".command-card:not(:has(.placeholder-input))").first();
+    await expect(card).toBeVisible();
+
+    const cmdText = (await card.locator(".command-code").textContent())?.trim() ?? "";
+    await card.click();
+
+    const toast = page.locator("#copy-toast");
+    await expect(toast).toHaveClass(/is-visible/);
+    await expect(toast).toHaveCSS("opacity", "1");
+    await expect(toast.locator(".copy-toast-status")).toHaveText("已複製");
+    await expect(toast.locator(".copy-toast-command")).toContainText(cmdText.replace(/\s+/g, " ").slice(0, 10));
+  });
+
+  test("mobile visible buttons keep a 44px touch target", async ({ browser }, testInfo) => {
+    const context = await browser.newContext({
+      baseURL: testInfo.project.use.baseURL,
+      viewport: { width: 390, height: 844 },
+      isMobile: true,
+      hasTouch: true
+    });
+    const mobilePage = await context.newPage();
+
+    await mobilePage.goto("/");
+    await expect(mobilePage.locator(".command-card").first()).toBeVisible();
+
+    const undersized = await mobilePage.evaluate(() => Array.from(document.querySelectorAll("button"))
+      .filter((button) => {
+        const rect = button.getBoundingClientRect();
+        const style = getComputedStyle(button);
+        return rect.width > 0 && rect.height > 0 && style.display !== "none" && style.visibility !== "hidden";
+      })
+      .map((button) => {
+        const rect = button.getBoundingClientRect();
+        return {
+          label: button.textContent.trim() || button.getAttribute("aria-label") || button.className,
+          width: Math.round(rect.width),
+          height: Math.round(rect.height)
+        };
+      })
+      .filter((button) => button.width < 44 || button.height < 44));
+
+    await context.close();
+    expect(undersized).toEqual([]);
+  });
+
+  test("mobile copy button sits below the command block instead of overlaying it", async ({ browser }, testInfo) => {
+    const context = await browser.newContext({
+      baseURL: testInfo.project.use.baseURL,
+      viewport: { width: 390, height: 844 },
+      isMobile: true,
+      hasTouch: true
+    });
+    const mobilePage = await context.newPage();
+
+    await mobilePage.goto("/");
+    const card = mobilePage.locator(".command-card").first();
+    await expect(card).toBeVisible();
+
+    const layout = await card.evaluate((el) => {
+      const commandLine = el.querySelector(".command-line").getBoundingClientRect();
+      const copyButton = el.querySelector(".copy-button").getBoundingClientRect();
+
+      return {
+        commandLineBottom: Math.round(commandLine.bottom),
+        commandLineWidth: Math.round(commandLine.width),
+        copyButtonTop: Math.round(copyButton.top),
+        copyButtonWidth: Math.round(copyButton.width)
+      };
+    });
+
+    await context.close();
+    expect(layout.copyButtonTop).toBeGreaterThanOrEqual(layout.commandLineBottom);
+    expect(layout.copyButtonWidth).toBeGreaterThanOrEqual(layout.commandLineWidth - 2);
+  });
+
+  test("desktop copy button uses a separate action column instead of overlaying the command", async ({ page }) => {
+    await expect(page.locator(".command-card").first()).toBeVisible();
+
+    const layout = await page.locator(".command-card").first().evaluate((el) => {
+      const commandLine = el.querySelector(".command-line").getBoundingClientRect();
+      const copyButton = el.querySelector(".copy-button").getBoundingClientRect();
+
+      return {
+        commandLineRight: Math.round(commandLine.right),
+        copyButtonLeft: Math.round(copyButton.left),
+        copyButtonHeight: Math.round(copyButton.height)
+      };
+    });
+
+    expect(layout.copyButtonLeft).toBeGreaterThanOrEqual(layout.commandLineRight);
+    expect(layout.copyButtonHeight).toBeGreaterThan(0);
+  });
+
+  test("Enter inside search copies the first visible result", async ({ page, context }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+
+    const search = page.locator("#search-input");
+    await search.fill("docker ps");
+    await search.press("Enter");
+
+    await expect(page.locator(".command-card").first()).toBeVisible();
+    await expect(async () => {
+      const clipboardText = await page.evaluate(() => navigator.clipboard.readText());
+      expect(clipboardText.length).toBeGreaterThan(0);
+    }).toPass({ timeout: 3000 });
+
+    const firstCommand = (await page.locator(".command-card .command-code").first().textContent())?.trim() ?? "";
+    const clipboardText = await page.evaluate(() => navigator.clipboard.readText());
+    expect(clipboardText.replace(/\s+/g, "")).toContain(firstCommand.replace(/\s+/g, "").slice(0, 10));
+  });
+
+  test("Enter inside search announces when there is no result to copy", async ({ page }) => {
+    const search = page.locator("#search-input");
+    await search.fill("zzzz-no-match-command-atlas");
+    await search.press("Enter");
+
+    await expect(page.locator("#app-announcer")).toContainText("沒有可複製的結果。");
+  });
+
+  test("ArrowDown inside search focuses the first visible result", async ({ page }) => {
+    const search = page.locator("#search-input");
+    await search.fill("docker ps");
+    await search.press("ArrowDown");
+
+    await expect(page.locator(".command-card").first()).toBeFocused();
+  });
+
+  test("ArrowUp on the first focused command card returns to search", async ({ page }) => {
+    const search = page.locator("#search-input");
+    await search.fill("docker ps");
+    await search.press("ArrowDown");
+    await expect(page.locator(".command-card").first()).toBeFocused();
+
+    await page.keyboard.press("ArrowUp");
+
+    await expect(search).toBeFocused();
+  });
+
+  test("ArrowDown inside search announces when there is no result to focus", async ({ page }) => {
+    const search = page.locator("#search-input");
+    await search.fill("zzzz-no-match-command-atlas");
+    await search.press("ArrowDown");
+
+    await expect(page.locator("#app-announcer")).toContainText("沒有可選取的結果。");
+  });
+
+  test("Ctrl+Enter copies the first visible result from page chrome", async ({ page, context }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+
+    await page.mouse.click(12, 12);
+    await page.keyboard.press("Control+Enter");
+
+    await expect(page.locator(".command-card").first()).toBeVisible();
+    await expect(async () => {
+      const clipboardText = await page.evaluate(() => navigator.clipboard.readText());
+      expect(clipboardText.length).toBeGreaterThan(0);
+    }).toPass({ timeout: 3000 });
+
+    const firstCommand = (await page.locator(".command-card .command-code").first().textContent())?.trim() ?? "";
+    const clipboardText = await page.evaluate(() => navigator.clipboard.readText());
+    expect(clipboardText.replace(/\s+/g, "")).toContain(firstCommand.replace(/\s+/g, "").slice(0, 10));
   });
 
   test("sticky bar pointer-events lets clicks pass through to cards behind it", async ({ page }) => {
@@ -300,6 +1136,83 @@ test.describe("UX exploratory", () => {
     // Click anywhere else closes it (document click listener)
     await page.locator("body").click({ position: { x: 5, y: 5 } });
     await expect(tooltip).not.toHaveClass(/is-open/);
+  });
+
+  test("? keyboard shortcut toggles the shortcuts tooltip outside text input", async ({ page }) => {
+    const tooltip = page.locator("#shortcuts-tooltip");
+    const btn = page.locator("#help-btn");
+
+    await page.locator("body").click({ position: { x: 5, y: 5 } });
+    await page.keyboard.press("Shift+Slash");
+    await expect(tooltip).toHaveClass(/is-open/);
+    await expect(btn).toHaveAttribute("aria-expanded", "true");
+    await expect(tooltip).toHaveAttribute("aria-hidden", "false");
+
+    await page.keyboard.press("Shift+Slash");
+    await expect(tooltip).not.toHaveClass(/is-open/);
+    await expect(btn).toHaveAttribute("aria-expanded", "false");
+    await expect(tooltip).toHaveAttribute("aria-hidden", "true");
+  });
+
+  test("shortcuts tooltip stays inside a short viewport and scrolls internally", async ({ page }) => {
+    await page.setViewportSize({ width: 900, height: 420 });
+
+    const tooltip = page.locator("#shortcuts-tooltip");
+    await page.locator("#help-btn").click();
+    await expect(tooltip).toHaveClass(/is-open/);
+
+    const geometry = await tooltip.evaluate((el) => {
+      const rect = el.getBoundingClientRect();
+      return {
+        bottom: Math.round(rect.bottom),
+        viewportHeight: window.innerHeight,
+        scrollHeight: el.scrollHeight,
+        clientHeight: el.clientHeight,
+        overflowY: getComputedStyle(el).overflowY
+      };
+    });
+
+    expect(geometry.bottom).toBeLessThanOrEqual(geometry.viewportHeight);
+    expect(geometry.scrollHeight).toBeGreaterThan(geometry.clientHeight);
+    expect(geometry.overflowY).toBe("auto");
+  });
+
+  test("PageDown does not change result pages while shortcuts tooltip is open", async ({ page }) => {
+    await expect(page.locator("#page-jump")).toBeVisible();
+    await expect(page.locator(".command-card .row-index").first()).toHaveText("001");
+
+    await page.locator("#help-btn").click();
+    await expect(page.locator("#shortcuts-tooltip")).toHaveClass(/is-open/);
+    await page.keyboard.press("PageDown");
+
+    await expect(page.locator(".pagination-button.is-active")).toHaveText("1");
+    await expect(page.locator(".command-card .row-index").first()).toHaveText("001");
+    expect(page.url()).not.toMatch(/[?&]page=2/);
+  });
+
+  test("? shortcut stays as text while typing in search", async ({ page }) => {
+    const search = page.locator("#search-input");
+
+    await search.focus();
+    await page.keyboard.press("Shift+Slash");
+
+    await expect(search).toHaveValue("?");
+    await expect(page.locator("#shortcuts-tooltip")).not.toHaveClass(/is-open/);
+  });
+
+  test("Esc closes shortcuts tooltip without clearing the current search", async ({ page }) => {
+    const search = page.locator("#search-input");
+    const tooltip = page.locator("#shortcuts-tooltip");
+
+    await search.fill("docker");
+    await page.locator("#help-btn").click();
+    await expect(tooltip).toHaveClass(/is-open/);
+
+    await page.keyboard.press("Escape");
+
+    await expect(tooltip).not.toHaveClass(/is-open/);
+    await expect(search).toHaveValue("docker");
+    await expect(page.locator("#active-state")).toContainText("docker");
   });
 
   test("REGRESSION: arrow keys on a variant tab should switch variants, not move cards", async ({ page }) => {

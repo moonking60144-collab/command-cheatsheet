@@ -33,6 +33,10 @@ export function hasOpenCategoryPicker() {
   return getCategoryPickerPairs().some(({ panel }) => !panel.hidden);
 }
 
+function syncPickerOpenState() {
+  document.body.classList.toggle("has-open-picker", hasOpenCategoryPicker());
+}
+
 export function openCategoryPicker(panel) {
   if (!panel) {
     return;
@@ -49,6 +53,7 @@ export function openCategoryPicker(panel) {
   }
 
   panel.hidden = false;
+  syncPickerOpenState();
   const button = getCategoryPickerButton(panel);
   button?.setAttribute("aria-expanded", "true");
   button?.classList.add("is-open");
@@ -56,7 +61,10 @@ export function openCategoryPicker(panel) {
   window.requestAnimationFrame(() => {
     calibratePickerGrid(panel);
     positionPicker(panel);
-    searchInput?.focus();
+    const isFinePointer = window.matchMedia?.("(hover: hover) and (pointer: fine)").matches ?? true;
+    if (isFinePointer) {
+      searchInput?.focus();
+    }
   });
 }
 
@@ -70,6 +78,7 @@ export function closeCategoryPicker(panel) {
   const button = getCategoryPickerButton(panel);
   button?.setAttribute("aria-expanded", "false");
   button?.classList.remove("is-open");
+  syncPickerOpenState();
 }
 
 export function closeAllCategoryPickers(exceptPanel = null) {
@@ -124,6 +133,7 @@ function createPickerButton(key, label, count) {
   button.type = "button";
   button.className = `picker-item${state.activeCategory === key ? " is-active" : ""}`;
   button.dataset.category = key;
+  button.setAttribute("aria-pressed", String(state.activeCategory === key));
   button.innerHTML = `
     <span class="picker-item-label">${escapeHtml(label)}</span>
     <span class="picker-item-count">${count}</span>
@@ -262,6 +272,7 @@ function updatePickerInPlace(panel) {
     const key = item.dataset.category;
     const isActive = key === state.activeCategory;
     item.classList.toggle("is-active", isActive);
+    item.setAttribute("aria-pressed", String(isActive));
 
     const countEl = item.querySelector(".picker-item-count");
     if (countEl) {
@@ -342,7 +353,7 @@ export function positionPicker(panel) {
 
   const btnRect = button.getBoundingClientRect();
   const margin = 8;
-  const maxWidth = 860;
+  const maxWidth = 720;
 
   // Fill leftward from button's right edge to viewport left edge, capped at maxWidth
   const desiredWidth = Math.min(Math.floor(btnRect.right) - margin, maxWidth);

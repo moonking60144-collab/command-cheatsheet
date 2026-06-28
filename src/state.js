@@ -2,13 +2,15 @@
 // All other modules import from here. `state` and `ui` are live objects —
 // mutating their properties from any module is observed everywhere.
 
+import { getCommandTemplateTokens } from "./search-core.js";
+
 export const STORAGE_KEY = "command-atlas-state-v1";
 export const PINNED_KEY = "command-atlas-pinned-v1";
 export const PLACEHOLDER_KEY = "command-atlas-placeholders-v1";
 export const PLACEHOLDER_SESSION_KEY = "command-atlas-placeholders-session-v1";
 export const DATA_URL = "./commands.json";
 export const SEARCH_DEBOUNCE_MS = 80;
-export const RESULTS_PER_PAGE = 50;
+export const RESULTS_PER_PAGE = 100;
 export const FIRST_RENDER_BATCH = 20;
 export const DEFERRED_RENDER_CHUNK = 15;
 
@@ -46,25 +48,35 @@ export const state = {
 export const ui = {
   hero: null,
   searchInput: null,
+  searchClearButton: null,
   stickySearchBar: null,
   stickySearchInput: null,
+  stickySearchClearButton: null,
   stickyActiveCategory: null,
+  stickyResultSummary: null,
   stickyCategoryPickerBtn: null,
   stickyCategoryPicker: null,
+  stickyPageJump: null,
+  stickyViewToggleButton: null,
+  stickyCurrentLinkButton: null,
   stickyClearButton: null,
+  searchAssists: null,
   filterBar: null,
   categoryPickerBtn: null,
   categoryPicker: null,
   publicResultsSection: null,
   results: null,
   publicPagination: null,
+  pageJump: null,
   resultSummary: null,
   commandCount: null,
   categoryCount: null,
   activeState: null,
   viewToggleButton: null,
+  currentLinkButton: null,
   clearButton: null,
   scrollTopButton: null,
+  copyToast: null,
   announcer: null
 };
 
@@ -72,25 +84,35 @@ export const ui = {
 export function bindUiRefs() {
   ui.hero = document.querySelector(".hero");
   ui.searchInput = document.getElementById("search-input");
+  ui.searchClearButton = document.getElementById("search-clear-btn");
   ui.stickySearchBar = document.getElementById("sticky-search-bar");
   ui.stickySearchInput = document.getElementById("sticky-search-input");
+  ui.stickySearchClearButton = document.getElementById("sticky-search-clear-btn");
   ui.stickyActiveCategory = document.getElementById("sticky-active-category");
+  ui.stickyResultSummary = document.getElementById("sticky-result-summary");
   ui.stickyCategoryPickerBtn = document.getElementById("sticky-category-picker-btn");
   ui.stickyCategoryPicker = document.getElementById("sticky-category-picker");
+  ui.stickyPageJump = document.getElementById("sticky-page-jump");
+  ui.stickyViewToggleButton = document.getElementById("sticky-view-toggle-btn");
+  ui.stickyCurrentLinkButton = document.getElementById("sticky-current-link-btn");
   ui.stickyClearButton = document.getElementById("sticky-clear-btn");
+  ui.searchAssists = document.getElementById("search-assists");
   ui.filterBar = document.getElementById("filter-bar");
   ui.categoryPickerBtn = document.getElementById("category-picker-btn");
   ui.categoryPicker = document.getElementById("category-picker");
   ui.publicResultsSection = document.getElementById("public-results-section");
   ui.results = document.getElementById("results");
   ui.publicPagination = document.getElementById("public-pagination");
+  ui.pageJump = document.getElementById("page-jump");
   ui.resultSummary = document.getElementById("result-summary");
   ui.commandCount = document.getElementById("command-count");
   ui.categoryCount = document.getElementById("category-count");
   ui.activeState = document.getElementById("active-state");
   ui.viewToggleButton = document.getElementById("view-toggle-btn");
+  ui.currentLinkButton = document.getElementById("current-link-btn");
   ui.clearButton = document.getElementById("clear-btn");
   ui.scrollTopButton = document.getElementById("scroll-top-btn");
+  ui.copyToast = document.getElementById("copy-toast");
   ui.announcer = document.getElementById("app-announcer");
 }
 
@@ -116,7 +138,8 @@ export function saveState() {
     JSON.stringify({
       query: state.query,
       activeCategory: state.activeCategory,
-      viewMode: state.viewMode
+      viewMode: state.viewMode,
+      page: state.pagination.public
     })
   );
   syncUrlState();
@@ -126,6 +149,7 @@ export function restoreState() {
   let nextQuery = "";
   let nextCategory = "all";
   let nextViewMode = "cards";
+  let nextPage = 1;
   const rawState = localStorage.getItem(STORAGE_KEY);
 
   if (rawState) {
@@ -134,6 +158,7 @@ export function restoreState() {
       nextQuery = typeof parsed.query === "string" ? parsed.query : "";
       nextCategory = typeof parsed.activeCategory === "string" ? parsed.activeCategory : "all";
       nextViewMode = parsed.viewMode === "list" ? "list" : "cards";
+      nextPage = Number.isInteger(parsed.page) && parsed.page > 0 ? parsed.page : 1;
     } catch (error) {
       console.warn("restoreState failed", error);
       localStorage.removeItem(STORAGE_KEY);
@@ -146,19 +171,22 @@ export function restoreState() {
     nextQuery = urlState.query;
     nextCategory = urlState.activeCategory;
     nextViewMode = urlState.viewMode;
+    nextPage = urlState.page;
   }
 
   state.query = nextQuery;
   state.activeCategory = nextCategory || "all";
   state.viewMode = nextViewMode;
+  state.pagination.public = nextPage;
 }
 
 export function getUrlState() {
   const params = new URLSearchParams(window.location.search);
-  const hasAnyParam = params.has("q") || params.has("cat") || params.has("view");
+  const hasAnyParam = params.has("q") || params.has("cat") || params.has("view") || params.has("page");
   let query = "";
   let activeCategory = "all";
   let viewMode = "cards";
+  let page = 1;
 
   if (params.has("q")) {
     query = params.get("q") ?? "";
@@ -174,11 +202,17 @@ export function getUrlState() {
     viewMode = "cards";
   }
 
+  if (params.has("page")) {
+    const parsedPage = Number.parseInt(params.get("page") ?? "", 10);
+    page = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
+  }
+
   return {
     hasAnyParam,
     query,
     activeCategory: activeCategory || "all",
-    viewMode
+    viewMode,
+    page
   };
 }
 
@@ -204,6 +238,12 @@ export function syncUrlState() {
     params.delete("view");
   }
 
+  if (state.pagination.public > 1) {
+    params.set("page", String(state.pagination.public));
+  } else {
+    params.delete("page");
+  }
+
   const nextSearch = params.toString();
   const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ""}${window.location.hash}`;
   window.history.replaceState(null, "", nextUrl);
@@ -218,12 +258,31 @@ export function updateViewModeUI() {
   const isListView = state.viewMode === "list";
   document.body.classList.toggle("is-list-view", isListView);
 
-  if (ui.viewToggleButton) {
-    ui.viewToggleButton.classList.toggle("is-active", isListView);
-    ui.viewToggleButton.setAttribute("aria-pressed", String(isListView));
-    ui.viewToggleButton.setAttribute("title", isListView ? "切換成卡片檢視" : "切換成緊湊檢視");
-    ui.viewToggleButton.textContent = isListView ? "卡片" : "緊湊";
-  }
+  [ui.viewToggleButton, ui.stickyViewToggleButton].forEach((button) => {
+    if (!button) {
+      return;
+    }
+
+    button.classList.toggle("is-active", isListView);
+    button.setAttribute("aria-pressed", String(isListView));
+    button.setAttribute("title", isListView ? "切換成卡片檢視" : "切換成緊湊檢視");
+    button.textContent = isListView ? "卡片" : "緊湊";
+  });
+}
+
+export function updateDocumentTitle(resultCount) {
+  const query = compactTitlePart(state.query);
+  const category = state.activeCategory === "all" ? "" : compactTitlePart(getActiveCategoryLabel());
+  const context = [query, category].filter(Boolean).join(" · ");
+
+  document.title = context
+    ? `${resultCount} 筆 · ${context} | Command Atlas`
+    : `${resultCount} 筆指令 | Command Atlas`;
+}
+
+function compactTitlePart(value) {
+  const normalized = String(value ?? "").replace(/\s+/g, " ").trim();
+  return normalized.length > 36 ? `${normalized.slice(0, 35)}…` : normalized;
 }
 
 export function announce(message) {
@@ -289,6 +348,9 @@ export function normalizeCommands(rawData, fallbackCategory = "") {
       const primaryCommand = rawVariants.length > 0
         ? rawVariants[0].command
         : String(item.command ?? "").trim();
+      const commandTemplateTokenSets = [primaryCommand, ...rawVariants.map((variant) => variant.command)]
+        .map(getCommandTemplateTokens)
+        .filter((tokens) => tokens.length > 0);
 
       // placeholderSuggestions: { "<token>": [{label, value}, ...] }
       // Optional. Only keep entries whose value is a non-empty string so
@@ -320,7 +382,8 @@ export function normalizeCommands(rawData, fallbackCategory = "") {
         description: String(item.description ?? "").trim(),
         tags: Array.isArray(item.tags) ? item.tags.map((tag) => String(tag).trim()).filter(Boolean) : [],
         notes: String(item.notes ?? "").trim(),
-        placeholderSuggestions
+        placeholderSuggestions,
+        commandTemplateTokenSets
       };
 
       const commandLower = normalized.command.toLowerCase();

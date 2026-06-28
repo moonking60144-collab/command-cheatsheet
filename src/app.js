@@ -15,7 +15,8 @@ import {
   getCommandCounts,
   updateMetrics,
   updateViewModeUI,
-  getUrlState
+  getUrlState,
+  announce
 } from "./state.js";
 import {
   registerWorkerHandlers,
@@ -50,6 +51,7 @@ import {
 import {
   restorePlaceholders,
   syncCardPlaceholderValues,
+  clearPlaceholderInference,
   updateCommandPreview,
   buildResolvedCommand,
   switchCardVariant
@@ -63,13 +65,19 @@ import {
   handleOutsideCategoryPickerClick,
   positionPicker,
   invalidatePickerLayoutCache,
-  clearPickerPanels
+  clearPickerPanels,
+  hasOpenCategoryPicker
 } from "./picker.js";
 import {
   setupUtilityChromeObserver,
-  copyToClipboard
+  copyToClipboard,
+  focusActiveSearch,
+  isTextEntryElement
 } from "./chrome.js";
 import { setupGlobalKeyboard } from "./keyboard.js";
+
+let copyFirstResultAfterRender = false;
+let focusFirstResultAfterRender = false;
 
 init();
 
@@ -140,6 +148,11 @@ function bindEvents() {
       input.dataset.composing = "true";
     });
 
+    input.addEventListener("focus", syncSearchFocusState);
+    input.addEventListener("blur", () => {
+      window.setTimeout(syncSearchFocusState, 0);
+    });
+
     input.addEventListener("compositionend", (event) => {
       delete input.dataset.composing;
       updateQuery(event.target.value, event.target);
@@ -151,6 +164,25 @@ function bindEvents() {
       }
       updateQuery(event.target.value, event.target);
     });
+
+    input.addEventListener("keydown", (event) => {
+      if (event.isComposing || input.dataset.composing === "true") {
+        return;
+      }
+
+      if (event.key === "Enter") {
+        event.preventDefault();
+        copyFirstResultAfterRender = true;
+        applyFilters({ fresh: false });
+        return;
+      }
+
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        focusFirstResultAfterRender = true;
+        applyFilters({ fresh: false });
+      }
+    });
   });
 
   [ui.clearButton, ui.stickyClearButton].forEach((button) => {
@@ -161,11 +193,33 @@ function bindEvents() {
     });
   });
 
-  ui.viewToggleButton?.addEventListener("click", () => {
-    state.viewMode = state.viewMode === "list" ? "cards" : "list";
-    saveState();
-    updateViewModeUI();
-    applyFiltersAnimated();
+  [ui.searchClearButton, ui.stickySearchClearButton].forEach((button) => {
+    button?.addEventListener("click", () => {
+      updateQuery("");
+      (button === ui.stickySearchClearButton ? ui.stickySearchInput : ui.searchInput)
+        ?.focus({ preventScroll: true });
+    });
+  });
+
+  ui.searchAssists?.addEventListener("click", (event) => {
+    const chip = event.target.closest("[data-query-template]");
+
+    if (!chip) {
+      return;
+    }
+
+    updateQuery(chip.dataset.queryTemplate ?? "");
+    focusActiveSearch({ select: false });
+  });
+
+  [ui.viewToggleButton, ui.stickyViewToggleButton].forEach((button) => {
+    button?.addEventListener("click", toggleViewMode);
+  });
+
+  [ui.currentLinkButton, ui.stickyCurrentLinkButton].forEach((button) => {
+    button?.addEventListener("click", () => {
+      copyCurrentViewLink(button);
+    });
   });
 
   ui.filterBar.addEventListener("click", (event) => {
@@ -240,6 +294,19 @@ function bindEvents() {
 
   [ui.results].forEach((container) => {
     container?.addEventListener("click", async (event) => {
+      const emptyAction = event.target.closest("[data-empty-action]");
+
+      if (emptyAction) {
+        if (emptyAction.dataset.emptyAction === "clear-all") {
+          clearFilters({ preserveScroll: true });
+        } else if (emptyAction.dataset.emptyAction === "clear-query") {
+          updateQuery("");
+        }
+
+        focusActiveSearch({ select: false });
+        return;
+      }
+
       const categoryButton = event.target.closest("[data-category]");
 
       if (categoryButton) {
@@ -326,6 +393,7 @@ function bindEvents() {
       }
 
       const card = placeholderInput.closest(".command-card");
+      clearPlaceholderInference(placeholderInput);
       syncCardPlaceholderValues(card);
       updateCommandPreview(card);
     });
@@ -334,6 +402,18 @@ function bindEvents() {
       const card = event.target.closest(".command-card");
 
       if (!card) {
+        return;
+      }
+
+      if (
+        event.target === card &&
+        (event.ctrlKey || event.metaKey) &&
+        event.key.toLowerCase() === "c" &&
+        !window.getSelection()?.toString()
+      ) {
+        event.preventDefault();
+        event.stopPropagation();
+        card.querySelector("[data-copy-command]")?.click();
         return;
       }
 
@@ -373,12 +453,21 @@ function bindEvents() {
         const cards = Array.from(container.querySelectorAll(".command-card"));
         const idx = cards.indexOf(card);
         const delta = event.key === "ArrowDown" || event.key === "ArrowRight" ? 1 : -1;
-        cards[idx + delta]?.focus();
+        const nextCard = cards[idx + delta];
+
+        if (nextCard) {
+          nextCard.focus();
+          return;
+        }
+
+        if (delta < 0) {
+          focusActiveSearch({ select: false });
+        }
       }
     });
   });
 
-  [ui.publicPagination].forEach((container) => {
+  [ui.publicPagination, ui.pageJump, ui.stickyPageJump].forEach((container) => {
     container?.addEventListener("click", (event) => {
       const button = event.target.closest("[data-page-target][data-page-number]");
 
@@ -394,12 +483,7 @@ function bindEvents() {
       }
 
       if (target === "public") {
-        state.pagination[target] = nextPage;
-        // Pagination renders the same filter result, sliced differently —
-        // skip card-in animation so the user doesn't see 50 cards fade
-        // in every time they click a page number.
-        applyFiltersAnimated({ fresh: false });
-        ui.publicResultsSection?.scrollIntoView({ behavior: "smooth", block: "start" });
+        goToPublicPage(nextPage);
       }
     });
   });
@@ -409,20 +493,55 @@ function bindEvents() {
 
   helpBtn?.addEventListener("click", (event) => {
     event.stopPropagation();
-    const isOpen = shortcutsTooltip.classList.toggle("is-open");
-    helpBtn.setAttribute("aria-expanded", String(isOpen));
-    shortcutsTooltip.setAttribute("aria-hidden", String(!isOpen));
+    toggleShortcutsTooltip();
   });
 
   document.addEventListener("click", () => closeShortcutsTooltip());
 
+  function toggleShortcutsTooltip() {
+    const isOpen = !shortcutsTooltip?.classList.contains("is-open");
+    shortcutsTooltip?.classList.toggle("is-open", isOpen);
+    helpBtn?.setAttribute("aria-expanded", String(isOpen));
+    shortcutsTooltip?.setAttribute("aria-hidden", String(!isOpen));
+  }
+
   function closeShortcutsTooltip() {
+    const wasOpen = shortcutsTooltip?.classList.contains("is-open");
     shortcutsTooltip?.classList.remove("is-open");
     helpBtn?.setAttribute("aria-expanded", "false");
     shortcutsTooltip?.setAttribute("aria-hidden", "true");
+    return Boolean(wasOpen);
   }
 
-  setupGlobalKeyboard({ closeShortcutsTooltip });
+  setupGlobalKeyboard({
+    closeShortcutsTooltip,
+    toggleShortcutsTooltip,
+    isShortcutsTooltipOpen: () => shortcutsTooltip?.classList.contains("is-open") ?? false
+  });
+
+  document.addEventListener("commandatlas:results-rendered", () => {
+    if (copyFirstResultAfterRender) {
+      copyFirstResultAfterRender = false;
+      copyFirstVisibleCommand();
+    }
+
+    if (focusFirstResultAfterRender) {
+      focusFirstResultAfterRender = false;
+      focusFirstVisibleCommandCard();
+    }
+  });
+
+  document.addEventListener("commandatlas:copy-first-result", () => {
+    copyFirstVisibleCommand();
+  });
+
+  document.addEventListener("commandatlas:toggle-view-mode", toggleViewMode);
+
+  document.addEventListener("commandatlas:change-page", (event) => {
+    changePublicPageBy(event.detail?.direction);
+  });
+
+  document.addEventListener("paste", handleGlobalPasteSearch);
 
   window.addEventListener("popstate", () => {
     restoreStateFromUrl(getUrlState());
@@ -438,6 +557,109 @@ function bindEvents() {
   ui.filterBar?.addEventListener("scroll", updateFilterBarOverflow, { passive: true });
 
   setupUtilityChromeObserver();
+}
+
+function handleGlobalPasteSearch(event) {
+  const target = event.target;
+
+  if (
+    hasOpenCategoryPicker() ||
+    target instanceof Element &&
+    (isTextEntryElement(target) || target.closest(".category-picker, .placeholder-fields, .help-wrap, button, a, [role='button'], [role='dialog']"))
+  ) {
+    return;
+  }
+
+  const rawPastedText = event.clipboardData?.getData("text/plain") ?? "";
+  const pastedText = rawPastedText.replace(/\s+/g, " ").trim();
+
+  if (!pastedText) {
+    return;
+  }
+
+  event.preventDefault();
+  updateQuery(pastedText);
+  focusActiveSearch({ select: false });
+  announce("已貼上內容並開始搜尋。");
+}
+
+async function copyFirstVisibleCommand() {
+  const card = ui.results?.querySelector(".command-card");
+  const copyButton = card?.querySelector("[data-copy-command]");
+
+  if (!card || !copyButton) {
+    announce("沒有可複製的結果。");
+    return;
+  }
+
+  const command = buildResolvedCommand(card, copyButton.dataset.copyCommand);
+  await copyToClipboard(command, copyButton, card);
+}
+
+async function copyCurrentViewLink(button) {
+  await copyToClipboard(window.location.href, button, null, "目前視圖連結已複製。");
+}
+
+function changePublicPageBy(direction) {
+  const delta = Number(direction);
+
+  if (!Number.isFinite(delta) || delta === 0) {
+    return;
+  }
+
+  const selector = delta > 0 ? ".page-jump-next:not(:disabled)" : ".page-jump-prev:not(:disabled)";
+  const button = ui.pageJump?.querySelector(selector) || ui.stickyPageJump?.querySelector(selector);
+
+  if (!button) {
+    announce(delta > 0 ? "已經是最後一頁。" : "已經是第一頁。");
+    return;
+  }
+
+  const nextPage = Number.parseInt(button.dataset.pageNumber ?? "", 10);
+  goToPublicPage(nextPage);
+}
+
+function goToPublicPage(nextPage) {
+  if (!Number.isFinite(nextPage)) {
+    return;
+  }
+
+  state.pagination.public = nextPage;
+  saveState();
+  // Pagination renders the same filter result, sliced differently —
+  // skip card-in animation so the user doesn't see a full page fade
+  // in every time they click a page number.
+  applyFiltersAnimated({ fresh: false });
+  ui.publicResultsSection?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function toggleViewMode(event) {
+  if (event?.currentTarget === ui.stickyViewToggleButton && event.detail > 0) {
+    ui.stickyViewToggleButton.blur();
+  }
+
+  state.viewMode = state.viewMode === "list" ? "cards" : "list";
+  saveState();
+  updateViewModeUI();
+  applyFiltersAnimated({ fresh: false, preserveScroll: true });
+}
+
+function syncSearchFocusState() {
+  const activeElement = document.activeElement;
+  const hasSearchFocus = activeElement === ui.searchInput || activeElement === ui.stickySearchInput;
+  document.body.classList.toggle("has-search-focus", hasSearchFocus);
+}
+
+function focusFirstVisibleCommandCard() {
+  const card = ui.results?.querySelector(".command-card");
+
+  if (!card) {
+    announce("沒有可選取的結果。");
+    return;
+  }
+
+  card.focus({ preventScroll: true });
+  card.scrollIntoView({ block: "nearest", behavior: "smooth" });
 }
 
 function registerServiceWorker() {

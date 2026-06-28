@@ -1,4 +1,4 @@
-// Document-level keyboard routing: /, Ctrl+K, Esc, [, ], Enter.
+// Document-level keyboard routing: /, ?, Ctrl+K, Ctrl+Enter, Esc, [, ], V, Enter, PageUp/PageDown.
 
 import { clearFilters, cycleCategory } from "./filters.js";
 import { hasOpenCategoryPicker, closeAllCategoryPickers } from "./picker.js";
@@ -29,7 +29,7 @@ function shouldFocusMainSearchOnEnter(target) {
   return true;
 }
 
-export function setupGlobalKeyboard({ closeShortcutsTooltip }) {
+export function setupGlobalKeyboard({ closeShortcutsTooltip, toggleShortcutsTooltip, isShortcutsTooltipOpen }) {
   document.addEventListener("keydown", (event) => {
     // Skip all custom shortcut handling while an IME composition is active
     // (Bopomofo, Pinyin, Kana, etc.) so we don't disturb the IME state.
@@ -39,10 +39,23 @@ export function setupGlobalKeyboard({ closeShortcutsTooltip }) {
 
     const activeElement = document.activeElement;
     const isTyping = isTextEntryElement(activeElement);
+    const shortcutsOpen = isShortcutsTooltipOpen?.() ?? false;
+
+    if ((event.ctrlKey || event.metaKey) && event.key === "Enter" && !isTyping) {
+      event.preventDefault();
+      document.dispatchEvent(new CustomEvent("commandatlas:copy-first-result"));
+      return;
+    }
 
     if ((event.key === "/" || (event.key.toLowerCase() === "k" && (event.metaKey || event.ctrlKey))) && !isTyping) {
       event.preventDefault();
       focusActiveSearch();
+    }
+
+    if (event.key === "?" && !isTyping && !hasOpenCategoryPicker()) {
+      event.preventDefault();
+      toggleShortcutsTooltip?.();
+      return;
     }
 
     if (event.key === "Enter" && shouldFocusMainSearchOnEnter(event.target)) {
@@ -51,9 +64,23 @@ export function setupGlobalKeyboard({ closeShortcutsTooltip }) {
       return;
     }
 
-    if (!isTyping && (event.key === "[" || event.key === "]")) {
+    if (!isTyping && !shortcutsOpen && (event.key === "[" || event.key === "]")) {
       event.preventDefault();
       cycleCategory(event.key === "[" ? -1 : 1);
+      return;
+    }
+
+    if (!isTyping && !shortcutsOpen && !hasOpenCategoryPicker() && (event.key === "PageUp" || event.key === "PageDown")) {
+      event.preventDefault();
+      document.dispatchEvent(new CustomEvent("commandatlas:change-page", {
+        detail: { direction: event.key === "PageDown" ? 1 : -1 }
+      }));
+      return;
+    }
+
+    if (!isTyping && !shortcutsOpen && !event.ctrlKey && !event.metaKey && !event.altKey && !hasOpenCategoryPicker() && event.key.toLowerCase() === "v") {
+      event.preventDefault();
+      document.dispatchEvent(new CustomEvent("commandatlas:toggle-view-mode"));
       return;
     }
 
@@ -69,7 +96,11 @@ export function setupGlobalKeyboard({ closeShortcutsTooltip }) {
         return;
       }
 
-      closeShortcutsTooltip?.();
+      if (closeShortcutsTooltip?.()) {
+        event.preventDefault();
+        return;
+      }
+
       clearFilters({ preserveScroll: true });
       focusActiveSearch({ select: false });
     }
