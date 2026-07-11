@@ -50,7 +50,7 @@ jobs:
       - name: Prepare deployment
         run: |
           mkdir _site
-          cp index.html style.css sw.js _site/
+          cp index.html style.css theme.css sw.js _site/
           cp commands.json manifest.json _site/
           [ -f secure-categories.json ] && cp secure-categories.json _site/ || true
           cp -r src _site/

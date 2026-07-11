@@ -1,21 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" role="img" aria-labelledby="title desc">
   <title id="title">Command Atlas icon</title>
   <desc id="desc">A terminal-inspired icon for the command cheatsheet app.</desc>
-  <defs>
-    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#0e1a2f"/>
-      <stop offset="100%" stop-color="#06101b"/>
-    </linearGradient>
-    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#7ae0ff"/>
-      <stop offset="100%" stop-color="#90f7d6"/>
-    </linearGradient>
-  </defs>
-  <rect width="192" height="192" rx="42" fill="url(#bg)"/>
-  <rect x="18" y="18" width="156" height="156" rx="28" fill="none" stroke="rgba(122,224,255,0.4)" stroke-width="3"/>
-  <path d="M54 68L82 96L54 124" fill="none" stroke="url(#accent)" stroke-linecap="round" stroke-linejoin="round" stroke-width="12"/>
-  <path d="M97 126H140" fill="none" stroke="#ffc274" stroke-linecap="round" stroke-width="12"/>
-  <circle cx="52" cy="42" r="6" fill="#90f7d6"/>
-  <circle cx="74" cy="42" r="6" fill="#7ae0ff"/>
-  <circle cx="96" cy="42" r="6" fill="#ffc274"/>
+  <rect width="192" height="192" rx="18" fill="#11100e"/>
+  <rect x="14" y="14" width="164" height="164" rx="8" fill="#1b1916" stroke="#4a453d" stroke-width="3"/>
+  <rect x="14" y="14" width="164" height="32" rx="7" fill="#ff5a1f"/>
+  <path d="M50 76L78 98L50 120" fill="none" stroke="#f4efe5" stroke-linecap="square" stroke-linejoin="miter" stroke-width="12"/>
+  <path d="M96 124H144" fill="none" stroke="#ff5a1f" stroke-linecap="square" stroke-width="12"/>
+  <text x="31" y="36" fill="#11100e" font-family="monospace" font-size="15" font-weight="800" letter-spacing="2">CA/01</text>
 </svg>

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#79b8ff">
+  <meta name="theme-color" content="#ff5a1f">
   <meta
     name="description"
     content="一個可搜尋、可分類、可離線使用的指令查詢工作台，適合部署到 GitHub Pages。"
@@ -13,6 +13,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="preload" as="fetch" href="./commands.json" crossorigin>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="theme.css">
 </head>
 <body>
   <div class="app-shell">
@@ -21,7 +22,11 @@
         <div class="hero-copy">
           <div class="brand">
             <span class="brand-monogram" aria-hidden="true">LJ</span>
-            <p class="eyebrow"><span class="brand-word-dim">Command</span> <span class="brand-word-accent">Atlas</span></p>
+            <div class="brand-lockup">
+              <span class="brand-index" aria-hidden="true">FIELD MANUAL / 01</span>
+              <h1 class="eyebrow"><span class="brand-word-dim">Command</span> <span class="brand-word-accent">Atlas</span></h1>
+              <p class="brand-brief">SEARCH · RESOLVE · EXECUTE</p>
+            </div>
           </div>
           <div class="hero-meta">
             <span class="meta-chip" id="command-count">0 筆指令</span>
@@ -209,7 +214,7 @@
     <main class="layout">
       <section id="public-results-section" class="results-section" aria-labelledby="results-title">
         <div class="section-header">
-          <h2 id="results-title">指令索引</h2>
+          <h2 id="results-title"><span aria-hidden="true">01 / </span>指令索引</h2>
           <span class="section-column-label" aria-hidden="true">指令</span>
           <span class="section-column-label" aria-hidden="true">說明 / 標籤</span>
         </div>
@@ -225,8 +230,8 @@
     </main>
 
     <footer class="footer">
-      <p>僅供個人技術查詢參考，部分指令可能影響系統狀態，執行前請確認影響範圍。</p>
-      <p>Command Cheatsheet · Maintained by Luo Zhih Jia</p>
+      <p>執行前確認作用範圍、權限與目標環境。</p>
+      <p>COMMAND ATLAS · FIELD MANUAL BY LUO ZHIH JIA</p>
     </footer>
   </div>
 
