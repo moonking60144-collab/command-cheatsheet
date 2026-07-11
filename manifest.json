@@ -5,8 +5,8 @@
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#11100e",
-  "theme_color": "#ff5a1f",
+  "background_color": "#07101a",
+  "theme_color": "#79b8ff",
   "description": "一個可搜尋、可分類、可離線使用的指令查詢工作台。",
   "icons": [
     {
