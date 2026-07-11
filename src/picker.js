@@ -353,7 +353,7 @@ export function positionPicker(panel) {
 
   const btnRect = button.getBoundingClientRect();
   const margin = 8;
-  const maxWidth = 720;
+  const maxWidth = 900;
 
   // Fill leftward from button's right edge to viewport left edge, capped at maxWidth
   const desiredWidth = Math.min(Math.floor(btnRect.right) - margin, maxWidth);
