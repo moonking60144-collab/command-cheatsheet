@@ -1,10 +1,10 @@
 # Command Atlas
 
-一個可搜尋、可分類、可離線使用的指令查詢工作台。純靜態網站，不需要打包工具。想客製化的話，fork 這個 repo、改 `commands.json`、透過 GitHub Actions 或任何靜態主機 deploy 即可。格式如下：
+指令查詢工作台。純靜態網站，不需要打包工具。想客製化的話，fork 這個 repo、改 `commands.json`、透過 GitHub Actions 或任何靜態主機 deploy 即可。格式如下：
 
 ## 怎麼用
 
-如果不想這麼客製化，可以直接用我的網址作使用。
+可以直接用我的網址作使用。
 
 網站：
 
@@ -73,16 +73,4 @@ https://moonking60144-collab.github.io/command-cheatsheet/
 - 卡片上按 `Enter` 或 `Space`：複製指令
 - `?`（右上角那顆）：打開這份清單
 
-## 本機玩 / 自己改
-
-純靜態，不用 build。拉下來以後：
-
-```bash
-npm install
-npx playwright install chromium   # 只要第一次
-npm test            # 跑 smoke 測試（10 個，3 秒）
-npm run serve       # 本機起 http://127.0.0.1:4173 邊改邊看
-```
-
-測試是 Playwright，主要擋一些很容易踩雷的互動 bug（Esc 焦點、IME 中文輸入、sticky 行為那類）。只在本機跑，沒接 CI。
 
