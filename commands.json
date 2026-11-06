@@ -4200,6 +4200,22 @@
     "notes": "`[adsisearcher]` 是 Windows 內建的 ADSI 介面，**不用裝 RSAT**。適用 Windows AD、Synology Directory Server、Samba AD 等所有 LDAP 相容的目錄服務。跟 `Get-ADComputer` 對比：語法原始一點、查詢條件要自己組 LDAP filter，但完全零依賴。`FindAll()` 回所有結果，`FindOne()` 只回第一筆。"
   },
   {
+    "id": "windows-keep-awake",
+    "category": "Windows Process & Service",
+    "command": "powershell -NoProfile -Command \"Add-Type -Namespace Win32 -Name Awake -MemberDefinition ('[DllImport(' + [char]34 + 'kernel32.dll' + [char]34 + ')] public static extern uint SetThreadExecutionState(uint flags);'); [void][Win32.Awake]::SetThreadExecutionState(2147483649); Read-Host 'Keep awake - Press Enter to stop'\"",
+    "description": "Windows 版 caffeinate：暫時防止閒置自動睡眠，按 Enter 結束。",
+    "tags": [
+      "windows",
+      "powershell",
+      "caffeinate",
+      "awake",
+      "sleep",
+      "power",
+      "防止睡眠"
+    ],
+    "notes": "可在 PowerShell 或 CMD 貼上執行，保留該程序運行；按 Enter 或關閉該程序後停止，不修改電源計畫。2147483649 = ES_CONTINUOUS | ES_SYSTEM_REQUIRED，只防止閒置自動睡眠，螢幕仍可依原設定關閉；不阻止手動睡眠或闔蓋睡眠。適合下載或長時間工作時暫時保持系統運作。官方說明：https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-setthreadexecutionstate"
+  },
+  {
     "id": "windows-powercfg-requests",
     "category": "Windows Process & Service",
     "command": "powercfg /requests",
