@@ -1,10 +1,8 @@
 # Command Atlas
 
-指令查詢工作台。純靜態網站，不需要打包工具。想客製化的話，fork 這個 repo、改 `commands.json`、透過 GitHub Actions 或任何靜態主機 deploy 即可。格式如下：
+指令查詢工作台。純靜態網站，不需要打包工具。想客製化的話，clone 這個 repo、改 `commands.json`、透過 GitHub Actions 或任何靜態主機 deploy 即可。格式如下：
 
 ## 怎麼用
-
-可以直接用我的網址作使用。
 
 網站：
 
@@ -22,7 +20,7 @@ https://moonking60144-collab.github.io/command-cheatsheet/
 
 ## 如何新增或修改指令
 
-最常改的檔案是 `commands.json`。每一筆資料建議長這樣：
+常改的檔案是 `commands.json`。每一筆資料建議長這樣：
 
 ```json
 {
