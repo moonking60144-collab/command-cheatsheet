@@ -40,8 +40,7 @@ export function togglePin(commandId, buttonEl, callbacks = {}) {
   const {
     applyFiltersAnimated,
     applyFilters,
-    updateFilterPillActive,
-    syncFilterIndicator
+    updateFilterPillActive
   } = callbacks;
 
   const wasPinned = state.pinned.has(commandId);
@@ -68,7 +67,7 @@ export function togglePin(commandId, buttonEl, callbacks = {}) {
     buttonEl.closest(".command-card")?.classList.toggle("is-pinned", isPinned);
   }
 
-  updatePinnedPill(syncFilterIndicator);
+  updatePinnedPill();
 
   // Full re-render is only necessary when the toggled pin actually changes
   // which cards are visible — that's either when we just emptied the pinned
@@ -85,36 +84,10 @@ export function togglePin(commandId, buttonEl, callbacks = {}) {
   }
 }
 
-export function updatePinnedPill(syncFilterIndicator) {
-  const existingPill = ui.filterBar.querySelector(".filter-pill-pinned");
-
-  if (state.pinned.size === 0) {
-    if (existingPill) {
-      existingPill.remove();
-    }
-
-    syncFilterIndicator?.();
-    return;
-  }
-
-  if (existingPill) {
-    const countEl = existingPill.querySelector(".pin-pill-count");
-
-    if (countEl) {
-      countEl.textContent = state.pinned.size;
-    }
-  } else {
-    const allPill = ui.filterBar.querySelector('[data-category="all"]');
-    const newPill = createPinnedFilterButton();
-
-    if (allPill) {
-      allPill.after(newPill);
-    } else {
-      ui.filterBar.prepend(newPill);
-    }
-  }
-
-  syncFilterIndicator?.();
+export function updatePinnedPill() {
+  const button = ui.filterBar.querySelector(".filter-pill-pinned");
+  button.disabled = state.pinned.size === 0;
+  button.querySelector(".pin-pill-count").textContent = state.pinned.size;
 }
 
 export function createPinnedFilterButton() {
@@ -124,6 +97,7 @@ export function createPinnedFilterButton() {
   button.className = `filter-pill filter-pill-pinned${isActive ? " is-active" : ""}`;
   button.dataset.category = "pinned";
   button.setAttribute("aria-pressed", String(isActive));
-  button.innerHTML = `★ 已釘選 <span class="pin-pill-count">${state.pinned.size}</span>`;
+  button.disabled = state.pinned.size === 0;
+  button.innerHTML = `已釘選 <span class="pin-pill-count">${state.pinned.size}</span>`;
   return button;
 }

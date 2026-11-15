@@ -198,6 +198,7 @@ export function getMatchScore(item, tokens) {
 
 export function filterCommands(commands, tokens, activeCategory, pinnedSet) {
   const { searchTokens, tagFilters, categoryFilters } = parseSearchTokenPlan(tokens);
+  const phrase = searchTokens.join(" ");
 
   return commands
     .filter((item) => {
@@ -207,14 +208,17 @@ export function filterCommands(commands, tokens, activeCategory, pinnedSet) {
     })
     .map((item) => {
       const { score, fuzzy } = getMatchScore(item, searchTokens);
-      return { item, score, fuzzy };
+      const variantIndex = item.variants.findIndex((variant) => variant.command.toLowerCase() === phrase);
+      const exact = variantIndex >= 0 || item.commandLower === phrase;
+      return { item, score, fuzzy, variantIndex, exact };
     })
     .filter((entry) => entry.score >= 0)
     .sort((left, right) => {
+      if (left.exact !== right.exact) return left.exact ? -1 : 1;
       const lp = pinnedSet.has(left.item.id);
       const rp = pinnedSet.has(right.item.id);
       if (lp !== rp) return lp ? -1 : 1;
       return right.score - left.score || left.item.category.localeCompare(right.item.category, "zh-Hant");
     })
-    .map((entry) => ({ ...entry.item, _fuzzy: entry.fuzzy }));
+    .map((entry) => ({ ...entry.item, _fuzzy: entry.fuzzy, matchedVariantIndex: entry.variantIndex }));
 }

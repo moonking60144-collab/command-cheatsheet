@@ -31,8 +31,6 @@ import {
   filterByTag,
   renderFilters,
   updateFilterPillActive,
-  syncFilterIndicator,
-  updateFilterBarOverflow,
   updateQuery,
   syncSearchInputs,
   handleWorkerResult,
@@ -41,6 +39,7 @@ import {
 } from "./filters.js";
 import {
   renderError,
+  toggleCommandDetails,
   upgradeAllCodeBlocks
 } from "./cards.js";
 import {
@@ -146,11 +145,6 @@ function bindEvents() {
     // search filter and disturb the IME state mid-composition.
     input.addEventListener("compositionstart", () => {
       input.dataset.composing = "true";
-    });
-
-    input.addEventListener("focus", syncSearchFocusState);
-    input.addEventListener("blur", () => {
-      window.setTimeout(syncSearchFocusState, 0);
     });
 
     input.addEventListener("compositionend", (event) => {
@@ -321,8 +315,7 @@ function bindEvents() {
         togglePin(pinButton.dataset.pinId, pinButton, {
           applyFilters,
           applyFiltersAnimated,
-          updateFilterPillActive,
-          syncFilterIndicator
+          updateFilterPillActive
         });
         return;
       }
@@ -375,9 +368,12 @@ function bindEvents() {
         return;
       }
 
-      const copyButton = card.querySelector("[data-copy-command]");
-
+      const copyButton = event.target.closest("[data-copy-command]");
       if (!copyButton) {
+        const isDisclosure = event.target.closest(".details-toggle");
+        if (isDisclosure || (!card.classList.contains("is-expanded") && !window.getSelection()?.toString())) {
+          toggleCommandDetails(card);
+        }
         return;
       }
 
@@ -548,13 +544,10 @@ function bindEvents() {
   });
 
   window.addEventListener("resize", () => {
-    updateFilterBarOverflow();
     getCategoryPickerPairs()
       .filter(({ panel }) => !panel.hidden)
       .forEach(({ panel }) => positionPicker(panel));
   }, { passive: true });
-
-  ui.filterBar?.addEventListener("scroll", updateFilterBarOverflow, { passive: true });
 
   setupUtilityChromeObserver();
 }
@@ -642,12 +635,6 @@ function toggleViewMode(event) {
   saveState();
   updateViewModeUI();
   applyFiltersAnimated({ fresh: false, preserveScroll: true });
-}
-
-function syncSearchFocusState() {
-  const activeElement = document.activeElement;
-  const hasSearchFocus = activeElement === ui.searchInput || activeElement === ui.stickySearchInput;
-  document.body.classList.toggle("has-search-focus", hasSearchFocus);
 }
 
 function focusFirstVisibleCommandCard() {

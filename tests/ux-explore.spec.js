@@ -2,10 +2,48 @@
 // to flush out edge cases that the smoke tests don't cover.
 const { test, expect } = require("@playwright/test");
 
+async function openDetails(card) {
+  await expect(card).toBeVisible();
+  const collapsed = card.locator('.details-toggle[aria-expanded="false"]');
+  if (await collapsed.count()) await collapsed.click();
+  await expect(card).toHaveClass(/is-expanded/);
+}
+
 test.describe("UX exploratory", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/");
     await expect(page.locator(".command-card").first()).toBeVisible();
+  });
+
+  test("rows disclose one command at a time and only Copy writes to the clipboard", async ({ page, context }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    await page.evaluate(() => navigator.clipboard.writeText("previous"));
+    const rows = page.locator(".command-card");
+    await expect(page.locator(".command-card.is-expanded")).toHaveCount(0);
+    await rows.nth(0).locator(".command-line").click();
+    await expect(rows.nth(0).locator(".placeholder-input")).toBeVisible();
+    const secondDisclosure = rows.nth(1).locator(".details-toggle");
+    await secondDisclosure.focus();
+    await secondDisclosure.press("Enter");
+    await expect(secondDisclosure).toHaveAttribute("aria-expanded", "true");
+    await expect(rows.nth(0).locator(".placeholder-input")).toBeHidden();
+    await expect(page.locator(".command-card.is-expanded")).toHaveCount(1);
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe("previous");
+    await rows.nth(1).locator(".copy-button").click();
+    await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe("rg --files");
+  });
+
+  test("a unique result shows the matching variant and its description without opening a row", async ({ page }) => {
+    await page.locator("#search-input").fill("shutdown /a");
+    const card = page.locator(".command-card");
+    await expect(card).toHaveCount(1);
+    await expect(card.locator(".detail-title")).toHaveText("Windows 電源操作");
+    await expect(card.getByRole("tab", { name: "取消排程" })).toHaveAttribute("aria-selected", "true");
+    await expect(card.locator(".description")).toContainText("取消");
+    await expect(card.locator(".command-code")).toHaveText("shutdown /a");
+    await expect(card.locator(".details-toggle")).toHaveCount(0);
+    await card.locator("summary").click();
+    await expect(card.locator(".notes")).toBeVisible();
   });
 
   test("pin survives reload and appears in pinned filter", async ({ page }) => {
@@ -38,7 +76,7 @@ test.describe("UX exploratory", () => {
 
     // Should fall back to "all"
     await expect(page.locator("#active-state")).toContainText("全部分類");
-    await expect(page.locator('.filter-pill[data-category="pinned"]')).toHaveCount(0);
+    await expect(page.locator('.filter-pill[data-category="pinned"]')).toBeDisabled();
   });
 
   test("placeholder value is preserved in clipboard after copy", async ({ page, context }) => {
@@ -48,10 +86,10 @@ test.describe("UX exploratory", () => {
     const placeholderCard = page.locator(".command-card:has(.placeholder-input)").first();
     await expect(placeholderCard).toBeVisible();
 
+    await openDetails(placeholderCard);
     const input = placeholderCard.locator(".placeholder-input").first();
     await input.fill("MYVALUE");
 
-    // Click the card body (not the input) to trigger copy
     await placeholderCard.locator(".copy-button").click();
 
     const clipboardText = await page.evaluate(() => navigator.clipboard.readText());
@@ -61,8 +99,10 @@ test.describe("UX exploratory", () => {
 
   test("switching variant keeps placeholder values in state", async ({ page }) => {
     await page.locator("#search-input").fill("git switch");
+    await expect(page.locator("#results-title")).toHaveText("搜尋結果");
     const variantCard = page.locator('.command-card[data-command-id="git-switch"]');
     await expect(variantCard).toBeVisible();
+    await openDetails(variantCard);
     await expect(variantCard.locator(".placeholder-input").first()).toBeVisible();
 
     await variantCard.locator(".placeholder-input").first().fill("testval");
@@ -183,7 +223,7 @@ test.describe("UX exploratory", () => {
     await expect(mobilePage.locator("#category-picker")).toBeVisible();
 
     const openState = await mobilePage.evaluate(() => {
-      const backdrop = getComputedStyle(document.body, "::after");
+      const backdrop = getComputedStyle(document.querySelector("#category-picker-btn").parentElement, "::before");
       return {
         hasClass: document.body.classList.contains("has-open-picker"),
         overflow: getComputedStyle(document.body).overflow,
@@ -201,10 +241,20 @@ test.describe("UX exploratory", () => {
     await expect(mobilePage.locator("#category-picker")).toBeHidden();
     await expect.poll(() => mobilePage.evaluate(() => document.body.classList.contains("has-open-picker"))).toBe(false);
 
+    for (const prefix of ["", "sticky-"]) {
+      if (prefix) await mobilePage.evaluate(() => window.scrollTo({ top: 1200, behavior: "instant" }));
+      await mobilePage.locator(`#${prefix}category-picker-btn`).tap();
+      const category = prefix ? "Docker" : "Git";
+      await mobilePage.locator(`#${prefix}category-picker [data-category="${category}"]`).tap();
+      await expect(mobilePage.locator(".command-card .category-badge").first()).toHaveText(category);
+      await expect(mobilePage.locator(`#${prefix}category-picker`)).toBeHidden();
+    }
+
     await context.close();
   });
 
   test("tag click fills search input with the tag operator", async ({ page }) => {
+    await openDetails(page.locator(".command-card:has(.tag-btn)").first());
     const firstTag = page.locator(".tag-btn").first();
     await expect(firstTag).toBeVisible();
     const tagValue = await firstTag.getAttribute("data-tag");
@@ -215,6 +265,7 @@ test.describe("UX exploratory", () => {
   });
 
   test("typing a visible #tag searches the normalized tag value", async ({ page }) => {
+    await openDetails(page.locator(".command-card:has(.tag-btn)").first());
     const firstTag = page.locator(".tag-btn").first();
     await expect(firstTag).toBeVisible();
     const tagText = (await firstTag.textContent())?.trim() ?? "";
@@ -222,7 +273,7 @@ test.describe("UX exploratory", () => {
     await page.locator("#search-input").fill(tagText);
 
     await expect(page.locator(".command-card").first()).toBeVisible();
-    await expect(page.locator(".tag-btn").filter({ hasText: tagText }).first()).toBeVisible();
+    await expect(page.locator(".command-card.is-expanded .tag-btn").filter({ hasText: tagText }).first()).toBeVisible();
     await expect(page.locator("#result-summary")).not.toContainText("0 筆");
   });
 
@@ -397,14 +448,14 @@ test.describe("UX exploratory", () => {
     });
 
     const button = page.locator("#current-link-btn");
-    await expect(button).toHaveText("連結");
+    await expect(button).toHaveText("複製連結");
 
     await button.click();
 
     await expect(button).toHaveText("失敗");
     await expect(page.locator("#copy-toast")).toHaveClass(/is-error/);
     await expect(page.locator("#copy-toast .copy-toast-status")).toHaveText("複製失敗");
-    await expect(button).toHaveText("連結", { timeout: 2000 });
+    await expect(button).toHaveText("複製連結", { timeout: 2000 });
   });
 
   test("pagination resets to page 1 when a new filter is applied", async ({ page }) => {
@@ -694,6 +745,7 @@ test.describe("UX exploratory", () => {
     await expect(hostInput).toHaveAttribute("data-placeholder-inferred", "true");
     await expect(firstCard.locator(".placeholder-source")).toHaveCount(2);
 
+    await openDetails(firstCard);
     await hostInput.fill("example.com");
 
     await expect(hostInput).not.toHaveAttribute("data-placeholder-inferred", "true");
@@ -841,6 +893,7 @@ test.describe("UX exploratory", () => {
   });
 
   test("pasting inside placeholder inputs is not hijacked by global search", async ({ page }) => {
+    await openDetails(page.locator(".command-card:has(.placeholder-input)").first());
     const placeholderInput = page.locator(".placeholder-input").first();
     await expect(placeholderInput).toBeVisible();
     await placeholderInput.focus();
@@ -861,19 +914,58 @@ test.describe("UX exploratory", () => {
     await expect(page.locator("#search-input")).toHaveValue("");
   });
 
-  test("focused search marks the first visible command as the Enter copy target", async ({ page }) => {
+  test("search focus keeps the copy hint in the input and arrows move focus to the card", async ({ page }) => {
     const search = page.locator("#search-input");
-    await search.focus();
+    await search.click();
+    const card = page.locator(".command-card").first();
+    await expect(card).toHaveCSS("box-shadow", "none");
+    await search.fill("caffeinate");
+    await expect(card).toHaveAttribute("data-command-id", "windows-keep-awake");
+    expect(await search.evaluate(el => getComputedStyle(el.parentElement, "::after").content)).toContain("Enter");
+    await search.press("ArrowDown");
+    await expect(card).toBeFocused();
+    await expect(card).toHaveCSS("outline-style", "solid");
+  });
 
-    await expect(page.locator("body")).toHaveClass(/has-search-focus/);
-    await expect(page.locator(".command-card").first()).toHaveCSS("position", "relative");
-    const copyHint = await page.locator(".command-card .copy-button").first().evaluate((button) =>
-      getComputedStyle(button, "::before").content
-    );
-    expect(copyHint).toContain("Enter");
+  test("exact variant is previewed and copied in both views, including after a manual switch", async ({ page, context }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    const search = page.locator("#search-input");
+    const first = page.locator(".command-card").first();
+    const clipboard = () => page.evaluate(() => navigator.clipboard.readText());
+    for (const command of ["ls -la", "shutdown /a"]) {
+      await search.fill(command);
+      await search.press("Enter");
+      await expect(first.locator(".command-code")).toHaveText(command);
+      await expect.poll(clipboard).toBe(command);
+    }
+    await page.locator("#view-toggle-btn").click();
+    await openDetails(first);
+    await first.getByRole("tab", { name: "休眠", exact: true }).click();
+    await search.press("Enter");
+    await expect.poll(clipboard).toBe("shutdown /h");
+    await search.fill("shutdown /h");
+    await search.fill("shutdown /a");
+    await expect(first.locator(".command-code")).toHaveText("shutdown /a");
+    await first.locator(".copy-button").click();
+    await expect.poll(clipboard).toBe("shutdown /a");
+  });
 
-    await page.locator(".command-card").first().focus();
-    await expect(page.locator("body")).not.toHaveClass(/has-search-focus/);
+  test("320px touch header fits and Windows chip applies the displayed category query", async ({ browser }, testInfo) => {
+    const page = await browser.newPage({
+      baseURL: testInfo.project.use.baseURL,
+      viewport: { width: 320, height: 780 },
+      hasTouch: true
+    });
+    await page.goto("/");
+    await expect(page.locator("#page-jump")).toBeVisible();
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBe(320);
+    const summary = await page.locator("#result-summary").boundingBox();
+    const pager = await page.locator("#page-jump").boundingBox();
+    expect(summary.x + summary.width).toBeLessThanOrEqual(pager.x);
+    await page.getByRole("button", { name: 'cat:"Windows"', exact: true }).tap();
+    await expect(page.locator("#search-input")).toHaveValue('cat:"Windows"');
+    await expect(page.locator('.command-card .category-badge').filter({ hasText: 'Windows Process' }).first()).toBeAttached();
+    await page.close();
   });
 
   test("Enter on a focused command card triggers copy", async ({ page, context }) => {
@@ -917,7 +1009,7 @@ test.describe("UX exploratory", () => {
     await expect(card).toBeVisible();
 
     const cmdText = (await card.locator(".command-code").textContent())?.trim() ?? "";
-    await card.click();
+    await card.locator(".copy-button").click();
 
     const toast = page.locator("#copy-toast");
     await expect(toast).toHaveClass(/is-visible/);
@@ -969,7 +1061,7 @@ test.describe("UX exploratory", () => {
 
     await mobilePage.goto("/");
     const card = mobilePage.locator(".command-card").first();
-    await expect(card).toBeVisible();
+    await openDetails(card);
 
     const layout = await card.evaluate((el) => {
       const commandLine = el.querySelector(".command-line").getBoundingClientRect();
@@ -1222,6 +1314,7 @@ test.describe("UX exploratory", () => {
       return;
     }
 
+    await openDetails(variantCard);
     const firstTab = variantCard.locator(".variant-tab").first();
     await firstTab.focus();
     const cardIdBefore = await variantCard.getAttribute("data-command-id");
@@ -1285,6 +1378,7 @@ test.describe("UX exploratory", () => {
     const card = page.locator('.command-card[data-command-id="powershell-find-file-recursive"]');
     await expect(card).toBeVisible();
 
+    await openDetails(card);
     const firstChip = card.locator(".placeholder-chip").first();
     await expect(firstChip).toBeVisible();
     const chipValue = await firstChip.getAttribute("data-suggestion-value");
@@ -1308,6 +1402,7 @@ test.describe("UX exploratory", () => {
     const card = page.locator('.command-card[data-command-id="powershell-find-file-recursive"]');
     await expect(card).toBeVisible();
 
+    await openDetails(card);
     const firstChip = card.locator(".placeholder-chip").first();
     const chipValue = await firstChip.getAttribute("data-suggestion-value");
     const chipToken = await firstChip.getAttribute("data-suggestion-for");
@@ -1334,6 +1429,7 @@ test.describe("UX exploratory", () => {
     }
 
     const tricky = `<script>alert("x")</script> & 'quote' \"dq\"`;
+    await openDetails(placeholderCard);
     await placeholderCard.locator(".placeholder-input").first().fill(tricky);
     await placeholderCard.locator(".copy-button").click();
 

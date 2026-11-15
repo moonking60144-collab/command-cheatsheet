@@ -16,7 +16,7 @@ test.describe("Command Atlas smoke", () => {
     const search = page.locator("#search-input");
 
     await search.fill("docker ps");
-    await expect(page.locator("#result-summary")).toContainText("共找到 2 筆結果");
+    await expect(page.locator("#result-summary")).toHaveText("2 筆");
 
     await expect(page.locator(".command-card")).toHaveCount(2);
     await expect(page.locator(".command-card").first()).toContainText("docker ps");

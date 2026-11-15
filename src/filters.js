@@ -1,5 +1,5 @@
 // Filter pipeline: query/category routing, main-thread <-> worker
-// dispatch, filter pill bar rendering + animated indicator.
+// dispatch, sidebar category navigation.
 
 import { escapeHtml, escapeCssSelector, tokenize } from "./utils.js";
 import { filterCommands, parseSearchTokenPlan } from "./search-core.js";
@@ -8,6 +8,7 @@ import {
   ui,
   SEARCH_DEBOUNCE_MS,
   resetPagination,
+  setQuery,
   saveState,
   updateViewModeUI,
   updateDocumentTitle,
@@ -90,7 +91,7 @@ function _renderFilterResults(filteredPublic, animated, fresh, scrollY) {
       detail: { totalResults }
     }));
     if (scrollY !== null) {
-      const restore = () => window.scrollTo(0, scrollY);
+      const restore = () => window.scrollTo({ top: scrollY, behavior: "instant" });
       requestAnimationFrame(restore);
     }
   };
@@ -119,7 +120,7 @@ export function handleWorkerFallback() {
 }
 
 export function updateQuery(value, sourceInput = null) {
-  state.query = String(value ?? "");
+  setQuery(String(value ?? ""));
   resetPagination();
   syncSearchInputs(sourceInput);
   saveState();
@@ -141,7 +142,7 @@ export function syncSearchInputs(sourceInput = null) {
 }
 
 export function clearFilters({ preserveScroll = false } = {}) {
-  state.query = "";
+  setQuery("");
   state.activeCategory = "all";
   resetPagination();
   syncSearchInputs();
@@ -167,7 +168,7 @@ export function cycleCategory(direction) {
 }
 
 export function filterByTag(tag) {
-  state.query = `tag:${tag}`;
+  setQuery(`tag:${tag}`);
   resetPagination();
   syncSearchInputs();
   saveState();
@@ -175,7 +176,7 @@ export function filterByTag(tag) {
 }
 
 export function restoreStateFromUrl(urlState) {
-  state.query = urlState.query;
+  setQuery(urlState.query);
   state.activeCategory = urlState.activeCategory;
   state.viewMode = urlState.viewMode;
   resetPagination();
@@ -203,7 +204,10 @@ export function updateSummary(resultCount) {
   const hasActiveFilters = trimmedQuery.length > 0 || state.activeCategory !== "all";
 
   ui.activeState.innerHTML = getActiveStateHtml();
-  ui.resultSummary.textContent = `共找到 ${resultCount} 筆結果`;
+  ui.resultsTitle.textContent = state.activeCategory === "all"
+    ? (trimmedQuery ? "搜尋結果" : "全部指令")
+    : getActiveCategoryLabel();
+  ui.resultSummary.textContent = `${resultCount} 筆`;
   if (ui.stickyResultSummary) {
     ui.stickyResultSummary.textContent = `${resultCount} 筆`;
   }
@@ -273,37 +277,23 @@ export function updateStickySearchState() {
 }
 
 export function renderFilters() {
-  const indicator = document.createElement("span");
-  indicator.className = "filter-indicator";
-  indicator.setAttribute("aria-hidden", "true");
-
   const counts = state.commandCounts;
-  const pinnedPill = state.pinned.size > 0 ? [createPinnedFilterButton()] : [];
 
   const divider = document.createElement("span");
   divider.className = "filter-bar-divider";
-  divider.setAttribute("aria-hidden", "true");
+  divider.textContent = "分類";
 
   const buttons = [
-    createFilterButton("all", "全部", state.commands.length),
+    createFilterButton("all", "全部指令", state.commands.length),
+    createPinnedFilterButton(),
     divider,
-    ...pinnedPill,
     ...state.categories.map((category) => createFilterButton(category, category, counts[category] || 0))
   ];
 
-  ui.filterBar.replaceChildren(indicator, ...buttons);
-  updateFilterBarOverflow();
-
-  // Position indicator instantly (no transition), then enable transition after paint
-  syncFilterIndicator();
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      ui.filterBar.querySelector(".filter-indicator")?.classList.add("is-ready");
-    });
-  });
+  ui.filterBar.replaceChildren(...buttons);
 
   const activeButton = ui.filterBar.querySelector(`[data-category="${escapeCssSelector(state.activeCategory)}"]`);
-  centerFilterPillHorizontally(activeButton);
+  revealSidebarCategory(activeButton);
 
   renderCategoryPickers();
   updateStickySearchState();
@@ -319,7 +309,7 @@ export function updateFilterPillActive() {
   });
 
   const activeButton = ui.filterBar.querySelector(".filter-pill.is-active");
-  centerFilterPillHorizontally(activeButton);
+  revealSidebarCategory(activeButton);
 
   const pickerLabel = getActiveCategoryLabel();
   getCategoryPickerPairs().forEach(({ button, panel }) => {
@@ -331,34 +321,7 @@ export function updateFilterPillActive() {
     }
   });
 
-  syncFilterIndicator();
   updateStickySearchState();
-}
-
-export function syncFilterIndicator() {
-  const activeBtn = ui.filterBar.querySelector(".filter-pill.is-active");
-  const indicator = ui.filterBar.querySelector(".filter-indicator");
-
-  if (!indicator) {
-    return;
-  }
-
-  if (!activeBtn) {
-    indicator.style.opacity = "0";
-    return;
-  }
-
-  // Batch all layout reads before any writes to avoid forced reflows
-  const w = activeBtn.offsetWidth;
-  const h = activeBtn.offsetHeight;
-  const top = activeBtn.offsetTop;
-  const left = activeBtn.offsetLeft;
-
-  indicator.style.opacity = "1";
-  indicator.style.width = `${w}px`;
-  indicator.style.height = `${h}px`;
-  indicator.style.top = `${top}px`;
-  indicator.style.transform = `translateX(${left}px)`;
 }
 
 function createFilterButton(category, label, count = 0) {
@@ -374,28 +337,12 @@ function createFilterButton(category, label, count = 0) {
   return button;
 }
 
-// scrollIntoView with block:"nearest" also scrolls the WINDOW to bring the
-// element into vertical view — which yanked the page back to the top every
-// time a filter pill was re-centered (e.g. on clearFilters via Esc). We only
-// want horizontal re-centering inside the filter bar, so compute the scroll
-// target ourselves and touch ui.filterBar.scrollLeft directly.
-export function centerFilterPillHorizontally(pill) {
-  if (!pill || !ui.filterBar) return;
+// Keep the selection visible inside the sidebar without moving the results page.
+function revealSidebarCategory(button) {
   const bar = ui.filterBar;
-  const target = pill.offsetLeft + pill.offsetWidth / 2 - bar.clientWidth / 2;
-  bar.scrollTo({
-    left: Math.max(0, target),
-    behavior: "smooth"
-  });
-}
-
-export function updateFilterBarOverflow() {
-  const bar = ui.filterBar;
-  const wrap = bar?.parentElement;
-  if (!bar || !wrap) return;
-  const maxScroll = bar.scrollWidth - bar.clientWidth;
-  const hasLeft = bar.scrollLeft > 4;
-  const hasRight = maxScroll > 4 && bar.scrollLeft < maxScroll - 4;
-  wrap.classList.toggle("has-left-overflow", hasLeft);
-  wrap.classList.toggle("has-right-overflow", hasRight);
+  if (!button || !bar.clientHeight) return;
+  const top = button.offsetTop;
+  const bottom = top + button.offsetHeight;
+  if (top < bar.scrollTop) bar.scrollTop = top;
+  else if (bottom > bar.scrollTop + bar.clientHeight) bar.scrollTop = bottom - bar.clientHeight;
 }

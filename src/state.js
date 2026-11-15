@@ -33,11 +33,13 @@ export const state = {
   publicCommands: [],
   placeholderValues: new Map(),
   activeVariants: new Map(),
+  expandedCommandId: null,
   pinned: new Set(),
   commands: [],
   categories: [],
   commandCounts: {},
   query: "",
+  queryRevision: 0,
   activeCategory: "all",
   viewMode: "cards",
   pagination: {
@@ -69,6 +71,7 @@ export const ui = {
   publicPagination: null,
   pageJump: null,
   resultSummary: null,
+  resultsTitle: null,
   commandCount: null,
   categoryCount: null,
   activeState: null,
@@ -97,6 +100,7 @@ export function bindUiRefs() {
   ui.stickyCurrentLinkButton = document.getElementById("sticky-current-link-btn");
   ui.stickyClearButton = document.getElementById("sticky-clear-btn");
   ui.searchAssists = document.getElementById("search-assists");
+  ui.resultsTitle = document.getElementById("results-title");
   ui.filterBar = document.getElementById("filter-bar");
   ui.categoryPickerBtn = document.getElementById("category-picker-btn");
   ui.categoryPicker = document.getElementById("category-picker");
@@ -145,6 +149,13 @@ export function saveState() {
   syncUrlState();
 }
 
+export function setQuery(value) {
+  if (state.query !== value) {
+    state.query = value;
+    state.queryRevision++;
+  }
+}
+
 export function restoreState() {
   let nextQuery = "";
   let nextCategory = "all";
@@ -174,7 +185,7 @@ export function restoreState() {
     nextPage = urlState.page;
   }
 
-  state.query = nextQuery;
+  setQuery(nextQuery);
   state.activeCategory = nextCategory || "all";
   state.viewMode = nextViewMode;
   state.pagination.public = nextPage;
@@ -341,7 +352,8 @@ export function normalizeCommands(rawData, fallbackCategory = "") {
         ? item.variants
           .map((variant) => ({
             label: String(variant?.label ?? "").trim(),
-            command: String(variant?.command ?? "").trim()
+            command: String(variant?.command ?? "").trim(),
+            description: String(variant?.description ?? "").trim()
           }))
           .filter((variant) => variant.label && variant.command)
         : [];
@@ -378,6 +390,7 @@ export function normalizeCommands(rawData, fallbackCategory = "") {
         id: item.id ?? `command-${index + 1}`,
         category: derivedCategory,
         command: primaryCommand,
+        title: String(item.title ?? "").trim(),
         variants: rawVariants,
         description: String(item.description ?? "").trim(),
         tags: Array.isArray(item.tags) ? item.tags.map((tag) => String(tag).trim()).filter(Boolean) : [],
@@ -391,7 +404,7 @@ export function normalizeCommands(rawData, fallbackCategory = "") {
       const descriptionLower = normalized.description.toLowerCase();
       const notesLower = normalized.notes.toLowerCase();
       const variantBlob = normalized.variants
-        .map((variant) => `${variant.label} ${variant.command}`.toLowerCase())
+        .map((variant) => `${variant.label} ${variant.command} ${variant.description}`.toLowerCase())
         .join(" ");
 
       return {
@@ -401,7 +414,7 @@ export function normalizeCommands(rawData, fallbackCategory = "") {
         descriptionLower,
         notesLower,
         tagsLower: normalized.tags.map((t) => t.toLowerCase()),
-        searchBlob: [commandLower, descriptionLower, categoryLower, notesLower, normalized.tags.join(" ").toLowerCase(), variantBlob].join(" ")
+        searchBlob: [commandLower, normalized.title.toLowerCase(), descriptionLower, categoryLower, notesLower, normalized.tags.join(" ").toLowerCase(), variantBlob].join(" ")
       };
     })
     .filter((item) => {

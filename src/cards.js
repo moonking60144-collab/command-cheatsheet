@@ -59,7 +59,7 @@ export function renderResultSections(publicItems, totalResults, fresh = true) {
   }
 
   if (hasPublicItems) {
-    renderResults(ui.results, visiblePublicItems, fresh, getPageStartIndex(publicPage));
+    renderResults(ui.results, visiblePublicItems, fresh, getPageStartIndex(publicPage), totalResults === 1);
   } else {
     ui.results.replaceChildren();
   }
@@ -223,7 +223,7 @@ function getVisiblePageNumbers(currentPage, totalPages) {
   return result;
 }
 
-function renderResults(container, items, fresh = true, rowOffset = 0) {
+function renderResults(container, items, fresh = true, rowOffset = 0, single = false) {
   if (!items.length) {
     const queryLabel = state.query.trim() || "*";
     const hasQuery = state.query.trim().length > 0;
@@ -265,7 +265,7 @@ function renderResults(container, items, fresh = true, rowOffset = 0) {
   const tokens = queryPlan.searchTokens;
   const highlightPattern = compileHighlightPattern(tokens);
   const commandHighlightPattern = compileTextHighlightPattern(tokens);
-  const ctx = { tokens, queryPlan, highlightPattern, commandHighlightPattern, fresh, rowOffset };
+  const ctx = { tokens, queryPlan, highlightPattern, commandHighlightPattern, fresh, rowOffset, single };
 
   // First batch: render above-the-fold cards synchronously so the user
   // sees content the moment the filter result lands.
@@ -331,6 +331,8 @@ function buildCommandCard(item, index, ctx) {
   const card = document.createElement("article");
   card.className = `command-card${isPinned ? " is-pinned" : ""}${hasVariants ? " has-variants" : ""}${fresh ? " is-fresh-batch" : ""}`;
   card.dataset.commandId = item.id;
+  const expanded = ctx.single || state.expandedCommandId === item.id;
+  card.classList.toggle("is-expanded", expanded);
   card.style.setProperty("--category-accent", accent.color);
   card.style.setProperty("--category-accent-soft", accent.soft);
   card.style.setProperty("--category-accent-border", accent.border);
@@ -361,6 +363,8 @@ function buildCommandCard(item, index, ctx) {
         </button>
         ${isFuzzy ? '<span class="fuzzy-hint">近似匹配</span>' : ''}
       </div>
+      ${ctx.single ? "" : `<button class="details-toggle" type="button" aria-expanded="${expanded}" aria-label="指令詳情：${escapeAttribute(item.title || item.command)}"><span aria-hidden="true"></span></button>`}
+      <h2 class="detail-title">${highlightText(item.title || item.description || item.command, highlightPattern)}</h2>
       ${variantStripHtml}
       <div class="command-block">
         <pre class="command-line"><code class="command-code" data-command-language="${escapeAttribute(commandLanguage)}"></code></pre>
@@ -368,16 +372,21 @@ function buildCommandCard(item, index, ctx) {
         <button class="copy-button" type="button" data-copy-command="${escapeAttribute(activeCommand)}">複製</button>
       </div>
       <div class="description-stack">
-        ${matchSignalHtml}
-        <p class="description">${highlightText(item.description, highlightPattern)}</p>
+        <p class="description">${highlightText(item.variants[activeVariantIndex]?.description || item.description, highlightPattern)}</p>
       </div>
-      ${item.notes ? `<p class="notes">${highlightText(item.notes, highlightPattern)}</p>` : ""}
+      ${item.notes || matchSignalHtml ? `
+        <details class="command-notes">
+          <summary>${item.notes ? "使用備註" : "搜尋命中來源"}</summary>
+          ${item.notes ? `<p class="notes">${highlightText(item.notes, highlightPattern)}</p>` : ""}
+          ${matchSignalHtml}
+        </details>` : ""}
       <div class="card-footer">
         <div class="tag-list">
           ${item.tags.map((tag) => `<button class="tag tag-btn" type="button" data-tag="${escapeAttribute(tag)}">#${highlightText(tag, highlightPattern)}</button>`).join("")}
         </div>
       </div>
     `;
+  card.classList.toggle("has-detail-description", Boolean(item.title || item.variants[activeVariantIndex]?.description));
   renderCommandCode(
     card.querySelector(".command-code"),
     previewCommand,
@@ -386,6 +395,20 @@ function buildCommandCard(item, index, ctx) {
   );
   card.setAttribute("tabindex", "0");
   return card;
+}
+
+export function toggleCommandDetails(card) {
+  const toggle = card.querySelector(".details-toggle");
+  if (!toggle) return;
+  const expanded = !card.classList.contains("is-expanded");
+  const previous = ui.results.querySelector(".command-card.is-expanded");
+  if (previous && previous !== card) {
+    previous.classList.remove("is-expanded");
+    previous.querySelector(".details-toggle")?.setAttribute("aria-expanded", "false");
+  }
+  card.classList.toggle("is-expanded", expanded);
+  toggle.setAttribute("aria-expanded", String(expanded));
+  state.expandedCommandId = expanded ? card.dataset.commandId : null;
 }
 
 function getMatchSignals(item, tokens, isFuzzy, queryPlan) {

@@ -253,17 +253,12 @@ export function handleScopedInputEscape(activeElement) {
 
 export function getActiveVariantIndex(item) {
   const stored = state.activeVariants.get(item.id);
-  const total = item.variants.length;
-
-  if (!total) {
-    return 0;
+  // An explicit tab choice wins until the search changes. A fresh exact
+  // match then takes priority over an unrelated previous selection.
+  if (stored?.queryRevision === state.queryRevision) {
+    return stored.index;
   }
-
-  if (typeof stored === "number" && stored >= 0 && stored < total) {
-    return stored;
-  }
-
-  return 0;
+  return item.matchedVariantIndex >= 0 ? item.matchedVariantIndex : stored?.index ?? 0;
 }
 
 function escapeRegExp(value) {
@@ -282,14 +277,17 @@ export function switchCardVariant(card, nextIndex) {
 
   const clampedIndex = Math.max(0, Math.min(nextIndex, item.variants.length - 1));
 
-  if (clampedIndex === getActiveVariantIndex(item)) {
+  if (card.querySelector(`.variant-tab[data-variant-index="${clampedIndex}"]`)?.getAttribute("aria-selected") === "true") {
     return;
   }
 
   syncCardPlaceholderValues(card);
-  state.activeVariants.set(item.id, clampedIndex);
+  state.activeVariants.set(item.id, { index: clampedIndex, queryRevision: state.queryRevision });
 
   const activeCommand = item.variants[clampedIndex].command;
+  const description = item.variants[clampedIndex].description;
+  card.classList.toggle("has-detail-description", Boolean(item.title || description));
+  card.querySelector(".description").textContent = description || item.description;
   const copyButton = card.querySelector("[data-copy-command]");
   if (copyButton) {
     copyButton.dataset.copyCommand = activeCommand;

@@ -1548,6 +1548,7 @@
   },
   {
     "id": "windows-shutdown",
+    "title": "Windows 電源操作",
     "category": "Windows Process & Service",
     "description": "控制電源狀態：關機、重開機、進階啟動、UEFI、登出、休眠、取消排程。",
     "variants": [
@@ -1577,7 +1578,8 @@
       },
       {
         "label": "取消排程",
-        "command": "shutdown /a"
+        "command": "shutdown /a",
+        "description": "取消目前排程中的關機或重新啟動。"
       }
     ],
     "tags": [

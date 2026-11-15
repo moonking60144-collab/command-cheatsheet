@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#79b8ff">
+  <meta name="theme-color" content="#191d22">
   <meta
     name="description"
     content="一個可搜尋、可分類、可離線使用的指令查詢工作台，適合部署到 GitHub Pages。"
@@ -16,16 +16,21 @@
 </head>
 <body>
   <div class="app-shell">
+    <aside class="catalog-sidebar" aria-label="指令導覽">
+      <div class="catalog-brand"><span class="terminal-mark" aria-hidden="true">&gt;_</span>Command Atlas</div>
+      <nav class="filter-bar-wrap" aria-label="分類篩選">
+        <div id="filter-bar" class="filter-bar"></div>
+      </nav>
+      <div class="catalog-metrics">
+        <span id="command-count">0 筆指令</span><span id="category-count">0 個分類</span>
+      </div>
+    </aside>
     <header class="hero">
       <div class="hero-grid">
         <div class="hero-copy">
           <div class="brand">
-            <span class="brand-monogram" aria-hidden="true">LJ</span>
-            <p class="eyebrow"><span class="brand-word-dim">Command</span> <span class="brand-word-accent">Atlas</span></p>
-          </div>
-          <div class="hero-meta">
-            <span class="meta-chip" id="command-count">0 筆指令</span>
-            <span class="meta-chip" id="category-count">0 個分類</span>
+            <span class="terminal-mark" aria-hidden="true">&gt;_</span>
+            <span>Command Atlas</span>
           </div>
         </div>
         <div class="help-wrap">
@@ -113,16 +118,13 @@
           <div id="search-assists" class="search-assists" aria-label="搜尋語法提示">
             <span class="search-assist-label">語法</span>
             <button class="search-assist-chip" type="button" data-query-template="tag:dns">tag:dns</button>
-            <button class="search-assist-chip" type="button" data-query-template="cat:&quot;Windows Network &amp; DNS&quot;">cat:"Windows"</button>
+            <button class="search-assist-chip" type="button" data-query-template="cat:&quot;Windows&quot;">cat:"Windows"</button>
             <button class="search-assist-chip" type="button" data-query-template="docker ps">docker ps</button>
             <button class="search-assist-chip" type="button" data-query-template="Test-NetConnection &lt;主機&gt; -Port &lt;埠&gt;">模板值</button>
           </div>
         </div>
 
         <div class="filter-row">
-          <div class="filter-bar-wrap">
-            <div id="filter-bar" class="filter-bar" aria-label="分類篩選"></div>
-          </div>
           <div class="picker-wrap">
             <button
               id="category-picker-btn"
@@ -137,7 +139,7 @@
                 <rect x="9" y="1" width="6" height="6" rx="1.2"></rect>
                 <rect x="1" y="9" width="6" height="6" rx="1.2"></rect>
                 <rect x="9" y="9" width="6" height="6" rx="1.2"></rect>
-              </svg>
+              </svg><span class="picker-label">分類</span>
             </button>
             <div
               id="category-picker"
@@ -149,13 +151,18 @@
         </div>
 
         <div class="toolbar">
-          <p id="active-state" class="active-state">目前：全部分類</p>
-          <p id="result-summary" class="result-summary">正在載入指令資料...</p>
+          <div class="result-heading">
+            <h1 id="results-title">全部指令</h1>
+            <p id="result-summary" class="result-summary">正在載入指令資料...</p>
+          </div>
           <div id="page-jump" class="page-jump" hidden aria-label="快速分頁"></div>
-          <button id="view-toggle-btn" class="ghost-button view-toggle-btn" type="button" aria-pressed="false">緊湊</button>
-          <button id="current-link-btn" class="ghost-button current-link-btn" type="button" title="複製目前查詢連結">連結</button>
-          <button id="clear-btn" class="ghost-button" type="button" hidden>清空</button>
+          <div class="result-actions">
+            <button id="view-toggle-btn" class="ghost-button view-toggle-btn" type="button" aria-pressed="false">緊湊</button>
+            <button id="current-link-btn" class="ghost-button current-link-btn" type="button" title="複製目前查詢連結">複製連結</button>
+            <button id="clear-btn" class="ghost-button" type="button" hidden>清空</button>
+          </div>
         </div>
+        <p id="active-state" class="active-state sr-only">目前：全部分類</p>
       </section>
 
     </header>
@@ -201,19 +208,13 @@
           ></div>
         </div>
         <button id="sticky-view-toggle-btn" class="ghost-button sticky-view-toggle-btn" type="button" aria-pressed="false">緊湊</button>
-        <button id="sticky-current-link-btn" class="ghost-button sticky-current-link-btn" type="button" title="複製目前查詢連結">連結</button>
+        <button id="sticky-current-link-btn" class="ghost-button sticky-current-link-btn" type="button" title="複製目前查詢連結">複製連結</button>
         <button id="sticky-clear-btn" class="ghost-button sticky-clear-btn" type="button" hidden>清空</button>
       </div>
     </div>
 
     <main class="layout">
       <section id="public-results-section" class="results-section" aria-labelledby="results-title">
-        <div class="section-header">
-          <h2 id="results-title">指令索引</h2>
-          <span class="section-column-label" aria-hidden="true">指令</span>
-          <span class="section-column-label" aria-hidden="true">說明 / 標籤</span>
-        </div>
-
         <div id="results" class="card-grid">
           <div class="skeleton-card" aria-hidden="true"></div>
           <div class="skeleton-card" aria-hidden="true"></div>
