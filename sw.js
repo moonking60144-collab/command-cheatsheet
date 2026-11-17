@@ -10,6 +10,8 @@ const ASSETS = [
   "./src/state.js",
   "./src/filters.js",
   "./src/cards.js",
+  "./src/icons.js",
+  "./src/motion.js",
   "./src/picker.js",
   "./src/pins.js",
   "./src/placeholders.js",
@@ -21,7 +23,12 @@ const ASSETS = [
   "./commands.json",
   "./manifest.json",
   "./assets/icons/icon-192.svg",
-  "./assets/icons/icon-512.svg"
+  "./assets/icons/icon-512.svg",
+  "./assets/icons/ui.svg",
+  "./assets/fonts/instrument-sans-400.woff2",
+  "./assets/fonts/instrument-sans-600.woff2",
+  "./assets/fonts/ibm-plex-mono-400.woff2",
+  "./assets/fonts/ibm-plex-mono-500.woff2"
 ];
 
 // highlight.* is intentionally NOT precached — app.js lazy-loads it

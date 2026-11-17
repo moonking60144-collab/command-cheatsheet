@@ -1,6 +1,7 @@
 // Pin management: toggle, persistence, derived UI (pinned pill).
 
 import { state, ui, PINNED_KEY } from "./state.js";
+import { icon } from "./icons.js";
 
 export function restorePinned() {
   try {
@@ -98,6 +99,6 @@ export function createPinnedFilterButton() {
   button.dataset.category = "pinned";
   button.setAttribute("aria-pressed", String(isActive));
   button.disabled = state.pinned.size === 0;
-  button.innerHTML = `已釘選 <span class="pin-pill-count">${state.pinned.size}</span>`;
+  button.innerHTML = `${icon("star")}<span class="filter-pill-label">已釘選</span><span class="pin-pill-count">${state.pinned.size}</span>`;
   return button;
 }

@@ -2,6 +2,7 @@
 // menu, search-within-picker, keyboard navigation, width calibration.
 
 import { escapeHtml } from "./utils.js";
+import { icon, categoryIcon } from "./icons.js";
 import {
   state,
   ui,
@@ -135,6 +136,7 @@ function createPickerButton(key, label, count) {
   button.dataset.category = key;
   button.setAttribute("aria-pressed", String(state.activeCategory === key));
   button.innerHTML = `
+    ${icon(categoryIcon(key))}
     <span class="picker-item-label">${escapeHtml(label)}</span>
     <span class="picker-item-count">${count}</span>
   `;

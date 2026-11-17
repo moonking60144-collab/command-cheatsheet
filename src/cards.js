@@ -31,6 +31,8 @@ import {
   inferPlaceholderValuesFromQuery
 } from "./placeholders.js";
 import { normalizeCommandShapeToken, parseSearchTokenPlan } from "./search-core.js";
+import { icon, categoryIcon } from "./icons.js";
+import { animateLayout } from "./motion.js";
 
 // Per-container render generation. Each renderResults call bumps the
 // counter for its container; any pending rAF chunk from a previous
@@ -175,7 +177,7 @@ function renderPageJump(container, target, totalItems, currentPage) {
       data-page-number="${Math.max(1, currentPage - 1)}"
       aria-label="上一頁"
       ${currentPage <= 1 ? "disabled" : ""}
-    >‹</button>
+    >${icon("caret-left")}</button>
     <span class="page-jump-current" aria-label="目前顯示第 ${startItem} 到 ${endItem} 筆，共 ${totalItems} 筆，第 ${currentPage} 頁，共 ${totalPages} 頁">${startItem}-${endItem} / ${totalItems}</span>
     <button
       class="page-jump-button page-jump-next"
@@ -184,7 +186,7 @@ function renderPageJump(container, target, totalItems, currentPage) {
       data-page-number="${Math.min(totalPages, currentPage + 1)}"
       aria-label="下一頁"
       ${currentPage >= totalPages ? "disabled" : ""}
-    >›</button>
+    >${icon("caret-right")}</button>
   `;
 }
 
@@ -356,17 +358,18 @@ function buildCommandCard(item, index, ctx) {
       <div class="card-top">
         <span class="row-index" aria-hidden="true">${String(rowOffset + index + 1).padStart(3, "0")}</span>
         <button class="pin-button" type="button" data-pin-id="${escapeAttribute(item.id)}" aria-label="${isPinned ? "取消釘選" : "釘選此指令"}" aria-pressed="${isPinned}" title="${isPinned ? "取消釘選" : "釘選"}">
-          <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><polygon points="8,1.5 10.2,6 15,6.6 11.5,9.9 12.5,14.5 8,12.1 3.5,14.5 4.5,9.9 1,6.6 5.8,6"/></svg>
+          ${icon("star")}
         </button>
         <button class="category-badge category-badge-button" type="button" data-category="${escapeAttribute(item.category)}" aria-label="篩選分類 ${escapeAttribute(item.category)}" title="篩選分類 ${escapeAttribute(item.category)}">
-          ${highlightText(item.category, highlightPattern)}
+          ${icon(categoryIcon(item.category))}${highlightText(item.category, highlightPattern)}
         </button>
         ${isFuzzy ? '<span class="fuzzy-hint">近似匹配</span>' : ''}
       </div>
-      ${ctx.single ? "" : `<button class="details-toggle" type="button" aria-expanded="${expanded}" aria-label="指令詳情：${escapeAttribute(item.title || item.command)}"><span aria-hidden="true"></span></button>`}
+      ${ctx.single ? "" : `<button class="details-toggle" type="button" aria-expanded="${expanded}" aria-label="指令詳情：${escapeAttribute(item.title || item.command)}">${icon("caret-down")}</button>`}
       <h2 class="detail-title">${highlightText(item.title || item.description || item.command, highlightPattern)}</h2>
       ${variantStripHtml}
       <div class="command-block">
+        <div class="command-caption">${icon(categoryIcon(item.category))}<span>${escapeHtml(item.category)}</span><span>指令預覽</span></div>
         <pre class="command-line"><code class="command-code" data-command-language="${escapeAttribute(commandLanguage)}"></code></pre>
         <div class="placeholder-slot">${renderPlaceholderFields(placeholders, placeholderValues, item.placeholderSuggestions, inferredValues)}</div>
         <button class="copy-button" type="button" data-copy-command="${escapeAttribute(activeCommand)}">複製</button>
@@ -402,13 +405,16 @@ export function toggleCommandDetails(card) {
   if (!toggle) return;
   const expanded = !card.classList.contains("is-expanded");
   const previous = ui.results.querySelector(".command-card.is-expanded");
-  if (previous && previous !== card) {
-    previous.classList.remove("is-expanded");
-    previous.querySelector(".details-toggle")?.setAttribute("aria-expanded", "false");
-  }
-  card.classList.toggle("is-expanded", expanded);
-  toggle.setAttribute("aria-expanded", String(expanded));
-  state.expandedCommandId = expanded ? card.dataset.commandId : null;
+  const affected = previous && previous !== card ? [previous, card] : [card];
+  animateLayout(affected, () => {
+    if (previous && previous !== card) {
+      previous.classList.remove("is-expanded");
+      previous.querySelector(".details-toggle")?.setAttribute("aria-expanded", "false");
+    }
+    card.classList.toggle("is-expanded", expanded);
+    toggle.setAttribute("aria-expanded", String(expanded));
+    state.expandedCommandId = expanded ? card.dataset.commandId : null;
+  });
 }
 
 function getMatchSignals(item, tokens, isFuzzy, queryPlan) {

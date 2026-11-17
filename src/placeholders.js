@@ -4,6 +4,7 @@
 
 import { escapeHtml, escapeAttribute, compileTextHighlightPattern, tokenize } from "./utils.js";
 import { renderCommandCode } from "./highlight.js";
+import { animateLayout } from "./motion.js";
 import {
   state,
   PLACEHOLDER_KEY,
@@ -281,35 +282,37 @@ export function switchCardVariant(card, nextIndex) {
     return;
   }
 
-  syncCardPlaceholderValues(card);
-  state.activeVariants.set(item.id, { index: clampedIndex, queryRevision: state.queryRevision });
+  animateLayout([card], () => {
+    syncCardPlaceholderValues(card);
+    state.activeVariants.set(item.id, { index: clampedIndex, queryRevision: state.queryRevision });
 
-  const activeCommand = item.variants[clampedIndex].command;
-  const description = item.variants[clampedIndex].description;
-  card.classList.toggle("has-detail-description", Boolean(item.title || description));
-  card.querySelector(".description").textContent = description || item.description;
-  const copyButton = card.querySelector("[data-copy-command]");
-  if (copyButton) {
-    copyButton.dataset.copyCommand = activeCommand;
-  }
+    const activeCommand = item.variants[clampedIndex].command;
+    const description = item.variants[clampedIndex].description;
+    card.classList.toggle("has-detail-description", Boolean(item.title || description));
+    card.querySelector(".description").textContent = description || item.description;
+    const copyButton = card.querySelector("[data-copy-command]");
+    if (copyButton) {
+      copyButton.dataset.copyCommand = activeCommand;
+    }
 
-  card.querySelectorAll(".variant-tab").forEach((tab) => {
-    const tabIndex = Number.parseInt(tab.dataset.variantIndex ?? "", 10);
-    const isActive = tabIndex === clampedIndex;
-    tab.classList.toggle("is-active", isActive);
-    tab.setAttribute("aria-selected", String(isActive));
+    card.querySelectorAll(".variant-tab").forEach((tab) => {
+      const tabIndex = Number.parseInt(tab.dataset.variantIndex ?? "", 10);
+      const isActive = tabIndex === clampedIndex;
+      tab.classList.toggle("is-active", isActive);
+      tab.setAttribute("aria-selected", String(isActive));
+    });
+
+    const placeholderSlot = card.querySelector(".placeholder-slot");
+    if (placeholderSlot) {
+      const placeholders = extractPlaceholders(activeCommand);
+      const inferredValues = inferPlaceholderValuesFromQuery(activeCommand, state.query);
+      const placeholderValues = {
+        ...(state.placeholderValues.get(item.id) ?? {}),
+        ...inferredValues
+      };
+      placeholderSlot.innerHTML = renderPlaceholderFields(placeholders, placeholderValues, item.placeholderSuggestions, inferredValues);
+    }
+
+    updateCommandPreview(card);
   });
-
-  const placeholderSlot = card.querySelector(".placeholder-slot");
-  if (placeholderSlot) {
-    const placeholders = extractPlaceholders(activeCommand);
-    const inferredValues = inferPlaceholderValuesFromQuery(activeCommand, state.query);
-    const placeholderValues = {
-      ...(state.placeholderValues.get(item.id) ?? {}),
-      ...inferredValues
-    };
-    placeholderSlot.innerHTML = renderPlaceholderFields(placeholders, placeholderValues, item.placeholderSuggestions, inferredValues);
-  }
-
-  updateCommandPreview(card);
 }

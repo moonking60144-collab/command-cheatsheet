@@ -17,6 +17,8 @@ import {
 } from "./state.js";
 import { renderResultSections } from "./cards.js";
 import { createPinnedFilterButton } from "./pins.js";
+import { icon, categoryIcon } from "./icons.js";
+import { animateResults } from "./motion.js";
 import {
   renderCategoryPickers,
   renderCategoryPicker,
@@ -96,11 +98,8 @@ function _renderFilterResults(filteredPublic, animated, fresh, scrollY) {
     }
   };
 
-  if (animated && scrollY === null && document.startViewTransition) {
-    document.startViewTransition(doRender);
-  } else {
-    doRender();
-  }
+  doRender();
+  animateResults(ui.results, animated ? 220 : 150);
 }
 
 export function handleWorkerResult(event) {
@@ -331,6 +330,7 @@ function createFilterButton(category, label, count = 0) {
   button.dataset.category = category;
   button.setAttribute("aria-pressed", String(state.activeCategory === category));
   button.innerHTML = `
+    ${icon(categoryIcon(category))}
     <span class="filter-pill-label">${escapeHtml(label)}</span>
     <span class="filter-pill-count">${count}</span>
   `;

@@ -2,6 +2,7 @@
 // connected via explicit callbacks — no module reaches back into app.js.
 
 import { scheduleHighlightLoad } from "./highlight.js";
+import { animateLayout } from "./motion.js";
 import {
   state,
   ui,
@@ -368,6 +369,14 @@ function bindEvents() {
         return;
       }
 
+      const summary = event.target.closest(".command-notes > summary");
+      if (summary) {
+        event.preventDefault();
+        const notes = summary.parentElement;
+        animateLayout([card], () => { notes.open = !notes.open; });
+        return;
+      }
+
       const copyButton = event.target.closest("[data-copy-command]");
       if (!copyButton) {
         const isDisclosure = event.target.closest(".details-toggle");
@@ -634,7 +643,6 @@ function toggleViewMode(event) {
   state.viewMode = state.viewMode === "list" ? "cards" : "list";
   saveState();
   updateViewModeUI();
-  applyFiltersAnimated({ fresh: false, preserveScroll: true });
 }
 
 function focusFirstVisibleCommandCard() {
