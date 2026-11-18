@@ -288,6 +288,10 @@ function bindEvents() {
   });
 
   [ui.results].forEach((container) => {
+    let pointerStart;
+    container?.addEventListener("pointerdown", (event) => {
+      pointerStart = { x: event.clientX, y: event.clientY };
+    });
     container?.addEventListener("click", async (event) => {
       const emptyAction = event.target.closest("[data-empty-action]");
 
@@ -377,12 +381,20 @@ function bindEvents() {
         return;
       }
 
-      const copyButton = event.target.closest("[data-copy-command]");
-      if (!copyButton) {
-        const isDisclosure = event.target.closest(".details-toggle");
-        if (isDisclosure || (!card.classList.contains("is-expanded") && !window.getSelection()?.toString())) {
-          toggleCommandDetails(card);
-        }
+      if (event.target.closest(".details-toggle")) {
+        toggleCommandDetails(card);
+        return;
+      }
+      // In a closed row the background and description share the copy action.
+      // In the editor, only the command is a copy target.
+      const copyButton = card.querySelector("[data-copy-command]");
+      if (card.classList.contains("is-expanded") && !copyButton.contains(event.target)) {
+        return;
+      }
+      // A text selection can persist across button clicks. Only suppress the
+      // gesture that actually dragged across text.
+      if (event.detail && pointerStart && window.getSelection()?.toString() &&
+          Math.hypot(event.clientX - pointerStart.x, event.clientY - pointerStart.y) > 3) {
         return;
       }
 

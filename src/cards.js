@@ -370,9 +370,11 @@ function buildCommandCard(item, index, ctx) {
       ${variantStripHtml}
       <div class="command-block">
         <div class="command-caption">${icon(categoryIcon(item.category))}<span>${escapeHtml(item.category)}</span><span>指令預覽</span></div>
-        <pre class="command-line"><code class="command-code" data-command-language="${escapeAttribute(commandLanguage)}"></code></pre>
+        <button type="button" class="command-line copy-button" data-copy-command="${escapeAttribute(activeCommand)}" title="點一下複製指令">
+          <code class="command-code" data-command-language="${escapeAttribute(commandLanguage)}"></code>
+          <span class="copy-label">複製</span>
+        </button>
         <div class="placeholder-slot">${renderPlaceholderFields(placeholders, placeholderValues, item.placeholderSuggestions, inferredValues)}</div>
-        <button class="copy-button" type="button" data-copy-command="${escapeAttribute(activeCommand)}">複製</button>
       </div>
       <div class="description-stack">
         <p class="description">${highlightText(item.variants[activeVariantIndex]?.description || item.description, highlightPattern)}</p>

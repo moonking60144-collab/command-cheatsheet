@@ -15,12 +15,18 @@ test.describe("UX exploratory", () => {
     await expect(page.locator(".command-card").first()).toBeVisible();
   });
 
-  test("rows disclose one command at a time and only Copy writes to the clipboard", async ({ page, context }) => {
+  test("clicking a closed row copies without expanding and the disclosure only opens details", async ({ page, context }) => {
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);
     await page.evaluate(() => navigator.clipboard.writeText("previous"));
     const rows = page.locator(".command-card");
     await expect(page.locator(".command-card.is-expanded")).toHaveCount(0);
-    await rows.nth(0).locator(".command-line").click();
+    const firstCommand = await rows.nth(0).locator(".command-code").textContent();
+    await rows.nth(0).locator(".command-code").click();
+    await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe(firstCommand);
+    await expect(page.locator(".command-card.is-expanded")).toHaveCount(0);
+    await rows.nth(1).locator(".description").click();
+    await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe("rg --files");
+    await rows.nth(0).locator(".details-toggle").click();
     await expect(rows.nth(0).locator(".placeholder-input")).toBeVisible();
     const secondDisclosure = rows.nth(1).locator(".details-toggle");
     await secondDisclosure.focus();
@@ -28,9 +34,7 @@ test.describe("UX exploratory", () => {
     await expect(secondDisclosure).toHaveAttribute("aria-expanded", "true");
     await expect(rows.nth(0).locator(".placeholder-input")).toBeHidden();
     await expect(page.locator(".command-card.is-expanded")).toHaveCount(1);
-    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe("previous");
-    await rows.nth(1).locator(".copy-button").click();
-    await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe("rg --files");
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe("rg --files");
   });
 
   test("a unique result shows the matching variant and its description without opening a row", async ({ page }) => {
@@ -1018,6 +1022,27 @@ test.describe("UX exploratory", () => {
     await expect(toast.locator(".copy-toast-command")).toContainText(cmdText.replace(/\s+/g, " ").slice(0, 10));
   });
 
+  test("selecting part of a command leaves the clipboard alone and repeated copies keep the code intact", async ({ page, context }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    await page.evaluate(() => navigator.clipboard.writeText("previous"));
+    const row = page.locator(".command-card").nth(1);
+    const code = row.locator(".command-code");
+    const rect = await code.boundingBox();
+    await page.mouse.move(rect.x + 1, rect.y + rect.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(rect.x + rect.width / 2, rect.y + rect.height / 2, { steps: 8 });
+    await page.mouse.up();
+    expect(await page.evaluate(() => window.getSelection().toString().length)).toBeGreaterThan(0);
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe("previous");
+
+    await row.locator(".copy-label").click();
+    await expect(row.locator(".copy-label")).toHaveText("已複製");
+    await code.click();
+    await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe("rg --files");
+    await expect(row.locator(".copy-label")).toHaveText("複製");
+    await expect(code).toHaveText("rg --files");
+  });
+
   test("mobile visible buttons keep a 44px touch target", async ({ browser }, testInfo) => {
     const context = await browser.newContext({
       baseURL: testInfo.project.use.baseURL,
@@ -1050,7 +1075,7 @@ test.describe("UX exploratory", () => {
     expect(undersized).toEqual([]);
   });
 
-  test("mobile copy button sits below the command block instead of overlaying it", async ({ browser }, testInfo) => {
+  test("tapping the displayed command on mobile copies its filled-in value", async ({ browser }, testInfo) => {
     const context = await browser.newContext({
       baseURL: testInfo.project.use.baseURL,
       viewport: { width: 390, height: 844 },
@@ -1058,44 +1083,33 @@ test.describe("UX exploratory", () => {
       hasTouch: true
     });
     const mobilePage = await context.newPage();
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
 
     await mobilePage.goto("/");
     const card = mobilePage.locator(".command-card").first();
     await openDetails(card);
 
-    const layout = await card.evaluate((el) => {
-      const commandLine = el.querySelector(".command-line").getBoundingClientRect();
-      const copyButton = el.querySelector(".copy-button").getBoundingClientRect();
-
-      return {
-        commandLineBottom: Math.round(commandLine.bottom),
-        commandLineWidth: Math.round(commandLine.width),
-        copyButtonTop: Math.round(copyButton.top),
-        copyButtonWidth: Math.round(copyButton.width)
-      };
-    });
-
+    await card.locator(".placeholder-input").fill("atlas");
+    await card.locator(".command-code").tap();
+    await expect.poll(() => mobilePage.evaluate(() => navigator.clipboard.readText())).toBe('rg -n "atlas" .');
+    await expect(card.locator(".command-code")).toHaveText('rg -n "atlas" .');
     await context.close();
-    expect(layout.copyButtonTop).toBeGreaterThanOrEqual(layout.commandLineBottom);
-    expect(layout.copyButtonWidth).toBeGreaterThanOrEqual(layout.commandLineWidth - 2);
   });
 
-  test("desktop copy button uses a separate action column instead of overlaying the command", async ({ page }) => {
+  test("desktop copy affordance and disclosure sit next to the command", async ({ page }) => {
     await expect(page.locator(".command-card").first()).toBeVisible();
 
     const layout = await page.locator(".command-card").first().evaluate((el) => {
-      const commandLine = el.querySelector(".command-line").getBoundingClientRect();
-      const copyButton = el.querySelector(".copy-button").getBoundingClientRect();
-
-      return {
-        commandLineRight: Math.round(commandLine.right),
-        copyButtonLeft: Math.round(copyButton.left),
-        copyButtonHeight: Math.round(copyButton.height)
-      };
+      const code = el.querySelector(".command-code").getBoundingClientRect();
+      const hint = el.querySelector(".copy-label").getBoundingClientRect();
+      const toggle = el.querySelector(".details-toggle").getBoundingClientRect();
+      return { hintGap: hint.left - code.right, toggleGap: code.left - toggle.right };
     });
 
-    expect(layout.copyButtonLeft).toBeGreaterThanOrEqual(layout.commandLineRight);
-    expect(layout.copyButtonHeight).toBeGreaterThan(0);
+    expect(layout.hintGap).toBeGreaterThanOrEqual(0);
+    expect(layout.hintGap).toBeLessThan(16);
+    expect(layout.toggleGap).toBeGreaterThanOrEqual(0);
+    expect(layout.toggleGap).toBeLessThan(16);
   });
 
   test("Enter inside search copies the first visible result", async ({ page, context }) => {

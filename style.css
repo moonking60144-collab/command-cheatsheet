@@ -316,7 +316,7 @@ input::placeholder { color: var(--text-muted); opacity: 1; }
 .result-summary { margin: 0; font: 11px/1.3 var(--mono-font); color: var(--text-secondary); white-space: nowrap; }
 .ghost-button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 5px 7px; min-height: 30px; border: 1px solid transparent; border-radius: 5px; background: transparent; color: var(--text-secondary); font-size: 11px; white-space: nowrap; }
 .ghost-button:hover, .ghost-button[aria-pressed="true"] { color: var(--accent); background: #b4d2ef0c; }
-.current-link-btn::before, .copy-button::before, .view-toggle-btn::before {
+.current-link-btn::before, .copy-label::before, .view-toggle-btn::before {
   content: "";
   width: 16px;
   height: 16px;
@@ -337,7 +337,7 @@ input::placeholder { color: var(--text-muted); opacity: 1; }
 .layout { margin: 0 var(--gutter); flex: 1; overflow-anchor: none; }
 .list-columns {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(100px, 14%) 144px;
+  grid-template-columns: minmax(0, 1fr) minmax(100px, 20%) 32px;
   gap: 16px;
   padding: 10px 22px;
   border: 1px solid var(--line);
@@ -346,13 +346,14 @@ input::placeholder { color: var(--text-muted); opacity: 1; }
   color: var(--text-muted);
   font-size: 10px;
 }
+.list-columns span:first-child { padding-left: 38px; }
 .list-columns span:last-child { text-align: right; }
 .card-grid { border: 1px solid var(--line); border-top: 0; border-radius: 0 0 10px 10px; background: linear-gradient(125deg, #1c2c374d, #2223334a); overflow-anchor: none; }
 .command-card {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(100px, 14%) 30px 70px 28px;
-  grid-template-areas: "line meta pin copy toggle" "desc meta pin copy toggle";
+  grid-template-columns: 30px minmax(0, 1fr) minmax(100px, 20%) 32px;
+  grid-template-areas: "toggle line meta pin" "toggle desc meta pin";
   align-items: center;
   gap: 3px 8px;
   min-height: 72px;
@@ -404,26 +405,34 @@ input::placeholder { color: var(--text-muted); opacity: 1; }
 .details-toggle .ui-icon { width: 15px; height: 15px; transition: transform var(--duration-base) var(--ease); }
 .details-toggle[aria-expanded="true"] .ui-icon { transform: rotate(180deg); }
 .details-toggle:hover { color: var(--accent); background: #bdd6f30b; }
-.command-line { grid-area: line; min-width: 0; margin: 0; color: #d8e8ff; font-size: 14px; font-weight: 500; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
-.command-code { display: block; font: inherit; color: inherit; }
+.command-line {
+  grid-area: line;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  text-align: left;
+  background: transparent;
+  color: #d8e8ff;
+  font: 500 14px/1.6 var(--mono-font);
+}
+.command-code { display: block; min-width: 0; font: inherit; white-space: pre-wrap; overflow-wrap: anywhere; user-select: text; }
 .command-card:not(.is-expanded) .command-code { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.copy-button {
-  grid-area: copy;
+.copy-label {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 5px;
-  min-height: 30px;
-  padding: 5px 8px;
-  border: 1px solid #d5e4fd20;
-  border-radius: 6px;
-  background: linear-gradient(150deg, #9dbce914, #7e9fce06);
-  color: #b6c7df;
-  font-size: 11px;
+  flex: none;
+  gap: 4px;
+  color: var(--text-muted);
+  font: 400 11px/1.4 var(--ui-font);
   white-space: nowrap;
 }
-.copy-button:hover { background-color: #b7d7f51c; border-color: var(--line-strong); color: var(--text-primary); }
-.copy-button.is-copied { color: var(--success); border-color: #9cdcc344; }
+.copy-label::before { width: 14px; height: 14px; }
+.copy-button:hover .copy-label, .copy-button:focus-visible .copy-label { color: var(--accent); }
+.copy-button.is-copied .copy-label { color: var(--success); }
 .description-stack { grid-area: desc; min-width: 0; }
 .description { margin: 0; color: #a3b2c8; font-size: 12px; line-height: 1.6; }
 .command-card:not(.is-expanded) .description { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
@@ -431,12 +440,12 @@ input::placeholder { color: var(--text-muted); opacity: 1; }
 body.is-list-view .command-card:not(.is-expanded) { min-height: 54px; padding-block: 6px; }
 .command-card.is-expanded {
   grid-template-areas:
-    "title title pin copy toggle"
-    "desc desc desc desc desc"
-    "extra extra extra extra extra"
-    "caption caption caption caption caption"
-    "line placeholders placeholders placeholders placeholders"
-    "tags tags notes notes notes";
+    "toggle title title pin"
+    "desc desc desc desc"
+    "extra extra extra extra"
+    "caption caption caption caption"
+    "line line placeholders placeholders"
+    "tags tags notes notes";
   row-gap: 10px;
   padding-block: 16px;
   background: linear-gradient(110deg, #42697624, #69608020);
@@ -444,16 +453,14 @@ body.is-list-view .command-card:not(.is-expanded) { min-height: 54px; padding-bl
 }
 .command-card.is-expanded:not(.has-detail-description):not(.has-variants) {
   grid-template-areas:
-    "title title pin copy toggle"
-    "caption caption caption caption caption"
-    "line placeholders placeholders placeholders placeholders"
-    "tags tags notes notes notes";
+    "toggle title title pin"
+    "caption caption caption caption"
+    "line line placeholders placeholders"
+    "tags tags notes notes";
 }
 .is-expanded .detail-title { display: block; grid-area: title; margin: 0; font-size: 16px; font-weight: 600; line-height: 1.6; overflow-wrap: anywhere; }
 .is-expanded .category-badge { display: none; }
-.is-expanded .copy-button { background: linear-gradient(130deg, #9addea, #8acdbc); color: #102b31; border-color: #d2e7ff20; }
-.is-expanded .copy-button:hover { background: linear-gradient(130deg, #b2e7ee, #a3e0ce); }
-.is-expanded .copy-button.is-copied { background: var(--success); }
+.is-expanded .copy-label { color: var(--accent); }
 .is-expanded:not(.has-detail-description) .description-stack { display: none; }
 .is-expanded .description { max-width: 85ch; }
 .is-expanded .command-caption {
@@ -690,21 +697,21 @@ body.has-sticky-search .hero:has(.category-picker:not([hidden])) { visibility: v
 @media (min-width: 721px) {
   .command-card.is-expanded:has(.placeholder-field:nth-child(2)) {
     grid-template-areas:
-      "title title pin copy toggle"
-      "desc desc desc desc desc"
-      "extra extra extra extra extra"
-      "caption caption caption caption caption"
-      "line line line line line"
-      "placeholders placeholders placeholders placeholders placeholders"
-      "tags tags notes notes notes";
+      "toggle title title pin"
+      "desc desc desc desc"
+      "extra extra extra extra"
+      "caption caption caption caption"
+      "line line line line"
+      "placeholders placeholders placeholders placeholders"
+      "tags tags notes notes";
   }
   .command-card.is-expanded:not(.has-detail-description):not(.has-variants):has(.placeholder-field:nth-child(2)) {
     grid-template-areas:
-      "title title pin copy toggle"
-      "caption caption caption caption caption"
-      "line line line line line"
-      "placeholders placeholders placeholders placeholders placeholders"
-      "tags tags notes notes notes";
+      "toggle title title pin"
+      "caption caption caption caption"
+      "line line line line"
+      "placeholders placeholders placeholders placeholders"
+      "tags tags notes notes";
   }
   .is-expanded .placeholder-fields:has(.placeholder-field:nth-child(2)) { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
 }
@@ -712,8 +719,8 @@ body.has-sticky-search .hero:has(.category-picker:not([hidden])) { visibility: v
   :root { --rail-width: 226px; }
   .catalog-brand { padding-inline: 18px; gap: 8px; font-size: 16px; }
   .sticky-active-category, .sticky-result-summary { display: none; }
-  .command-card { grid-template-columns: minmax(0,1fr) minmax(80px,14%) 28px 64px 28px; column-gap: 6px; }
-  .list-columns { grid-template-columns: minmax(0,1fr) minmax(80px,14%) 132px; }
+  .command-card { grid-template-columns: 30px minmax(0,1fr) minmax(80px,20%) 32px; column-gap: 6px; }
+  .list-columns { grid-template-columns: minmax(0,1fr) minmax(80px,20%) 32px; }
   .catalog-metrics { gap: 8px; }
   .catalog-metrics>span+span { padding-left: 8px; }
 }
@@ -755,8 +762,8 @@ body.has-sticky-search .hero:has(.category-picker:not([hidden])) { visibility: v
   .list-columns { display: none; }
   .card-grid { border-top: 1px solid var(--line); border-radius: 9px; }
   .command-card {
-    grid-template-columns: minmax(0,1fr) 32px 32px;
-    grid-template-areas: "line copy toggle" "desc copy toggle" "meta pin toggle";
+    grid-template-columns: 32px minmax(0,1fr) 32px;
+    grid-template-areas: "toggle line pin" ". desc desc" ". meta meta";
     gap: 3px 6px;
     min-height: 92px;
     padding: 13px;
@@ -765,20 +772,17 @@ body.has-sticky-search .hero:has(.category-picker:not([hidden])) { visibility: v
   .description { font-size: 11px; }
   .category-badge { font-size: 10px; min-height: 24px; }
   .category-badge .ui-icon { width: 14px; height: 14px; }
-  .copy-button { width: 32px; min-height: 32px; padding: 6px; font-size: 0; }
-  .copy-button::before { width: 17px; height: 17px; }
   .command-card.is-expanded {
-    grid-template-columns: minmax(0,1fr) auto auto;
-    grid-template-areas: "title pin toggle" "desc desc desc" "extra extra extra" "caption caption caption" "line line line" "placeholders placeholders placeholders" "copy copy copy" "tags tags tags" "notes notes notes";
+    grid-template-columns: 32px minmax(0,1fr) 32px;
+    grid-template-areas: "toggle title pin" "desc desc desc" "extra extra extra" "caption caption caption" "line line line" "placeholders placeholders placeholders" "tags tags tags" "notes notes notes";
     row-gap: 10px;
     padding: 16px 13px;
   }
   .command-card.is-expanded:not(.has-detail-description):not(.has-variants) {
-    grid-template-areas: "title pin toggle" "caption caption caption" "line line line" "placeholders placeholders placeholders" "copy copy copy" "tags tags tags" "notes notes notes";
+    grid-template-areas: "toggle title pin" "caption caption caption" "line line line" "placeholders placeholders placeholders" "tags tags tags" "notes notes notes";
   }
   .is-expanded .detail-title { font-size: 15px; }
   .is-expanded .command-line { font-size: 14px; padding: 11px 12px; }
-  .is-expanded .copy-button { width: 100%; font-size: 12px; }
   .is-expanded .placeholder-slot { margin-top: 4px; }
   .placeholder-input { font-size: 16px; }
   .command-notes summary { text-align: left; }
@@ -831,14 +835,12 @@ body.has-sticky-search .hero:has(.category-picker:not([hidden])) { visibility: v
 @media (pointer: coarse) {
   button, button[class] { min-width: 44px; min-height: 44px; }
   .search-clear-btn { right: 4px; }
-  .command-card:not(.is-expanded) { grid-template-columns: minmax(0,1fr) minmax(100px,14%) 44px 70px 44px; }
+  .command-card { grid-template-columns: 44px minmax(0,1fr) minmax(100px,20%) 44px; }
 }
 @media (max-width: 720px) and (pointer: coarse) {
   .hero-grid { gap: 4px; }
-  .command-card:not(.is-expanded) { grid-template-columns: minmax(0,1fr) 44px 44px; }
-  .command-card.is-expanded { grid-template-columns: minmax(0,1fr) 44px 44px; }
-  .command-card .copy-button { width: 44px; }
-  .command-card.is-expanded .copy-button { width: 100%; }
+  .command-card:not(.is-expanded) { grid-template-columns: 44px minmax(0,1fr) 44px; }
+  .command-card.is-expanded { grid-template-columns: 44px minmax(0,1fr) 44px; }
   .search-assists { margin-top: 7px; }
 }
 @media (prefers-reduced-motion: reduce) {

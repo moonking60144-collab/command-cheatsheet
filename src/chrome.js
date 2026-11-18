@@ -4,6 +4,7 @@
 import { ui, announce } from "./state.js";
 
 let copyToastTimer = 0;
+const copyFeedback = new WeakMap();
 
 export function setupUtilityChromeObserver() {
   if (!ui.hero) {
@@ -55,32 +56,34 @@ function syncFocusWhenStickyChromeHides(showChrome) {
 }
 
 export async function copyToClipboard(text, button, card = null, successAnnouncement = "指令已複製到剪貼簿。") {
-  const originalLabel = button.textContent;
+  const label = button.querySelector(".copy-label") || button;
+  const originalLabel = copyFeedback.get(button)?.originalLabel ?? label.textContent;
 
   try {
     await navigator.clipboard.writeText(text);
 
-    button.textContent = "已複製";
+    label.textContent = "已複製";
     button.classList.add("is-copied");
     card?.classList.add("is-copied");
-
-    window.setTimeout(() => {
-      button.textContent = originalLabel;
-      button.classList.remove("is-copied");
-      card?.classList.remove("is-copied");
-    }, 1400);
 
     showCopyToast(text);
     announce(successAnnouncement);
   } catch (error) {
     console.error(error);
-    button.textContent = "失敗";
-    window.setTimeout(() => {
-      button.textContent = originalLabel;
-    }, 1400);
+    label.textContent = "失敗";
+    button.classList.remove("is-copied");
+    card?.classList.remove("is-copied");
     showCopyToast("複製失敗", { isError: true });
     announce("複製失敗。");
   }
+  window.clearTimeout(copyFeedback.get(button)?.timer);
+  const timer = window.setTimeout(() => {
+    label.textContent = originalLabel;
+    button.classList.remove("is-copied");
+    card?.classList.remove("is-copied");
+    copyFeedback.delete(button);
+  }, 1400);
+  copyFeedback.set(button, { originalLabel, timer });
 }
 
 function showCopyToast(text, { isError = false } = {}) {
