@@ -6,6 +6,23 @@ test.beforeEach(async ({ page }) => {
   await page.evaluate(() => document.fonts.ready);
 });
 
+test("column headings align with each desktop field and descriptions stack on a narrow screen", async ({ page }) => {
+  await expect(page.locator(".list-columns span")).toHaveText(["指令", "說明", "分類"]);
+  const row = page.locator(".command-card").nth(1);
+  const fields = [".command-line", ".description", ".category-badge"];
+  for (const [index, field] of fields.entries()) {
+    const header = await page.locator(".list-columns span").nth(index).boundingBox();
+    const cell = await row.locator(field).boundingBox();
+    expect(Math.abs(cell.x - header.x)).toBeLessThan(1);
+  }
+  await page.setViewportSize({ width: 320, height: 800 });
+  await expect(page.locator(".list-columns")).toBeHidden();
+  const command = await row.locator(".command-line").boundingBox();
+  const description = await row.locator(".description").boundingBox();
+  expect(description.y).toBeGreaterThanOrEqual(command.y + command.height);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(320);
+});
+
 test("rapid disclosure reversals keep the visible height and settle on the latest row", async ({ page }) => {
   const result = await page.evaluate(async () => {
     const [first, second] = document.querySelectorAll(".command-card");

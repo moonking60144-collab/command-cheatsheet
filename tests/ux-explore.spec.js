@@ -1450,8 +1450,12 @@ test.describe("UX exploratory", () => {
 
     const tricky = `<script>alert("x")</script> & 'quote' \"dq\"`;
     await openDetails(placeholderCard);
+    const code = placeholderCard.locator(".command-code");
+    await expect(code.locator("var").first()).toBeVisible();
     await placeholderCard.locator(".placeholder-input").first().fill(tricky);
-    await placeholderCard.locator(".copy-button").click();
+    await expect(code).toContainText(tricky);
+    await expect(code.locator("var, script")).toHaveCount(0);
+    await code.click();
 
     const clipboardText = await page.evaluate(() => navigator.clipboard.readText());
     expect(clipboardText).toContain(`<script>alert("x")</script>`);

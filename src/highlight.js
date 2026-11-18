@@ -4,7 +4,7 @@
 // caller passes in a callback to run after the highlight libraries finish
 // loading (so app.js can re-highlight existing DOM with the current query).
 
-import { escapeHtml } from "./utils.js";
+import { compileTextHighlightPattern, escapeHtml } from "./utils.js";
 
 let highlightLoadPromise = null;
 let onLibrariesReady = null;
@@ -120,9 +120,13 @@ export function renderCommandCode(codeElement, commandText, language, highlightP
     }
   }
 
-  if (highlightPattern) {
-    applySearchMarksToCode(codeElement, highlightPattern);
+  if (codeElement.dataset.commandText.includes("<")) {
+    const fields = codeElement.closest(".command-block").querySelectorAll(".placeholder-input");
+    const tokens = Array.from(fields).filter(field => !field.value).map(field => field.dataset.placeholderToken);
+    const tokenPattern = compileTextHighlightPattern(tokens);
+    if (tokenPattern) wrapCodeMatches(codeElement, tokenPattern, "var");
   }
+  if (highlightPattern) wrapCodeMatches(codeElement, highlightPattern, "mark");
 }
 
 // Cache hljs output by (language, text). hljs.highlight is the single most
@@ -182,7 +186,7 @@ function getCommandCodeHtml(commandText, language) {
   return html;
 }
 
-function applySearchMarksToCode(container, highlightPattern) {
+function wrapCodeMatches(container, highlightPattern, tagName) {
   const textNodes = [];
   const walker = document.createTreeWalker(
     container,
@@ -224,9 +228,9 @@ function applySearchMarksToCode(container, highlightPattern) {
         fragment.append(text.slice(lastIndex, match.index));
       }
 
-      const mark = document.createElement("mark");
-      mark.textContent = match[0];
-      fragment.append(mark);
+      const wrapper = document.createElement(tagName);
+      wrapper.textContent = match[0];
+      fragment.append(wrapper);
       lastIndex = match.index + match[0].length;
     }
 
