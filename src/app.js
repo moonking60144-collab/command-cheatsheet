@@ -14,7 +14,6 @@ import {
   normalizeCommands,
   getCategories,
   getCommandCounts,
-  updateMetrics,
   updateViewModeUI,
   getUrlState,
   announce
@@ -128,7 +127,6 @@ function rebuildCommandState() {
   saveState();
   invalidatePickerLayoutCache();
   clearPickerPanels();
-  updateMetrics();
   renderFilters();
   updateViewModeUI();
   syncWorkerData();
@@ -194,17 +192,6 @@ function bindEvents() {
       (button === ui.stickySearchClearButton ? ui.stickySearchInput : ui.searchInput)
         ?.focus({ preventScroll: true });
     });
-  });
-
-  ui.searchAssists?.addEventListener("click", (event) => {
-    const chip = event.target.closest("[data-query-template]");
-
-    if (!chip) {
-      return;
-    }
-
-    updateQuery(chip.dataset.queryTemplate ?? "");
-    focusActiveSearch({ select: false });
   });
 
   [ui.viewToggleButton, ui.stickyViewToggleButton].forEach((button) => {

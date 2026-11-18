@@ -299,12 +299,18 @@ test.describe("UX exploratory", () => {
     expect(allVisibleCardsHaveDnsTag).toBe(true);
   });
 
-  test("search assist chip applies an operator query", async ({ page }) => {
-    await page.locator('.search-assist-chip[data-query-template="tag:dns"]').click();
-
-    await expect(page.locator("#search-input")).toHaveValue("tag:dns");
-    await expect(page.locator(".command-card").first()).toBeVisible();
-    await expect(page.locator(".command-card .match-line").first()).toContainText("標籤");
+  test("search refraction moves at rest, dims on focus and stays static with reduced motion", async ({ page }) => {
+    const light = page.locator(".hero .search-light");
+    const transform = () => light.evaluate(el => getComputedStyle(el, "::before").transform);
+    const initial = await transform();
+    await expect.poll(transform).not.toBe(initial);
+    await page.keyboard.press("/");
+    await expect(page.locator("#search-input")).toBeFocused();
+    await expect(light).toHaveCSS("opacity", "0.3");
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    for (const layer of ["::before", "::after"]) {
+      expect(await light.evaluate((el, pseudo) => getComputedStyle(el, pseudo).animationName, layer)).toBe("none");
+    }
   });
 
   test("cat: operator scopes search to matching categories", async ({ page }) => {
@@ -954,7 +960,7 @@ test.describe("UX exploratory", () => {
     await expect.poll(clipboard).toBe("shutdown /a");
   });
 
-  test("320px touch header fits and Windows chip applies the displayed category query", async ({ browser }, testInfo) => {
+  test("320px touch search fits and accepts a Windows category query", async ({ browser }, testInfo) => {
     const page = await browser.newPage({
       baseURL: testInfo.project.use.baseURL,
       viewport: { width: 320, height: 780 },
@@ -966,8 +972,8 @@ test.describe("UX exploratory", () => {
     const summary = await page.locator("#result-summary").boundingBox();
     const pager = await page.locator("#page-jump").boundingBox();
     expect(summary.x + summary.width).toBeLessThanOrEqual(pager.x);
-    await page.getByRole("button", { name: 'cat:"Windows"', exact: true }).tap();
-    await expect(page.locator("#search-input")).toHaveValue('cat:"Windows"');
+    await page.locator("#search-input").tap();
+    await page.locator("#search-input").fill('cat:"Windows"');
     await expect(page.locator('.command-card .category-badge').filter({ hasText: 'Windows Process' }).first()).toBeAttached();
     await page.close();
   });

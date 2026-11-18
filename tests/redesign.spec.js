@@ -23,14 +23,16 @@ test("rapid disclosure reversals keep the visible height and settle on the lates
     first.querySelector(".details-toggle").click();
     await frame();
     second.querySelector(".details-toggle").click();
+    const results = document.querySelector("#results");
+    const resultAnimations = () => results.getAnimations({ subtree: true });
     const deadline = performance.now() + 1500;
-    while (document.getAnimations().length && performance.now() < deadline) await frame();
+    while (resultAnimations().length && performance.now() < deadline) await frame();
     return {
       initialHeight, intermediateHeight, reversalHeight,
       finalHeight: height(first),
       expandedIds: [...document.querySelectorAll(".command-card.is-expanded")].map((card) => card.dataset.commandId),
       expectedId: second.dataset.commandId,
-      activeAnimations: document.getAnimations().length
+      activeAnimations: resultAnimations().length
     };
   });
   expect(result.intermediateHeight).toBeGreaterThan(result.initialHeight);
@@ -80,7 +82,8 @@ test("a touch disclosure does not move the page while its focused button animate
   // Raw touch input avoids the locator's automatic scroll-into-view step.
   await page.touchscreen.tap(button.x + button.width / 2, button.y + button.height / 2);
   await page.evaluate(async () => {
-    await Promise.all(document.getAnimations().map((animation) => animation.finished));
+    const results = document.querySelector("#results");
+    await Promise.all(results.getAnimations({ subtree: true }).map((animation) => animation.finished));
     await new Promise(requestAnimationFrame);
   });
   expect(await page.evaluate(() => scrollY)).toBe(0);

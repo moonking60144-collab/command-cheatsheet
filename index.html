@@ -123,38 +123,23 @@
       </div>
 
       <section class="hero-panel" aria-label="搜尋與篩選">
-        <div class="panel-heading">
-          <div class="atlas-heading">
-            <h1>指令速查手冊</h1>
-            <div class="catalog-metrics">
-              <span><svg class="ui-icon" aria-hidden="true"><use href="assets/icons/ui.svg#terminal"></use></svg><span id="command-count">載入中…</span></span>
-              <span><svg class="ui-icon" aria-hidden="true"><use href="assets/icons/ui.svg#stack"></use></svg><span id="category-count"></span></span>
-            </div>
-          </div>
-          <div class="search-panel">
-            <label class="sr-only" for="search-input">搜尋指令、描述、標籤或分類</label>
-            <input
-              id="search-input"
-              class="search-input"
-              type="search"
-              autocomplete="off"
-              aria-label="搜尋指令、描述、標籤或分類"
-              placeholder="搜尋指令、描述、標籤或分類…"
-            >
-            <button id="search-clear-btn" class="search-clear-btn" type="button" aria-label="清除搜尋" title="清除搜尋" hidden>×</button>
-          </div>
-          <div id="search-assists" class="search-assists" aria-label="搜尋語法提示">
-            <span class="search-assist-label">試試搜尋</span>
-            <button class="search-assist-chip" type="button" data-query-template="tag:dns">tag:dns</button>
-            <button class="search-assist-chip" type="button" data-query-template="cat:&quot;Windows&quot;">cat:"Windows"</button>
-            <button class="search-assist-chip" type="button" data-query-template="docker ps">docker ps</button>
-            <button class="search-assist-chip" type="button" data-query-template="Test-NetConnection &lt;主機&gt; -Port &lt;埠&gt;">模板值</button>
-          </div>
+        <div class="search-panel" role="search">
+          <span class="search-light" aria-hidden="true"></span>
+          <label class="sr-only" for="search-input">搜尋指令、描述、標籤或分類</label>
+          <input
+            id="search-input"
+            class="search-input"
+            type="search"
+            autocomplete="off"
+            aria-label="搜尋指令、描述、標籤或分類"
+            placeholder="搜尋指令、描述、標籤或分類…"
+          >
+          <button id="search-clear-btn" class="search-clear-btn" type="button" aria-label="清除搜尋" title="清除搜尋" hidden>×</button>
         </div>
 
         <div class="toolbar">
           <div class="result-heading">
-            <h2 id="results-title">全部指令</h2>
+            <h1 id="results-title">全部指令</h1>
             <p id="result-summary" class="result-summary">正在載入指令資料...</p>
           </div>
           <div id="page-jump" class="page-jump" hidden aria-label="快速分頁"></div>
@@ -171,7 +156,8 @@
 
     <div id="sticky-search-bar" class="sticky-search-bar" aria-hidden="true">
       <div class="sticky-search-shell">
-        <div class="sticky-search-input-wrap search-panel">
+        <div class="sticky-search-input-wrap search-panel" role="search">
+          <span class="search-light" aria-hidden="true"></span>
           <label class="sr-only" for="sticky-search-input">快速搜尋指令</label>
           <input
             id="sticky-search-input"

@@ -3,7 +3,6 @@ const { test, expect } = require("@playwright/test");
 test.describe("Command Atlas smoke", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/");
-    await expect(page.locator("#command-count")).not.toHaveText(/^0 /);
     await expect(page.locator(".command-card").first()).toBeVisible();
   });
 

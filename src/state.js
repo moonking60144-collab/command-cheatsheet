@@ -62,7 +62,6 @@ export const ui = {
   stickyViewToggleButton: null,
   stickyCurrentLinkButton: null,
   stickyClearButton: null,
-  searchAssists: null,
   filterBar: null,
   categoryPickerBtn: null,
   categoryPicker: null,
@@ -72,8 +71,6 @@ export const ui = {
   pageJump: null,
   resultSummary: null,
   resultsTitle: null,
-  commandCount: null,
-  categoryCount: null,
   activeState: null,
   viewToggleButton: null,
   currentLinkButton: null,
@@ -99,7 +96,6 @@ export function bindUiRefs() {
   ui.stickyViewToggleButton = document.getElementById("sticky-view-toggle-btn");
   ui.stickyCurrentLinkButton = document.getElementById("sticky-current-link-btn");
   ui.stickyClearButton = document.getElementById("sticky-clear-btn");
-  ui.searchAssists = document.getElementById("search-assists");
   ui.resultsTitle = document.getElementById("results-title");
   ui.filterBar = document.getElementById("filter-bar");
   ui.categoryPickerBtn = document.getElementById("category-picker-btn");
@@ -109,8 +105,6 @@ export function bindUiRefs() {
   ui.publicPagination = document.getElementById("public-pagination");
   ui.pageJump = document.getElementById("page-jump");
   ui.resultSummary = document.getElementById("result-summary");
-  ui.commandCount = document.getElementById("command-count");
-  ui.categoryCount = document.getElementById("category-count");
   ui.activeState = document.getElementById("active-state");
   ui.viewToggleButton = document.getElementById("view-toggle-btn");
   ui.currentLinkButton = document.getElementById("current-link-btn");
@@ -258,11 +252,6 @@ export function syncUrlState() {
   const nextSearch = params.toString();
   const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ""}${window.location.hash}`;
   window.history.replaceState(null, "", nextUrl);
-}
-
-export function updateMetrics() {
-  ui.commandCount.innerHTML = `<span class="meta-num">${state.commands.length}</span> 筆指令`;
-  ui.categoryCount.innerHTML = `<span class="meta-num">${state.categories.length}</span> 個分類`;
 }
 
 export function updateViewModeUI() {
