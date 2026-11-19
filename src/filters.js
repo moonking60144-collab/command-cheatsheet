@@ -340,9 +340,30 @@ function createFilterButton(category, label, count = 0) {
 // Keep the selection visible inside the sidebar without moving the results page.
 function revealSidebarCategory(button) {
   const bar = ui.filterBar;
+  positionSelection(button);
   if (!button || !bar.clientHeight) return;
   const top = button.offsetTop;
   const bottom = top + button.offsetHeight;
   if (top < bar.scrollTop) bar.scrollTop = top;
   else if (bottom > bar.scrollTop + bar.clientHeight) bar.scrollTop = bottom - bar.clientHeight;
+}
+
+function positionSelection(button) {
+  const sidebar = ui.filterBar;
+  if (!button || !button.offsetWidth) {
+    sidebar.removeAttribute("data-selection-frame");
+    return;
+  }
+  // Scroll and selection share the sidebar's content coordinates.
+  sidebar.style.setProperty("--selection-x", button.offsetLeft + "px");
+  sidebar.style.setProperty("--selection-y", button.offsetTop + "px");
+  sidebar.style.setProperty("--selection-width", button.offsetWidth + "px");
+  sidebar.style.setProperty("--selection-height", button.offsetHeight + "px");
+  sidebar.setAttribute("data-selection-frame", "");
+}
+
+export function observeSidebarSelection() {
+  const align = () => positionSelection(ui.filterBar.querySelector(".filter-pill.is-active"));
+  new ResizeObserver(align).observe(ui.filterBar);
+  document.fonts.ready.then(align);
 }

@@ -30,6 +30,7 @@ import {
   clearFilters,
   filterByTag,
   renderFilters,
+  observeSidebarSelection,
   updateFilterPillActive,
   updateQuery,
   syncSearchInputs,
@@ -73,6 +74,8 @@ import {
   focusActiveSearch,
   isTextEntryElement
 } from "./chrome.js";
+import "./focus-ring.js";
+import "./card-light.js";
 import { setupGlobalKeyboard } from "./keyboard.js";
 
 let copyFirstResultAfterRender = false;
@@ -82,6 +85,7 @@ init();
 
 async function init() {
   bindUiRefs();
+  observeSidebarSelection();
   bindEvents();
   restoreState();
   syncSearchInputs();

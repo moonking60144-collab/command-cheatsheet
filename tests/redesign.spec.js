@@ -148,3 +148,77 @@ test("new local icons and fonts are available after an offline reload", async ({
     { family: "IBM Plex Mono", weight: "500", status: "loaded" }
   ]));
 });
+
+test("the selection frame travels with the active category and ignores hover", async ({ page }) => {
+  const rail = page.locator("#filter-bar");
+  const npm = rail.locator('[data-category="npm"]');
+  const powershell = rail.locator('[data-category="PowerShell"]');
+  const frameY = () => rail.evaluate(el => new DOMMatrixReadOnly(getComputedStyle(el, "::before").transform).m42);
+  await npm.click();
+  const start = await npm.evaluate(el => el.offsetTop);
+  await expect.poll(frameY).toBe(start);
+  await powershell.hover();
+  await expect(npm).toHaveAttribute("aria-pressed", "true");
+  expect(await frameY()).toBe(start);
+
+  // Sample the actual transition at a known time even on a busy CI runner.
+  await rail.evaluate(el => {
+    el.addEventListener("transitionrun", function capture(event) {
+      if (event.propertyName !== "transform" || event.pseudoElement !== "::before") return;
+      const slide = el.getAnimations({ subtree: true }).find(animation => animation.transitionProperty === "transform");
+      slide.pause();
+      slide.currentTime = slide.effect.getTiming().duration / 2;
+      el.removeEventListener("transitionrun", capture);
+    });
+  });
+  await powershell.click();
+  await expect(powershell).toHaveAttribute("aria-pressed", "true");
+  const end = await powershell.evaluate(el => el.offsetTop);
+  await expect.poll(() => rail.evaluate(el => el.getAnimations({ subtree: true }).some(a => a.playState === "paused"))).toBe(true);
+  const intermediate = await frameY();
+  expect(intermediate).toBeGreaterThan(start);
+  expect(intermediate).toBeLessThan(end);
+  await rail.evaluate(el => el.getAnimations({ subtree: true }).filter(a => a.playState === "paused").forEach(a => a.play()));
+  await expect.poll(frameY).toBe(end);
+  await expect(page.locator("#result-summary")).toContainText("33");
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await npm.click();
+  expect(await frameY()).toBe(start);
+});
+
+test("pointer light follows the current card and clears on exit and reduced motion", async ({ page }) => {
+  const card = page.locator(".command-card").nth(1);
+  await card.hover({ position: { x: 40, y: 16 } });
+  await expect(card).toHaveClass(/pointer-lit/);
+  const x = await card.evaluate(el => el.style.getPropertyValue("--light-x"));
+  await card.hover({ position: { x: 180, y: 16 } });
+  await expect.poll(() => card.evaluate(el => el.style.getPropertyValue("--light-x"))).not.toBe(x);
+  expect(await card.evaluate(el => getComputedStyle(el).backgroundImage)).toContain("radial-gradient");
+  await page.locator(".command-card").nth(2).hover();
+  await expect(card).not.toHaveClass(/pointer-lit/);
+  await expect(page.locator(".pointer-lit")).toHaveCount(1);
+  await page.locator("#search-input").hover();
+  await expect(page.locator(".pointer-lit")).toHaveCount(0);
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await card.hover();
+  await expect(page.locator(".pointer-lit")).toHaveCount(0);
+});
+
+test("inspector edits update the card and copy the resolved command", async ({ page, context }) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  const card = page.locator('[data-command-id="bash-rg"]');
+  const panel = page.locator("#desk");
+  await card.locator(".command-code").click();
+  await panel.locator(".desk-input").fill("README");
+  await expect(card.locator(".placeholder-input")).toHaveValue("README");
+  await expect(panel.locator(".desk-code")).toHaveText('rg -n "README" .');
+  await expect(panel.locator(".desk-status")).toContainText("待複製");
+  await panel.locator(".desk-copy").click();
+  await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe('rg -n "README" .');
+  await expect(panel.locator(".desk-status")).toContainText("已複製");
+  await panel.locator(".desk-pin").click();
+  await expect(card.locator(".pin-button")).toHaveAttribute("aria-pressed", "true");
+  await page.keyboard.press("Escape");
+  await expect(panel).toBeHidden();
+  await expect(card).toBeFocused();
+});

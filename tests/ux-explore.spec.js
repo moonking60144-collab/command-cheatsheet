@@ -1007,12 +1007,12 @@ test.describe("UX exploratory", () => {
     await simpleCard.focus();
     await page.keyboard.press("Control+C");
 
-    await expect(page.locator("#copy-toast")).toHaveClass(/is-visible/);
+    await expect(page.locator("#desk .desk-status")).toContainText("已複製");
     const clipboardText = await page.evaluate(() => navigator.clipboard.readText());
     expect(clipboardText.replace(/\s+/g, "")).toContain(cmdText.replace(/\s+/g, "").slice(0, 10));
   });
 
-  test("copy action shows a visible clipboard toast", async ({ page, context }) => {
+  test("copy action opens the inspector with the copied command", async ({ page, context }) => {
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);
 
     const card = page.locator(".command-card:not(:has(.placeholder-input))").first();
@@ -1021,11 +1021,11 @@ test.describe("UX exploratory", () => {
     const cmdText = (await card.locator(".command-code").textContent())?.trim() ?? "";
     await card.locator(".copy-button").click();
 
-    const toast = page.locator("#copy-toast");
-    await expect(toast).toHaveClass(/is-visible/);
-    await expect(toast).toHaveCSS("opacity", "1");
-    await expect(toast.locator(".copy-toast-status")).toHaveText("已複製");
-    await expect(toast.locator(".copy-toast-command")).toContainText(cmdText.replace(/\s+/g, " ").slice(0, 10));
+    const inspector = page.locator("#desk");
+    await expect(inspector).toBeVisible();
+    await expect(inspector.locator(".desk-status")).toContainText("已複製");
+    await expect(inspector.locator(".desk-code")).toHaveText(cmdText);
+    await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe(cmdText);
   });
 
   test("selecting part of a command leaves the clipboard alone and repeated copies keep the code intact", async ({ page, context }) => {

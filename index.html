@@ -17,6 +17,7 @@
 </head>
 <body>
   <div class="app-shell">
+    <div class="ambient-field" aria-hidden="true"></div>
     <aside class="catalog-sidebar" aria-label="指令導覽">
       <div class="catalog-brand"><img class="brand-logo" src="assets/icons/icon-192.svg" alt=""><span>Command <b>Atlas</b></span></div>
       <div class="nav-heading">工作空間</div>
@@ -207,6 +208,24 @@
         <div id="public-pagination" class="pagination" hidden></div>
       </section>
 
+      <aside id="desk" class="inspector" aria-labelledby="desk-heading" hidden>
+        <header><svg class="ui-icon" aria-hidden="true"><use href="assets/icons/ui.svg#sidebar-simple"/></svg><h2 id="desk-heading">指令檢視器</h2>
+          <button type="button" class="desk-pin" aria-label="釘選指令" aria-pressed="false"><svg class="ui-icon" aria-hidden="true"><use href="assets/icons/ui.svg#star"/></svg></button>
+          <button type="button" class="desk-close" aria-label="關閉指令檢視器" title="關閉（Esc）"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+        </header>
+        <div class="desk-content">
+          <h3 class="desk-title"></h3><p class="desk-summary" hidden></p>
+          <div class="desk-variants" hidden></div>
+          <div class="desk-terminal">
+            <div class="desk-term-head"><span class="desk-language"></span><span class="desk-status" aria-live="polite"></span></div>
+            <pre class="desk-code"><code></code></pre>
+          </div>
+          <div class="desk-section" id="desk-params" hidden><h4>指令參數</h4><div class="desk-fields"></div></div>
+          <button class="desk-copy" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="8.5" y="8.5" width="12" height="12" rx="2"/><path d="M15.5 8.5V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v8.5a2 2 0 0 0 2 2h3.5"/></svg>複製指令</button>
+          <p class="desk-retry" role="status" hidden>瀏覽器無法寫入剪貼簿，可選取上方指令手動複製。</p>
+          <div class="desk-context"><div class="desk-section" id="desk-notes" style="margin-top:0"><h4>使用備註</h4><p class="desk-notes"></p></div><div class="desk-tags"></div></div>
+        </div>
+      </aside>
     </main>
 
     <footer class="footer">

@@ -2,8 +2,10 @@
 // copy feedback, focus management for the active search input.
 
 import { ui, announce } from "./state.js";
+import { showCommandInspector } from "./inspector.js";
 
 let copyToastTimer = 0;
+let latestCommandCopy = 0;
 const copyFeedback = new WeakMap();
 
 export function setupUtilityChromeObserver() {
@@ -58,6 +60,8 @@ function syncFocusWhenStickyChromeHides(showChrome) {
 export async function copyToClipboard(text, button, card = null, successAnnouncement = "指令已複製到剪貼簿。") {
   const label = button.querySelector(".copy-label") || button;
   const originalLabel = copyFeedback.get(button)?.originalLabel ?? label.textContent;
+  const request = card ? ++latestCommandCopy : null;
+  let copiedText = null;
 
   try {
     await navigator.clipboard.writeText(text);
@@ -66,16 +70,18 @@ export async function copyToClipboard(text, button, card = null, successAnnounce
     button.classList.add("is-copied");
     card?.classList.add("is-copied");
 
-    showCopyToast(text);
+    copiedText = text;
+    if (!card) showCopyToast(text);
     announce(successAnnouncement);
   } catch (error) {
     console.error(error);
     label.textContent = "失敗";
     button.classList.remove("is-copied");
     card?.classList.remove("is-copied");
-    showCopyToast("複製失敗", { isError: true });
+    if (!card) showCopyToast("複製失敗", { isError: true });
     announce("複製失敗。");
   }
+  if (card && request === latestCommandCopy) showCommandInspector(card, copiedText);
   window.clearTimeout(copyFeedback.get(button)?.timer);
   const timer = window.setTimeout(() => {
     label.textContent = originalLabel;
